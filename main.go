@@ -17,22 +17,25 @@ func main() {
 	for {
 		log.Println("connecting...")
 		serverConn, listener := Connect(serverEndpoint, remoteEndpoint)
-		for {
-			// Open a (local) connection to localEndpoint whose content will be forwarded so serverEndpoint
-			local, err := net.Dial("tcp", localEndpoint.String())
-			if err != nil {
-				log.Fatalln(fmt.Printf("Dial INTO local service error: %s", err))
-			}
+		if serverConn != nil && listener != nil {
+			for {
+				// Open a (local) connection to localEndpoint whose content will be forwarded so serverEndpoint
+				local, err := net.Dial("tcp", localEndpoint.String())
+				if err != nil {
+					log.Println(fmt.Printf("Dial INTO local service error. %s\n", err))
+					break
+				}
 
-			client, err := listener.Accept()
-			if err != nil {
-				log.Println("disconnected")
-				break
+				client, err := listener.Accept()
+				if err != nil {
+					log.Println("disconnected")
+					break
+				}
+				HandleClient(client, local)
 			}
-			HandleClient(client, local)
+			serverConn.Close()
+			listener.Close()
 		}
-		serverConn.Close()
-		listener.Close()
-		time.Sleep(1 * time.Second)
+		time.Sleep(3 * time.Second)
 	}
 }

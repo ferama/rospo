@@ -39,26 +39,29 @@ func HandleClient(client net.Conn, remote net.Conn) {
 
 func Connect(serverEndpoint *Endpoint, remoteEndpoint *Endpoint) (*ssh.Client, net.Listener) {
 	flags := GetFlags()
+
 	// refer to https://godoc.org/golang.org/x/crypto/ssh for other authentication types
 	sshConfig := &ssh.ClientConfig{
 		// SSH connection username
 		User: *flags.Username,
 		Auth: []ssh.AuthMethod{
-			// put here your private key path
 			PublicKeyFile(*flags.Identity),
+			// ssh.Password("your_password_here"),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 	// Connect to SSH remote server using serverEndpoint
 	serverConn, err := ssh.Dial("tcp", serverEndpoint.String(), sshConfig)
 	if err != nil {
-		log.Fatalln(fmt.Printf("Dial INTO remote server error: %s", err))
+		log.Println(fmt.Printf("Dial INTO remote server error. %s\n", err))
+		return nil, nil
 	}
 
 	// Listen on remote server port
 	listener, err := serverConn.Listen("tcp", remoteEndpoint.String())
 	if err != nil {
-		log.Fatalln(fmt.Printf("Listen open port ON remote server error: %s", err))
+		log.Println(fmt.Printf("Listen open port ON remote server error. %s\n", err))
+		return nil, nil
 	}
 
 	log.Println("connected")
