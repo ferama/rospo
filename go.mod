@@ -1,4 +1,4 @@
-module main
+module gotun
 
 go 1.16
 

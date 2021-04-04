@@ -2,21 +2,23 @@ package main
 
 import (
 	"fmt"
+	"gotun/conn"
+	"gotun/utils"
 	"log"
 	"net"
 	"time"
 )
 
 func main() {
-	flags := GetFlags()
+	flags := utils.GetFlags()
 
-	localEndpoint := NewEndpoint(*flags.LocalEndpoint)
-	serverEndpoint := NewEndpoint(*flags.ServerEndpoint)
-	remoteEndpoint := NewEndpoint(*flags.RemoteEndpoint)
+	localEndpoint := conn.NewEndpoint(*flags.LocalEndpoint)
+	serverEndpoint := conn.NewEndpoint(*flags.ServerEndpoint)
+	remoteEndpoint := conn.NewEndpoint(*flags.RemoteEndpoint)
 
 	for {
 		log.Println("connecting...")
-		serverConn, listener := Connect(serverEndpoint, remoteEndpoint)
+		serverConn, listener := conn.Connect(serverEndpoint, remoteEndpoint)
 		if serverConn != nil && listener != nil {
 			for {
 				// Open a (local) connection to localEndpoint whose content will be forwarded so serverEndpoint
@@ -31,7 +33,7 @@ func main() {
 					log.Println("disconnected")
 					break
 				}
-				HandleClient(client, local)
+				conn.HandleClient(client, local)
 			}
 			serverConn.Close()
 			listener.Close()

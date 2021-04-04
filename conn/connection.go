@@ -1,7 +1,8 @@
-package main
+package conn
 
 import (
 	"fmt"
+	"gotun/utils"
 	"io"
 	"log"
 	"net"
@@ -38,14 +39,14 @@ func HandleClient(client net.Conn, remote net.Conn) {
 }
 
 func Connect(serverEndpoint *Endpoint, remoteEndpoint *Endpoint) (*ssh.Client, net.Listener) {
-	flags := GetFlags()
+	flags := utils.GetFlags()
 
 	// refer to https://godoc.org/golang.org/x/crypto/ssh for other authentication types
 	sshConfig := &ssh.ClientConfig{
 		// SSH connection username
 		User: *flags.Username,
 		Auth: []ssh.AuthMethod{
-			PublicKeyFile(*flags.Identity),
+			utils.PublicKeyFile(*flags.Identity),
 			// ssh.Password("your_password_here"),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
