@@ -24,6 +24,13 @@ var (
 	hostPrivateKeySigner ssh.Signer
 )
 
+type directTCPPayload struct {
+	Addr       string // To connect to
+	Port       uint32
+	OriginAddr string
+	OriginPort uint32
+}
+
 type SshServer struct {
 	authorizedKeysMap map[string]bool
 }
@@ -136,10 +143,17 @@ func (s *SshServer) ptyRun(c *exec.Cmd, tty *os.File) (err error) {
 func (s *SshServer) handleRequests(reqs <-chan *ssh.Request) {
 	for req := range reqs {
 		log.Printf("recieved out-of-band request: %+v", req)
+		// if req.Type == "tcpip-forward" {
+		// }
 	}
 }
 
-func (s *SshServer) handleChannelsRequests(channel ssh.Channel, requests <-chan *ssh.Request) {
+func (s *SshServer) handleChannelSession(c ssh.NewChannel) {
+	channel, requests, err := c.Accept()
+	if err != nil {
+		log.Printf("could not accept channel (%s)", err)
+		return
+	}
 	// allocate a terminal for this channel
 	log.Print("creating pty...")
 	// Create new pty
@@ -236,23 +250,58 @@ func (s *SshServer) handleChannelsRequests(channel ssh.Channel, requests <-chan 
 	}
 }
 
+func (s *SshServer) handleChannelDirect(c ssh.NewChannel) {
+	var payload directTCPPayload
+	if err := ssh.Unmarshal(c.ExtraData(), &payload); err != nil {
+		log.Printf("Could not unmarshal extra data: %s\n", err)
+
+		c.Reject(ssh.Prohibited, "Bad payload")
+		return
+	}
+	connection, requests, err := c.Accept()
+	if err != nil {
+		log.Printf("Could not accept channel (%s)\n", err)
+		return
+	}
+	go ssh.DiscardRequests(requests)
+	addr := fmt.Sprintf("[%s]:%d", payload.Addr, payload.Port)
+
+	rconn, err := net.Dial("tcp", addr)
+	if err != nil {
+		log.Printf("Could not dial remote (%s)", err)
+		connection.Close()
+		return
+	}
+	// Teardown session
+	var once sync.Once
+	close := func() {
+		connection.Close()
+		rconn.Close()
+		log.Printf("session closed")
+	}
+	go func() {
+		io.Copy(connection, rconn)
+		once.Do(close)
+	}()
+	go func() {
+		io.Copy(rconn, connection)
+		once.Do(close)
+	}()
+}
+
 func (s *SshServer) handleChannels(chans <-chan ssh.NewChannel) {
 	// Service the incoming Channel channel.
 	for newChannel := range chans {
-		// Channels have a type, depending on the application level
-		// protocol intended. In the case of a shell, the type is
-		// "session" and ServerShell may be used to present a simple
-		// terminal interface.
-		if t := newChannel.ChannelType(); t != "session" {
-			newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
+		t := newChannel.ChannelType()
+		if t == "session" {
+			go s.handleChannelSession(newChannel)
 			continue
 		}
-		channel, requests, err := newChannel.Accept()
-		if err != nil {
-			log.Printf("could not accept channel (%s)", err)
+		if t == "direct-tcpip" {
+			go s.handleChannelDirect(newChannel)
 			continue
 		}
-		s.handleChannelsRequests(channel, requests)
+		newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
 	}
 }
 
