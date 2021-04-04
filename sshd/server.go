@@ -222,24 +222,26 @@ func (s *SshServer) handleTcpIpForwardSession(listener net.Listener, laddr strin
 				return
 			}
 			go ssh.DiscardRequests(requests)
-			// serve(c, lconn, client, *forwardedtimeout)
-			// Teardown session
-			var once sync.Once
-			close := func() {
-				c.Close()
-				lconn.Close()
-				log.Printf("session closed")
-			}
-			go func() {
-				io.Copy(c, lconn)
-				once.Do(close)
-			}()
-			go func() {
-				io.Copy(lconn, c)
-				once.Do(close)
-			}()
+			s.serve(c, lconn)
 		}(lconn, laddr, lport)
 	}
+}
+
+func (s *SshServer) serve(cssh ssh.Channel, conn net.Conn) {
+	var once sync.Once
+	close := func() {
+		cssh.Close()
+		conn.Close()
+		log.Printf("session closed")
+	}
+	go func() {
+		io.Copy(cssh, conn)
+		once.Do(close)
+	}()
+	go func() {
+		io.Copy(conn, cssh)
+		once.Do(close)
+	}()
 }
 
 func (s *SshServer) handleChannelSession(c ssh.NewChannel) {
@@ -366,21 +368,8 @@ func (s *SshServer) handleChannelDirect(c ssh.NewChannel) {
 		connection.Close()
 		return
 	}
-	// Teardown session
-	var once sync.Once
-	close := func() {
-		connection.Close()
-		rconn.Close()
-		log.Printf("session closed")
-	}
-	go func() {
-		io.Copy(connection, rconn)
-		once.Do(close)
-	}()
-	go func() {
-		io.Copy(rconn, connection)
-		once.Do(close)
-	}()
+
+	s.serve(connection, rconn)
 }
 
 func (s *SshServer) handleChannels(chans <-chan ssh.NewChannel) {
