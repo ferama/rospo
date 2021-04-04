@@ -30,9 +30,23 @@ type directTCPPayload struct {
 	OriginAddr string
 	OriginPort uint32
 }
+type tcpIpForwardPayload struct {
+	Addr string
+	Port uint32
+}
+type tcpIpForwardPayloadReply struct {
+	Port uint32
+}
+type forwardedTCPPayload struct {
+	Addr       string // Is connected to
+	Port       uint32
+	OriginAddr string
+	OriginPort uint32
+}
 
 type SshServer struct {
 	authorizedKeysMap map[string]bool
+	client            *ssh.ServerConn
 }
 
 func NewSshServer() *SshServer {
@@ -116,6 +130,7 @@ func (s *SshServer) Start() {
 			log.Println(err)
 			continue
 		}
+		s.client = sshConn
 
 		log.Println("Connection from", sshConn.RemoteAddr())
 		// Print incoming out-of-band Requests
@@ -142,9 +157,88 @@ func (s *SshServer) ptyRun(c *exec.Cmd, tty *os.File) (err error) {
 
 func (s *SshServer) handleRequests(reqs <-chan *ssh.Request) {
 	for req := range reqs {
+		if req.Type == "tcpip-forward" {
+			s.handleTcpIpForward(req)
+			continue
+		}
 		log.Printf("recieved out-of-band request: %+v", req)
-		// if req.Type == "tcpip-forward" {
-		// }
+	}
+}
+
+func (s *SshServer) handleTcpIpForward(req *ssh.Request) {
+	var payload tcpIpForwardPayload
+	if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
+		log.Printf("[Unable to unmarshal payload")
+		req.Reply(false, []byte{})
+
+		return
+	}
+	laddr := payload.Addr
+	lport := payload.Port
+
+	bind := fmt.Sprintf("[%s]:%d", laddr, lport)
+	ln, err := net.Listen("tcp", bind)
+	if err != nil {
+		log.Printf("Listen failed for %s", bind)
+		req.Reply(false, []byte{})
+		return
+	}
+	// Tell client everything is OK
+	reply := tcpIpForwardPayloadReply{lport}
+	req.Reply(true, ssh.Marshal(&reply))
+	// go handleListener(bindinfo, listener)
+	go s.handleTcpIpForwardSession(ln, laddr, lport)
+}
+
+func (s *SshServer) handleTcpIpForwardSession(listener net.Listener, laddr string, lport uint32) {
+	for {
+		lconn, err := listener.Accept()
+		if err != nil {
+			neterr := err.(net.Error)
+			if neterr.Timeout() {
+				log.Printf("Accept failed with timeout: %s", err)
+				continue
+			}
+			if neterr.Temporary() {
+				log.Printf("Accept failed with temporary: %s", err)
+				continue
+			}
+
+			break
+		}
+
+		// go handleForwardTcpIp(client, bindinfo, lconn)
+		go func(lconn net.Conn, laddr string, lport uint32) {
+			remotetcpaddr := lconn.RemoteAddr().(*net.TCPAddr)
+			raddr := remotetcpaddr.IP.String()
+			rport := uint32(remotetcpaddr.Port)
+			payload := forwardedTCPPayload{laddr, lport, raddr, uint32(rport)}
+			mpayload := ssh.Marshal(&payload)
+
+			c, requests, err := s.client.OpenChannel("forwarded-tcpip", mpayload)
+			if err != nil {
+				log.Printf("Unable to get channel: %s. Hanging up requesting party!", err)
+				lconn.Close()
+				return
+			}
+			go ssh.DiscardRequests(requests)
+			// serve(c, lconn, client, *forwardedtimeout)
+			// Teardown session
+			var once sync.Once
+			close := func() {
+				c.Close()
+				lconn.Close()
+				log.Printf("session closed")
+			}
+			go func() {
+				io.Copy(c, lconn)
+				once.Do(close)
+			}()
+			go func() {
+				io.Copy(lconn, c)
+				once.Do(close)
+			}()
+		}(lconn, laddr, lport)
 	}
 }
 
