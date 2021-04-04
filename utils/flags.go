@@ -32,7 +32,7 @@ func GetFlags() *Flags {
 	defaultIdentity := filepath.Join(usr.HomeDir, ".ssh", "id_rsa")
 
 	flagValues = &Flags{
-		Identity:       flag.String("identity", defaultIdentity, "The ssh public key absolute path"),
+		Identity:       flag.String("identity", defaultIdentity, "The ssh identity (private) key absolute path"),
 		LocalEndpoint:  flag.String("local", "localhost:22", "The local endpoint"),
 		RemoteEndpoint: flag.String("remote", "localhost:5555", "The remote endpoint"),
 	}

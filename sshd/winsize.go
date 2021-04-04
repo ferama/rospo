@@ -1,4 +1,4 @@
-package sshs
+package sshd
 
 import (
 	"log"

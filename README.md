@@ -2,7 +2,7 @@
 
 Gotun is a very simple ssh tunnel tool.
 
-It's meant to replace autossh.
+It's meant to replace the couple autossh - sshd.
 
 Usage example:
 

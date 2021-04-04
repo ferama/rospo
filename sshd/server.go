@@ -1,4 +1,4 @@
-package sshs
+package sshd
 
 import (
 	"encoding/binary"
@@ -113,7 +113,6 @@ func (s *SshServer) Start() {
 		log.Println("Connection from", sshConn.RemoteAddr())
 		// Print incoming out-of-band Requests
 		go s.handleRequests(reqs)
-		// sshConn.Close()
 		// Accept all channels
 		go s.handleChannels(chans)
 	}
@@ -140,6 +139,103 @@ func (s *SshServer) handleRequests(reqs <-chan *ssh.Request) {
 	}
 }
 
+func (s *SshServer) handleChannelsRequests(channel ssh.Channel, requests <-chan *ssh.Request) {
+	// allocate a terminal for this channel
+	log.Print("creating pty...")
+	// Create new pty
+	f, tty, err := pty.Open()
+	if err != nil {
+		log.Printf("could not start pty (%s)", err)
+		return
+	}
+	var shell string
+	shell = os.Getenv("SHELL")
+	if shell == "" {
+		shell = DEFAULT_SHELL
+	}
+	for req := range requests {
+		// log.Printf("%v %s", req.Payload, req.Payload)
+		ok := false
+		switch req.Type {
+		case "exec":
+			ok = true
+			command := string(req.Payload[4 : req.Payload[3]+4])
+			cmd := exec.Command(shell, []string{"-c", command}...)
+
+			cmd.Stdout = channel
+			cmd.Stderr = channel
+			cmd.Stdin = channel
+
+			err := cmd.Start()
+			if err != nil {
+				log.Printf("could not start command (%s)", err)
+				continue
+			}
+
+			// teardown session
+			go func() {
+				_, err := cmd.Process.Wait()
+				if err != nil {
+					log.Printf("failed to exit bash (%s)", err)
+				}
+				channel.Close()
+				log.Printf("session closed")
+			}()
+		case "shell":
+			cmd := exec.Command(shell)
+			cmd.Env = []string{"TERM=xterm"}
+			err := s.ptyRun(cmd, tty)
+			if err != nil {
+				log.Printf("%s", err)
+			}
+
+			// Teardown session
+			var once sync.Once
+			close := func() {
+				channel.Close()
+				log.Printf("session closed")
+			}
+
+			// Pipe session to bash and visa-versa
+			go func() {
+				io.Copy(channel, f)
+				once.Do(close)
+			}()
+
+			go func() {
+				io.Copy(f, channel)
+				once.Do(close)
+			}()
+
+			// We don't accept any commands (Payload),
+			// only the default shell.
+			if len(req.Payload) == 0 {
+				ok = true
+			}
+		case "pty-req":
+			// Responding 'ok' here will let the client
+			// know we have a pty ready for input
+			ok = true
+			// Parse body...
+			termLen := req.Payload[3]
+			termEnv := string(req.Payload[4 : termLen+4])
+			w, h := s.parseDims(req.Payload[termLen+4:])
+			SetWinsize(f.Fd(), w, h)
+			log.Printf("pty-req '%s'", termEnv)
+		case "window-change":
+			w, h := s.parseDims(req.Payload)
+			SetWinsize(f.Fd(), w, h)
+			continue //no response
+		}
+
+		if !ok {
+			log.Printf("declining %s request...", req.Type)
+		}
+
+		req.Reply(ok, nil)
+	}
+}
+
 func (s *SshServer) handleChannels(chans <-chan ssh.NewChannel) {
 	// Service the incoming Channel channel.
 	for newChannel := range chans {
@@ -156,105 +252,7 @@ func (s *SshServer) handleChannels(chans <-chan ssh.NewChannel) {
 			log.Printf("could not accept channel (%s)", err)
 			continue
 		}
-		// allocate a terminal for this channel
-		log.Print("creating pty...")
-		// Create new pty
-		f, tty, err := pty.Open()
-		if err != nil {
-			log.Printf("could not start pty (%s)", err)
-			continue
-		}
-
-		var shell string
-		shell = os.Getenv("SHELL")
-		if shell == "" {
-			shell = DEFAULT_SHELL
-		}
-
-		// Sessions have out-of-band requests such as "shell", "pty-req" and "env"
-		go func(in <-chan *ssh.Request) {
-			for req := range in {
-				// log.Printf("%v %s", req.Payload, req.Payload)
-				ok := false
-				switch req.Type {
-				case "exec":
-					ok = true
-					command := string(req.Payload[4 : req.Payload[3]+4])
-					cmd := exec.Command(shell, []string{"-c", command}...)
-
-					cmd.Stdout = channel
-					cmd.Stderr = channel
-					cmd.Stdin = channel
-
-					err := cmd.Start()
-					if err != nil {
-						log.Printf("could not start command (%s)", err)
-						continue
-					}
-
-					// teardown session
-					go func() {
-						_, err := cmd.Process.Wait()
-						if err != nil {
-							log.Printf("failed to exit bash (%s)", err)
-						}
-						channel.Close()
-						log.Printf("session closed")
-					}()
-				case "shell":
-					cmd := exec.Command(shell)
-					cmd.Env = []string{"TERM=xterm"}
-					err := s.ptyRun(cmd, tty)
-					if err != nil {
-						log.Printf("%s", err)
-					}
-
-					// Teardown session
-					var once sync.Once
-					close := func() {
-						channel.Close()
-						log.Printf("session closed")
-					}
-
-					// Pipe session to bash and visa-versa
-					go func() {
-						io.Copy(channel, f)
-						once.Do(close)
-					}()
-
-					go func() {
-						io.Copy(f, channel)
-						once.Do(close)
-					}()
-
-					// We don't accept any commands (Payload),
-					// only the default shell.
-					if len(req.Payload) == 0 {
-						ok = true
-					}
-				case "pty-req":
-					// Responding 'ok' here will let the client
-					// know we have a pty ready for input
-					ok = true
-					// Parse body...
-					termLen := req.Payload[3]
-					termEnv := string(req.Payload[4 : termLen+4])
-					w, h := s.parseDims(req.Payload[termLen+4:])
-					SetWinsize(f.Fd(), w, h)
-					log.Printf("pty-req '%s'", termEnv)
-				case "window-change":
-					w, h := s.parseDims(req.Payload)
-					SetWinsize(f.Fd(), w, h)
-					continue //no response
-				}
-
-				if !ok {
-					log.Printf("declining %s request...", req.Type)
-				}
-
-				req.Reply(ok, nil)
-			}
-		}(requests)
+		s.handleChannelsRequests(channel, requests)
 	}
 }
 
