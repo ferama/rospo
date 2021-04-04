@@ -134,6 +134,7 @@ func (c *Client) ListenTCP(laddr *net.TCPAddr) (net.Listener, error) {
 
 	// Register this forward, using the port number we obtained.
 	ch := c.forwards.add(laddr)
+
 	return &tcpListener{laddr, c, ch}, nil
 }
 
