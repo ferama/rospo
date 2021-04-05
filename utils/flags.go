@@ -11,13 +11,17 @@ import (
 
 // Flags ...
 type Flags struct {
-	Identity       *string
+	UserIdentity   *string
 	Username       *string
 	LocalEndpoint  *string
 	ServerEndpoint *string
 	RemoteEndpoint *string
 	Forward        *bool
-	DisableSshd    *bool
+
+	DisableSshd          *bool
+	ServerIdentity       *string
+	ServerAuthorizedKeys *string
+	SshdPort             *string
 }
 
 var flagValues *Flags
@@ -34,18 +38,21 @@ func GetFlags() *Flags {
 	defaultIdentity := filepath.Join(usr.HomeDir, ".ssh", "id_rsa")
 
 	flagValues = &Flags{
-		Identity:       flag.String("identity", defaultIdentity, "The ssh identity (private) key absolute path"),
-		LocalEndpoint:  flag.String("local", "localhost:2222", "The local endpoint"),
-		RemoteEndpoint: flag.String("remote", "localhost:4444", "The remote endpoint"),
-		Forward:        flag.Bool("forward", false, "forwards a remote port to local"),
-		DisableSshd:    flag.Bool("no-sshd", false, "If true disable the embedded ssh server"),
+		UserIdentity:         flag.String("user-identity", defaultIdentity, "The ssh identity (private) key absolute path"),
+		ServerIdentity:       flag.String("server-identity", "./id_rsa", "The ssh server key path"),
+		ServerAuthorizedKeys: flag.String("server-authorized-keys", "./authorized_keys", "The ssh server authorized keys path"),
+		SshdPort:             flag.String("sshd-port", "2222", "The ssh server tcp port"),
+		LocalEndpoint:        flag.String("local", "localhost:2222", "The local endpoint"),
+		RemoteEndpoint:       flag.String("remote", "localhost:4444", "The remote endpoint"),
+		Forward:              flag.Bool("forward", false, "forwards a remote port to local"),
+		DisableSshd:          flag.Bool("no-sshd", false, "If set disable the embedded ssh server"),
 	}
 
 	flag.Parse()
 	values := flag.Args()
 
 	if len(values) == 0 {
-		fmt.Printf("Usage: %s user@server:port\n", execName)
+		fmt.Printf("Usage: %s [user@]server[:port]\n", execName)
 		flag.PrintDefaults()
 		os.Exit(1)
 	}

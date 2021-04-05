@@ -11,13 +11,17 @@ func main() {
 	flags := utils.GetFlags()
 
 	username := flags.Username
-	identity := flags.Identity
+	userIdentity := flags.UserIdentity
 	localEndpoint := tun.NewEndpoint(*flags.LocalEndpoint)
 	serverEndpoint := tun.NewEndpoint(*flags.ServerEndpoint)
 	remoteEndpoint := tun.NewEndpoint(*flags.RemoteEndpoint)
 
 	if !*flags.DisableSshd {
-		s := sshd.NewSshServer()
+		s := sshd.NewSshServer(
+			flags.ServerIdentity,
+			flags.ServerAuthorizedKeys,
+			flags.SshdPort,
+		)
 		go s.Start()
 	}
 
@@ -25,14 +29,14 @@ func main() {
 		if *flags.Forward {
 			tun.ForwardTunnel(
 				*username,
-				*identity,
+				*userIdentity,
 				serverEndpoint,
 				remoteEndpoint,
 				localEndpoint)
 		} else {
 			tun.ReverseTunnel(
 				*username,
-				*identity,
+				*userIdentity,
 				serverEndpoint,
 				remoteEndpoint,
 				localEndpoint)

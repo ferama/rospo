@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
-	"os"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -21,15 +20,11 @@ var (
 type SshServer struct {
 	authorizedKeysMap map[string]bool
 	client            *ssh.ServerConn
+	tcpPort           *string
 }
 
-func NewSshServer() *SshServer {
-	keyPath := "./id_rsa"
-	if os.Getenv("HOST_KEY") != "" {
-		keyPath = os.Getenv("HOST_KEY")
-	}
-
-	hostPrivateKey, err := ioutil.ReadFile(keyPath)
+func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *SshServer {
+	hostPrivateKey, err := ioutil.ReadFile(*identity)
 	if err != nil {
 		panic(err)
 	}
@@ -37,7 +32,7 @@ func NewSshServer() *SshServer {
 	// Public key authentication is done by comparing
 	// the public key of a received connection
 	// with the entries in the authorized_keys file.
-	authorizedKeysBytes, err := ioutil.ReadFile("authorized_keys")
+	authorizedKeysBytes, err := ioutil.ReadFile(*authorizedKeys)
 	if err != nil {
 		log.Fatalf("Failed to load authorized_keys, err: %v", err)
 	}
@@ -58,6 +53,7 @@ func NewSshServer() *SshServer {
 	}
 	ss := &SshServer{
 		authorizedKeysMap: authorizedKeysMap,
+		tcpPort:           tcpPort,
 	}
 
 	return ss
@@ -82,15 +78,11 @@ func (s *SshServer) Start() {
 	}
 	config.AddHostKey(hostPrivateKeySigner)
 
-	port := "2222"
-	if os.Getenv("PORT") != "" {
-		port = os.Getenv("PORT")
-	}
-	socket, err := net.Listen("tcp", ":"+port)
+	socket, err := net.Listen("tcp", ":"+*s.tcpPort)
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("[SSHD] Listening on port %s", port)
+	log.Printf("[SSHD] Listening on port %s", *s.tcpPort)
 	for {
 		conn, err := socket.Accept()
 		if err != nil {
