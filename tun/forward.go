@@ -30,30 +30,30 @@ func ForwardTunnel(
 	// Connect to SSH remote server using serverEndpoint
 	serverConn, err := ssh.Dial("tcp", serverEndpoint.String(), sshConfig)
 	if err != nil {
-		log.Println(fmt.Printf("Dial INTO remote server error. %s\n", err))
+		log.Println(fmt.Printf("[TUN] Dial INTO remote server error. %s\n", err))
 		return
 	}
 
 	// Listen on remote server port
 	listener, err := net.Listen("tcp", localEndpoint.String())
 	if err != nil {
-		log.Println(fmt.Printf("Dial INTO remote service error. %s\n", err))
+		log.Println(fmt.Printf("[TUN] Dial INTO remote service error. %s\n", err))
 		return
 	}
 
-	log.Println("connected")
+	log.Println("[TUN] connected")
 	if serverConn != nil && listener != nil {
 		for {
 			remote, err := serverConn.Dial("tcp", remoteEndpoint.String())
 			// Open a (local) connection to localEndpoint whose content will be forwarded so serverEndpoint
 			if err != nil {
-				log.Println(fmt.Printf("Listan open port ON local server error. %s\n", err))
+				log.Println(fmt.Printf("[TUN] Listan open port ON local server error. %s\n", err))
 				break
 			}
 
 			client, err := listener.Accept()
 			if err != nil {
-				log.Println("disconnected")
+				log.Println("[TUN] disconnected")
 				break
 			}
 			serveClient(client, remote)

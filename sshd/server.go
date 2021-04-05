@@ -90,7 +90,7 @@ func (s *SshServer) Start() {
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("Listening on port %s", port)
+	log.Printf("[SSHD] Listening on port %s", port)
 	for {
 		conn, err := socket.Accept()
 		if err != nil {
@@ -106,7 +106,7 @@ func (s *SshServer) Start() {
 		}
 		s.client = sshConn
 
-		log.Println("Connection from", sshConn.RemoteAddr())
+		log.Println("[SSHD] Connection from", sshConn.RemoteAddr())
 		// Print incoming out-of-band Requests
 		go s.handleRequests(reqs)
 		// Accept all channels
@@ -120,7 +120,7 @@ func (s *SshServer) handleRequests(reqs <-chan *ssh.Request) {
 			handleTcpIpForward(req, s.client)
 			continue
 		}
-		log.Printf("recieved out-of-band request: %+v", req)
+		log.Printf("[SSHD] recieved out-of-band request: %+v", req)
 	}
 }
 

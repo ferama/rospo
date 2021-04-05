@@ -32,15 +32,15 @@ func ptyRun(c *exec.Cmd, tty *os.File) (err error) {
 func handleChannelSession(c ssh.NewChannel) {
 	channel, requests, err := c.Accept()
 	if err != nil {
-		log.Printf("could not accept channel (%s)", err)
+		log.Printf("[SSHD] could not accept channel (%s)", err)
 		return
 	}
 	// allocate a terminal for this channel
-	log.Print("creating pty...")
+	log.Print("[SSHD] creating pty...")
 	// Create new pty
 	f, tty, err := pty.Open()
 	if err != nil {
-		log.Printf("could not start pty (%s)", err)
+		log.Printf("[SSHD] could not start pty (%s)", err)
 		return
 	}
 	var shell string
@@ -64,7 +64,7 @@ func handleChannelSession(c ssh.NewChannel) {
 
 			err := cmd.Start()
 			if err != nil {
-				log.Printf("could not start command (%s)", err)
+				log.Printf("[SSHD] could not start command (%s)", err)
 				continue
 			}
 
@@ -72,10 +72,10 @@ func handleChannelSession(c ssh.NewChannel) {
 			go func() {
 				_, err := cmd.Process.Wait()
 				if err != nil {
-					log.Printf("failed to exit bash (%s)", err)
+					log.Printf("[SSHD] failed to exit bash (%s)", err)
 				}
 				channel.Close()
-				log.Printf("session closed")
+				log.Printf("[SSHD] session closed")
 			}()
 		// request an interactive shell
 		case "shell":
@@ -83,21 +83,21 @@ func handleChannelSession(c ssh.NewChannel) {
 			cmd.Env = []string{"TERM=xterm"}
 			err := ptyRun(cmd, tty)
 			if err != nil {
-				log.Printf("%s", err)
+				log.Printf("[SSHD] %s", err)
 			}
 
 			// Teardown session
 			var once sync.Once
 			close := func() {
 				channel.Close()
-				log.Printf("session closed")
+				log.Printf("[SSHD] session closed")
 			}
 
 			// Pipe session to bash and visa-versa
 			go func() {
 				_, err := io.Copy(channel, f)
 				if err != nil {
-					log.Println(fmt.Sprintf("error while copy: %s", err))
+					log.Println(fmt.Sprintf("[SSHD] error while copy: %s", err))
 				}
 				once.Do(close)
 			}()
@@ -105,7 +105,7 @@ func handleChannelSession(c ssh.NewChannel) {
 			go func() {
 				_, err := io.Copy(f, channel)
 				if err != nil {
-					log.Println(fmt.Sprintf("error while copy: %s", err))
+					log.Println(fmt.Sprintf("[SSHD] error while copy: %s", err))
 				}
 				once.Do(close)
 			}()
@@ -125,7 +125,7 @@ func handleChannelSession(c ssh.NewChannel) {
 			termEnv := string(req.Payload[4 : termLen+4])
 			w, h := parseDims(req.Payload[termLen+4:])
 			SetWinsize(f.Fd(), w, h)
-			log.Printf("pty-req '%s'", termEnv)
+			log.Printf("[SSHD] pty-req '%s'", termEnv)
 
 		case "window-change":
 			w, h := parseDims(req.Payload)
@@ -135,7 +135,7 @@ func handleChannelSession(c ssh.NewChannel) {
 
 		if !ok {
 			// log.Printf("declining %s request... %s", req.Type, req.Payload)
-			log.Printf("declining %s request... ", req.Type)
+			log.Printf("[SSHD] declining %s request... ", req.Type)
 		}
 
 		req.Reply(ok, nil)

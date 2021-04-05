@@ -1,9 +1,9 @@
 package main
 
 import (
+	"gotun/sshd"
 	"gotun/tun"
 	"gotun/utils"
-	"log"
 	"time"
 )
 
@@ -16,8 +16,12 @@ func main() {
 	serverEndpoint := tun.NewEndpoint(*flags.ServerEndpoint)
 	remoteEndpoint := tun.NewEndpoint(*flags.RemoteEndpoint)
 
+	if *flags.StartSsh {
+		s := sshd.NewSshServer()
+		go s.Start()
+	}
+
 	for {
-		log.Println("connecting...")
 		if *flags.Forward {
 			tun.ForwardTunnel(
 				*username,

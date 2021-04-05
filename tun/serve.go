@@ -19,7 +19,7 @@ func serveClient(client net.Conn, remote net.Conn) {
 	go func() {
 		_, err := io.Copy(client, remote)
 		if err != nil {
-			log.Println(fmt.Sprintf("error while copy remote->local: %s", err))
+			log.Println(fmt.Sprintf("[TUN] error while copy remote->local: %s", err))
 		}
 		once.Do(close)
 
@@ -29,7 +29,7 @@ func serveClient(client net.Conn, remote net.Conn) {
 	go func() {
 		_, err := io.Copy(remote, client)
 		if err != nil {
-			log.Println(fmt.Sprintf("error while copy local->remote: %s", err))
+			log.Println(fmt.Sprintf("[TUN] error while copy local->remote: %s", err))
 		}
 		once.Do(close)
 

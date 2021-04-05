@@ -28,7 +28,7 @@ type forwardedTCPPayload struct {
 func handleTcpIpForward(req *ssh.Request, client *ssh.ServerConn) {
 	var payload tcpIpForwardPayload
 	if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
-		log.Printf("[Unable to unmarshal payload")
+		log.Printf("[SSHD] Unable to unmarshal payload")
 		req.Reply(false, []byte{})
 
 		return
@@ -39,7 +39,7 @@ func handleTcpIpForward(req *ssh.Request, client *ssh.ServerConn) {
 	bind := fmt.Sprintf("[%s]:%d", laddr, lport)
 	ln, err := net.Listen("tcp", bind)
 	if err != nil {
-		log.Printf("Listen failed for %s", bind)
+		log.Printf("[SSHD] Listen failed for %s", bind)
 		req.Reply(false, []byte{})
 		return
 	}
@@ -56,11 +56,11 @@ func handleTcpIpForwardSession(client *ssh.ServerConn, listener net.Listener, la
 		if err != nil {
 			neterr := err.(net.Error)
 			if neterr.Timeout() {
-				log.Printf("Accept failed with timeout: %s", err)
+				log.Printf("[SSHD] Accept failed with timeout: %s", err)
 				continue
 			}
 			if neterr.Temporary() {
-				log.Printf("Accept failed with temporary: %s", err)
+				log.Printf("[SSHD] Accept failed with temporary: %s", err)
 				continue
 			}
 
@@ -76,7 +76,7 @@ func handleTcpIpForwardSession(client *ssh.ServerConn, listener net.Listener, la
 
 			c, requests, err := client.OpenChannel("forwarded-tcpip", mpayload)
 			if err != nil {
-				log.Printf("Unable to get channel: %s. Hanging up requesting party!", err)
+				log.Printf("[SSHD] Unable to get channel: %s. Hanging up requesting party!", err)
 				lconn.Close()
 				return
 			}
@@ -91,19 +91,19 @@ func forwardServe(cssh ssh.Channel, conn net.Conn) {
 	close := func() {
 		cssh.Close()
 		conn.Close()
-		log.Printf("session closed")
+		log.Printf("[SSHD] session closed")
 	}
 	go func() {
 		_, err := io.Copy(cssh, conn)
 		if err != nil {
-			log.Println(fmt.Sprintf("error while copy: %s", err))
+			log.Println(fmt.Sprintf("[SSHD] error while copy: %s", err))
 		}
 		once.Do(close)
 	}()
 	go func() {
 		_, err := io.Copy(conn, cssh)
 		if err != nil {
-			log.Println(fmt.Sprintf("error while copy: %s", err))
+			log.Println(fmt.Sprintf("[SSHD] error while copy: %s", err))
 		}
 		once.Do(close)
 	}()
