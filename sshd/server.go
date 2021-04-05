@@ -114,24 +114,22 @@ func (s *SshServer) Start() {
 			panic(err)
 		}
 
-		// From a standard TCP connection to an encrypted SSH connection
-		sshConn, chans, reqs, err := ssh.NewServerConn(conn, &config)
-		if err != nil {
-			// panic(err)
-			log.Println(err)
-			continue
-		}
-		log.Printf("[SSHD] logged in with key %s", sshConn.Permissions.Extensions["pubkey-fp"])
-		// The incoming Request channel must be serviced.
-		// go ssh.DiscardRequests(reqs)
+		go func() {
+			// From a standard TCP connection to an encrypted SSH connection
+			sshConn, chans, reqs, err := ssh.NewServerConn(conn, &config)
+			if err != nil {
+				log.Println(err)
+			}
+			log.Printf("[SSHD] logged in with key %s", sshConn.Permissions.Extensions["pubkey-fp"])
 
-		s.client = sshConn
+			s.client = sshConn
 
-		log.Println("[SSHD] Connection from", sshConn.RemoteAddr())
-		// Print incoming out-of-band Requests
-		go s.handleRequests(reqs)
-		// Accept all channels
-		go s.handleChannels(chans)
+			log.Println("[SSHD] Connection from", sshConn.RemoteAddr())
+			// Print incoming out-of-band Requests
+			go s.handleRequests(reqs)
+			// Accept all channels
+			go s.handleChannels(chans)
+		}()
 	}
 }
 
