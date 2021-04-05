@@ -2,6 +2,7 @@ package sshd
 
 import (
 	"fmt"
+	"gotun/utils"
 	"io/ioutil"
 	"log"
 	"net"
@@ -26,7 +27,12 @@ type SshServer struct {
 func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *SshServer {
 	hostPrivateKey, err := ioutil.ReadFile(*identity)
 	if err != nil {
-		panic(err)
+		log.Println("[SSHD] server identity do not exists. Generating one...")
+		utils.GeneratePrivateKey(identity)
+		hostPrivateKey, err = ioutil.ReadFile(*identity)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	// Public key authentication is done by comparing
@@ -82,7 +88,7 @@ func (s *SshServer) Start() {
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("[SSHD] Listening on port %s", *s.tcpPort)
+	log.Printf("[SSHD] Listening on port %s\n", *s.tcpPort)
 	for {
 		conn, err := socket.Accept()
 		if err != nil {
