@@ -1,18 +1,12 @@
 package sshd
 
 import (
-	"encoding/binary"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net"
 	"os"
-	"os/exec"
-	"sync"
-	"syscall"
 
-	"github.com/creack/pty"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -23,26 +17,6 @@ var (
 var (
 	hostPrivateKeySigner ssh.Signer
 )
-
-type directTCPPayload struct {
-	Addr       string // To connect to
-	Port       uint32
-	OriginAddr string
-	OriginPort uint32
-}
-type tcpIpForwardPayload struct {
-	Addr string
-	Port uint32
-}
-type tcpIpForwardPayloadReply struct {
-	Port uint32
-}
-type forwardedTCPPayload struct {
-	Addr       string // Is connected to
-	Port       uint32
-	OriginAddr string
-	OriginPort uint32
-}
 
 type SshServer struct {
 	authorizedKeysMap map[string]bool
@@ -116,7 +90,7 @@ func (s *SshServer) Start() {
 	if err != nil {
 		panic(err)
 	}
-	log.Println("Listening...")
+	log.Printf("Listening on port %s", port)
 	for {
 		conn, err := socket.Accept()
 		if err != nil {
@@ -140,236 +114,14 @@ func (s *SshServer) Start() {
 	}
 }
 
-// Start assigns a pseudo-terminal tty os.File to c.Stdin, c.Stdout,
-// and c.Stderr, calls c.Start, and returns the File of the tty's
-// corresponding pty.
-func (s *SshServer) ptyRun(c *exec.Cmd, tty *os.File) (err error) {
-	defer tty.Close()
-	c.Stdout = tty
-	c.Stdin = tty
-	c.Stderr = tty
-	c.SysProcAttr = &syscall.SysProcAttr{
-		Setctty: true,
-		Setsid:  true,
-	}
-	return c.Start()
-}
-
 func (s *SshServer) handleRequests(reqs <-chan *ssh.Request) {
 	for req := range reqs {
 		if req.Type == "tcpip-forward" {
-			s.handleTcpIpForward(req)
+			handleTcpIpForward(req, s.client)
 			continue
 		}
 		log.Printf("recieved out-of-band request: %+v", req)
 	}
-}
-
-func (s *SshServer) handleTcpIpForward(req *ssh.Request) {
-	var payload tcpIpForwardPayload
-	if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
-		log.Printf("[Unable to unmarshal payload")
-		req.Reply(false, []byte{})
-
-		return
-	}
-	laddr := payload.Addr
-	lport := payload.Port
-
-	bind := fmt.Sprintf("[%s]:%d", laddr, lport)
-	ln, err := net.Listen("tcp", bind)
-	if err != nil {
-		log.Printf("Listen failed for %s", bind)
-		req.Reply(false, []byte{})
-		return
-	}
-	// Tell client everything is OK
-	reply := tcpIpForwardPayloadReply{lport}
-	req.Reply(true, ssh.Marshal(&reply))
-	// go handleListener(bindinfo, listener)
-	go s.handleTcpIpForwardSession(ln, laddr, lport)
-}
-
-func (s *SshServer) handleTcpIpForwardSession(listener net.Listener, laddr string, lport uint32) {
-	for {
-		lconn, err := listener.Accept()
-		if err != nil {
-			neterr := err.(net.Error)
-			if neterr.Timeout() {
-				log.Printf("Accept failed with timeout: %s", err)
-				continue
-			}
-			if neterr.Temporary() {
-				log.Printf("Accept failed with temporary: %s", err)
-				continue
-			}
-
-			break
-		}
-
-		// go handleForwardTcpIp(client, bindinfo, lconn)
-		go func(lconn net.Conn, laddr string, lport uint32) {
-			remotetcpaddr := lconn.RemoteAddr().(*net.TCPAddr)
-			raddr := remotetcpaddr.IP.String()
-			rport := uint32(remotetcpaddr.Port)
-			payload := forwardedTCPPayload{laddr, lport, raddr, uint32(rport)}
-			mpayload := ssh.Marshal(&payload)
-
-			c, requests, err := s.client.OpenChannel("forwarded-tcpip", mpayload)
-			if err != nil {
-				log.Printf("Unable to get channel: %s. Hanging up requesting party!", err)
-				lconn.Close()
-				return
-			}
-			go ssh.DiscardRequests(requests)
-			s.serve(c, lconn)
-		}(lconn, laddr, lport)
-	}
-}
-
-func (s *SshServer) serve(cssh ssh.Channel, conn net.Conn) {
-	var once sync.Once
-	close := func() {
-		cssh.Close()
-		conn.Close()
-		log.Printf("session closed")
-	}
-	go func() {
-		io.Copy(cssh, conn)
-		once.Do(close)
-	}()
-	go func() {
-		io.Copy(conn, cssh)
-		once.Do(close)
-	}()
-}
-
-func (s *SshServer) handleChannelSession(c ssh.NewChannel) {
-	channel, requests, err := c.Accept()
-	if err != nil {
-		log.Printf("could not accept channel (%s)", err)
-		return
-	}
-	// allocate a terminal for this channel
-	log.Print("creating pty...")
-	// Create new pty
-	f, tty, err := pty.Open()
-	if err != nil {
-		log.Printf("could not start pty (%s)", err)
-		return
-	}
-	var shell string
-	shell = os.Getenv("SHELL")
-	if shell == "" {
-		shell = DEFAULT_SHELL
-	}
-	for req := range requests {
-		// log.Printf("%v %s", req.Payload, req.Payload)
-		ok := false
-		switch req.Type {
-		case "exec":
-			ok = true
-			command := string(req.Payload[4 : req.Payload[3]+4])
-			cmd := exec.Command(shell, []string{"-c", command}...)
-
-			cmd.Stdout = channel
-			cmd.Stderr = channel
-			cmd.Stdin = channel
-
-			err := cmd.Start()
-			if err != nil {
-				log.Printf("could not start command (%s)", err)
-				continue
-			}
-
-			// teardown session
-			go func() {
-				_, err := cmd.Process.Wait()
-				if err != nil {
-					log.Printf("failed to exit bash (%s)", err)
-				}
-				channel.Close()
-				log.Printf("session closed")
-			}()
-		case "shell":
-			cmd := exec.Command(shell)
-			cmd.Env = []string{"TERM=xterm"}
-			err := s.ptyRun(cmd, tty)
-			if err != nil {
-				log.Printf("%s", err)
-			}
-
-			// Teardown session
-			var once sync.Once
-			close := func() {
-				channel.Close()
-				log.Printf("session closed")
-			}
-
-			// Pipe session to bash and visa-versa
-			go func() {
-				io.Copy(channel, f)
-				once.Do(close)
-			}()
-
-			go func() {
-				io.Copy(f, channel)
-				once.Do(close)
-			}()
-
-			// We don't accept any commands (Payload),
-			// only the default shell.
-			if len(req.Payload) == 0 {
-				ok = true
-			}
-		case "pty-req":
-			// Responding 'ok' here will let the client
-			// know we have a pty ready for input
-			ok = true
-			// Parse body...
-			termLen := req.Payload[3]
-			termEnv := string(req.Payload[4 : termLen+4])
-			w, h := s.parseDims(req.Payload[termLen+4:])
-			SetWinsize(f.Fd(), w, h)
-			log.Printf("pty-req '%s'", termEnv)
-		case "window-change":
-			w, h := s.parseDims(req.Payload)
-			SetWinsize(f.Fd(), w, h)
-			continue //no response
-		}
-
-		if !ok {
-			log.Printf("declining %s request...", req.Type)
-		}
-
-		req.Reply(ok, nil)
-	}
-}
-
-func (s *SshServer) handleChannelDirect(c ssh.NewChannel) {
-	var payload directTCPPayload
-	if err := ssh.Unmarshal(c.ExtraData(), &payload); err != nil {
-		log.Printf("Could not unmarshal extra data: %s\n", err)
-
-		c.Reject(ssh.Prohibited, "Bad payload")
-		return
-	}
-	connection, requests, err := c.Accept()
-	if err != nil {
-		log.Printf("Could not accept channel (%s)\n", err)
-		return
-	}
-	go ssh.DiscardRequests(requests)
-	addr := fmt.Sprintf("[%s]:%d", payload.Addr, payload.Port)
-
-	rconn, err := net.Dial("tcp", addr)
-	if err != nil {
-		log.Printf("Could not dial remote (%s)", err)
-		connection.Close()
-		return
-	}
-
-	s.serve(connection, rconn)
 }
 
 func (s *SshServer) handleChannels(chans <-chan ssh.NewChannel) {
@@ -377,20 +129,13 @@ func (s *SshServer) handleChannels(chans <-chan ssh.NewChannel) {
 	for newChannel := range chans {
 		t := newChannel.ChannelType()
 		if t == "session" {
-			go s.handleChannelSession(newChannel)
+			go handleChannelSession(newChannel)
 			continue
 		}
 		if t == "direct-tcpip" {
-			go s.handleChannelDirect(newChannel)
+			go handleChannelDirect(newChannel)
 			continue
 		}
 		newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
 	}
-}
-
-// parseDims extracts two uint32s from the provided buffer.
-func (s *SshServer) parseDims(b []byte) (uint32, uint32) {
-	w := binary.BigEndian.Uint32(b)
-	h := binary.BigEndian.Uint32(b[4:])
-	return w, h
 }
