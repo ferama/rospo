@@ -33,7 +33,7 @@ func main() {
 					log.Println("disconnected")
 					break
 				}
-				tun.HandleClient(client, local)
+				tun.Serve(client, local)
 			}
 			serverConn.Close()
 			listener.Close()

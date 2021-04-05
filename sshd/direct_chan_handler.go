@@ -51,11 +51,17 @@ func directServe(cssh ssh.Channel, conn net.Conn) {
 		log.Printf("session closed")
 	}
 	go func() {
-		io.Copy(cssh, conn)
+		_, err := io.Copy(cssh, conn)
+		if err != nil {
+			log.Println(fmt.Sprintf("error while copy: %s", err))
+		}
 		once.Do(close)
 	}()
 	go func() {
-		io.Copy(conn, cssh)
+		_, err := io.Copy(conn, cssh)
+		if err != nil {
+			log.Println(fmt.Sprintf("error while copy: %s", err))
+		}
 		once.Do(close)
 	}()
 }

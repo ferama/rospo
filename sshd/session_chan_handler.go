@@ -2,6 +2,7 @@ package sshd
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -94,12 +95,18 @@ func handleChannelSession(c ssh.NewChannel) {
 
 			// Pipe session to bash and visa-versa
 			go func() {
-				io.Copy(channel, f)
+				_, err := io.Copy(channel, f)
+				if err != nil {
+					log.Println(fmt.Sprintf("error while copy: %s", err))
+				}
 				once.Do(close)
 			}()
 
 			go func() {
-				io.Copy(f, channel)
+				_, err := io.Copy(f, channel)
+				if err != nil {
+					log.Println(fmt.Sprintf("error while copy: %s", err))
+				}
 				once.Do(close)
 			}()
 
@@ -108,6 +115,7 @@ func handleChannelSession(c ssh.NewChannel) {
 			if len(req.Payload) == 0 {
 				ok = true
 			}
+
 		case "pty-req":
 			// Responding 'ok' here will let the client
 			// know we have a pty ready for input
@@ -118,6 +126,7 @@ func handleChannelSession(c ssh.NewChannel) {
 			w, h := parseDims(req.Payload[termLen+4:])
 			SetWinsize(f.Fd(), w, h)
 			log.Printf("pty-req '%s'", termEnv)
+
 		case "window-change":
 			w, h := parseDims(req.Payload)
 			SetWinsize(f.Fd(), w, h)
@@ -125,7 +134,8 @@ func handleChannelSession(c ssh.NewChannel) {
 		}
 
 		if !ok {
-			log.Printf("declining %s request...", req.Type)
+			// log.Printf("declining %s request... %s", req.Type, req.Payload)
+			log.Printf("declining %s request... ", req.Type)
 		}
 
 		req.Reply(ok, nil)

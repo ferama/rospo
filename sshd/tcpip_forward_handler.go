@@ -67,7 +67,6 @@ func handleTcpIpForwardSession(client *ssh.ServerConn, listener net.Listener, la
 			break
 		}
 
-		// go handleForwardTcpIp(client, bindinfo, lconn)
 		go func(lconn net.Conn, laddr string, lport uint32) {
 			remotetcpaddr := lconn.RemoteAddr().(*net.TCPAddr)
 			raddr := remotetcpaddr.IP.String()
@@ -95,11 +94,17 @@ func forwardServe(cssh ssh.Channel, conn net.Conn) {
 		log.Printf("session closed")
 	}
 	go func() {
-		io.Copy(cssh, conn)
+		_, err := io.Copy(cssh, conn)
+		if err != nil {
+			log.Println(fmt.Sprintf("error while copy: %s", err))
+		}
 		once.Do(close)
 	}()
 	go func() {
-		io.Copy(conn, cssh)
+		_, err := io.Copy(conn, cssh)
+		if err != nil {
+			log.Println(fmt.Sprintf("error while copy: %s", err))
+		}
 		once.Do(close)
 	}()
 }

@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"sync"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -13,9 +14,12 @@ import (
 // From https://sosedoff.com/2015/05/25/ssh-port-forwarding-with-go.html
 // Handle local client connections and tunnel data to the remote server
 // Will use io.Copy - http://golang.org/pkg/io/#Copy
-func HandleClient(client net.Conn, remote net.Conn) {
-	defer client.Close()
-	chDone := make(chan bool)
+func Serve(client net.Conn, remote net.Conn) {
+	var once sync.Once
+	close := func() {
+		client.Close()
+		// log.Printf("session closed")
+	}
 
 	// Start remote -> local data transfer
 	go func() {
@@ -23,7 +27,8 @@ func HandleClient(client net.Conn, remote net.Conn) {
 		if err != nil {
 			log.Println(fmt.Sprintf("error while copy remote->local: %s", err))
 		}
-		chDone <- true
+		once.Do(close)
+
 	}()
 
 	// Start local -> remote data transfer
@@ -32,10 +37,9 @@ func HandleClient(client net.Conn, remote net.Conn) {
 		if err != nil {
 			log.Println(fmt.Sprintf("error while copy local->remote: %s", err))
 		}
-		chDone <- true
-	}()
+		once.Do(close)
 
-	<-chDone
+	}()
 }
 
 func Connect(serverEndpoint *Endpoint, remoteEndpoint *Endpoint) (*ssh.Client, net.Listener) {
