@@ -91,7 +91,15 @@ func (s *SshServer) keyAuth(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.P
 
 func (s *SshServer) Start() {
 	config := ssh.ServerConfig{
+		// one try only. I'm supporting public key auth only.
+		// If it fails, there is nothing more to try
+		MaxAuthTries:      1,
 		PublicKeyCallback: s.keyAuth,
+		AuthLogCallback: func(conn ssh.ConnMetadata, method string, err error) {
+			if err != nil {
+				log.Printf("[SSHD] Auth error: %s", err)
+			}
+		},
 	}
 	config.AddHostKey(hostPrivateKeySigner)
 
@@ -113,6 +121,10 @@ func (s *SshServer) Start() {
 			log.Println(err)
 			continue
 		}
+		log.Printf("[SSHD] logged in with key %s", sshConn.Permissions.Extensions["pubkey-fp"])
+		// The incoming Request channel must be serviced.
+		// go ssh.DiscardRequests(reqs)
+
 		s.client = sshConn
 
 		log.Println("[SSHD] Connection from", sshConn.RemoteAddr())
