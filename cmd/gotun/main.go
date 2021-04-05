@@ -1,43 +1,39 @@
 package main
 
 import (
-	"fmt"
 	"gotun/tun"
 	"gotun/utils"
 	"log"
-	"net"
 	"time"
 )
 
 func main() {
 	flags := utils.GetFlags()
 
+	username := flags.Username
+	identity := flags.Identity
 	localEndpoint := tun.NewEndpoint(*flags.LocalEndpoint)
 	serverEndpoint := tun.NewEndpoint(*flags.ServerEndpoint)
 	remoteEndpoint := tun.NewEndpoint(*flags.RemoteEndpoint)
 
 	for {
 		log.Println("connecting...")
-		serverConn, listener := tun.Connect(serverEndpoint, remoteEndpoint)
-		if serverConn != nil && listener != nil {
-			for {
-				// Open a (local) connection to localEndpoint whose content will be forwarded so serverEndpoint
-				local, err := net.Dial("tcp", localEndpoint.String())
-				if err != nil {
-					log.Println(fmt.Printf("Dial INTO local service error. %s\n", err))
-					break
-				}
-
-				client, err := listener.Accept()
-				if err != nil {
-					log.Println("disconnected")
-					break
-				}
-				tun.Serve(client, local)
-			}
-			serverConn.Close()
-			listener.Close()
+		if *flags.Forward {
+			tun.ForwardTunnel(
+				*username,
+				*identity,
+				serverEndpoint,
+				remoteEndpoint,
+				localEndpoint)
+		} else {
+			tun.ReverseTunnel(
+				*username,
+				*identity,
+				serverEndpoint,
+				remoteEndpoint,
+				localEndpoint)
 		}
+
 		time.Sleep(3 * time.Second)
 	}
 }

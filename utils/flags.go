@@ -16,6 +16,7 @@ type Flags struct {
 	LocalEndpoint  *string
 	ServerEndpoint *string
 	RemoteEndpoint *string
+	Forward        *bool
 }
 
 var flagValues *Flags
@@ -35,6 +36,7 @@ func GetFlags() *Flags {
 		Identity:       flag.String("identity", defaultIdentity, "The ssh identity (private) key absolute path"),
 		LocalEndpoint:  flag.String("local", "localhost:22", "The local endpoint"),
 		RemoteEndpoint: flag.String("remote", "localhost:5555", "The remote endpoint"),
+		Forward:        flag.Bool("forward", true, "forwards a remote port to local"),
 	}
 
 	flag.Parse()
