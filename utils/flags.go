@@ -17,7 +17,7 @@ type Flags struct {
 	ServerEndpoint *string
 	RemoteEndpoint *string
 	Forward        *bool
-	StartSsh       *bool
+	DisableSshd    *bool
 }
 
 var flagValues *Flags
@@ -38,7 +38,7 @@ func GetFlags() *Flags {
 		LocalEndpoint:  flag.String("local", "localhost:2222", "The local endpoint"),
 		RemoteEndpoint: flag.String("remote", "localhost:4444", "The remote endpoint"),
 		Forward:        flag.Bool("forward", false, "forwards a remote port to local"),
-		StartSsh:       flag.Bool("start-ssh", true, "If true starts the embedded ssh server"),
+		DisableSshd:    flag.Bool("no-sshd", false, "If true disable the embedded ssh server"),
 	}
 
 	flag.Parse()

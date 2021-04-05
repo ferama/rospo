@@ -16,7 +16,7 @@ func main() {
 	serverEndpoint := tun.NewEndpoint(*flags.ServerEndpoint)
 	remoteEndpoint := tun.NewEndpoint(*flags.RemoteEndpoint)
 
-	if *flags.StartSsh {
+	if !*flags.DisableSshd {
 		s := sshd.NewSshServer()
 		go s.Start()
 	}
