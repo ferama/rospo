@@ -19,7 +19,7 @@ var (
 )
 
 type SshServer struct {
-	authorizedKeysMap map[string]bool
+	authorizedKeyFile *string
 	client            *ssh.ServerConn
 	tcpPort           *string
 }
@@ -35,10 +35,28 @@ func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *Ss
 		}
 	}
 
+	hostPrivateKeySigner, err = ssh.ParsePrivateKey(hostPrivateKey)
+	if err != nil {
+		panic(err)
+	}
+
+	ss := &SshServer{
+		authorizedKeyFile: authorizedKeys,
+		tcpPort:           tcpPort,
+	}
+
+	// run here, to make sure I have a valid authorized keys
+	// file on start
+	ss.loadAuthorizedKeys()
+
+	return ss
+}
+
+func (s *SshServer) loadAuthorizedKeys() map[string]bool {
 	// Public key authentication is done by comparing
 	// the public key of a received connection
 	// with the entries in the authorized_keys file.
-	authorizedKeysBytes, err := ioutil.ReadFile(*authorizedKeys)
+	authorizedKeysBytes, err := ioutil.ReadFile(*s.authorizedKeyFile)
 	if err != nil {
 		log.Fatalf("Failed to load authorized_keys, err: %v", err)
 	}
@@ -52,22 +70,15 @@ func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *Ss
 		authorizedKeysMap[string(pubKey.Marshal())] = true
 		authorizedKeysBytes = rest
 	}
-
-	hostPrivateKeySigner, err = ssh.ParsePrivateKey(hostPrivateKey)
-	if err != nil {
-		panic(err)
-	}
-	ss := &SshServer{
-		authorizedKeysMap: authorizedKeysMap,
-		tcpPort:           tcpPort,
-	}
-
-	return ss
+	return authorizedKeysMap
 }
 
 func (s *SshServer) keyAuth(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
 	log.Println(conn.RemoteAddr(), "authenticate with", pubKey.Type())
-	if s.authorizedKeysMap[string(pubKey.Marshal())] {
+
+	authorizedKeysMap := s.loadAuthorizedKeys()
+
+	if authorizedKeysMap[string(pubKey.Marshal())] {
 		return &ssh.Permissions{
 			// Record the public key used for authentication.
 			Extensions: map[string]string{
