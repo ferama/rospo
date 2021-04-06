@@ -41,7 +41,7 @@ func ForwardTunnel(
 		return
 	}
 
-	log.Println("[TUN] Forward connected")
+	log.Printf("[TUN] Forward connected. Local: %s <- Remote: %s\n", localEndpoint.String(), remoteEndpoint.String())
 	if serverConn != nil && listener != nil {
 		for {
 			remote, err := serverConn.Dial("tcp", remoteEndpoint.String())

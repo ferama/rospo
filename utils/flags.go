@@ -11,13 +11,19 @@ import (
 
 // Flags ...
 type Flags struct {
-	UserIdentity   *string
+	//// tunnell
+
+	// args
 	Username       *string
-	LocalEndpoint  *string
 	ServerEndpoint *string
+
+	UserIdentity   *string
+	DisableTun     *bool
+	LocalEndpoint  *string
 	RemoteEndpoint *string
 	Forward        *bool
 
+	//// sshd
 	DisableSshd          *bool
 	ServerIdentity       *string
 	ServerAuthorizedKeys *string
@@ -43,25 +49,29 @@ func GetFlags() *Flags {
 		ServerAuthorizedKeys: flag.String("server-authorized-keys", "./authorized_keys", "The ssh server authorized keys path"),
 		SshdPort:             flag.String("sshd-port", "2222", "The ssh server tcp port"),
 		LocalEndpoint:        flag.String("local", "localhost:2222", "The local endpoint"),
-		RemoteEndpoint:       flag.String("remote", "localhost:4444", "The remote endpoint"),
+		RemoteEndpoint:       flag.String("remote", "localhost:5555", "The remote endpoint"),
 		Forward:              flag.Bool("forward", false, "forwards a remote port to local"),
 		DisableSshd:          flag.Bool("no-sshd", false, "If set disable the embedded ssh server"),
+		DisableTun:           flag.Bool("no-tun", false, "If set disable the tunnel (starts the sshd service only)"),
 	}
 
 	flag.Parse()
-	values := flag.Args()
 
-	if len(values) == 0 {
-		fmt.Printf("Usage: %s [user@]server[:port]\n", execName)
-		flag.PrintDefaults()
-		os.Exit(1)
-	}
-	parts := strings.Split(values[0], "@")
-	if len(parts) == 2 {
-		flagValues.Username = &parts[0]
-		flagValues.ServerEndpoint = &parts[1]
-	} else {
-		flagValues.ServerEndpoint = &parts[0]
+	if !*flagValues.DisableTun {
+		values := flag.Args()
+
+		if len(values) == 0 {
+			fmt.Printf("Usage: %s [user@]server[:port]\n", execName)
+			flag.PrintDefaults()
+			os.Exit(1)
+		}
+		parts := strings.Split(values[0], "@")
+		if len(parts) == 2 {
+			flagValues.Username = &parts[0]
+			flagValues.ServerEndpoint = &parts[1]
+		} else {
+			flagValues.ServerEndpoint = &parts[0]
+		}
 	}
 
 	return flagValues

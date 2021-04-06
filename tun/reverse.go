@@ -41,7 +41,7 @@ func ReverseTunnel(
 		return
 	}
 
-	log.Println("[TUN] Reverse connected")
+	log.Printf("[TUN] Reverse connected. Local: %s -> Remote: %s\n", localEndpoint.String(), remoteEndpoint.String())
 	if serverConn != nil && listener != nil {
 		for {
 			// Open a (local) connection to localEndpoint whose content will be forwarded so serverEndpoint
