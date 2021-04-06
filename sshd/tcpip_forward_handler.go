@@ -30,7 +30,6 @@ func handleTcpIpForward(req *ssh.Request, client *ssh.ServerConn) {
 	if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
 		log.Printf("[SSHD] Unable to unmarshal payload")
 		req.Reply(false, []byte{})
-
 		return
 	}
 	laddr := payload.Addr

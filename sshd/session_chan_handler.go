@@ -7,12 +7,18 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/user"
 	"sync"
 	"syscall"
 
 	"github.com/creack/pty"
 	"golang.org/x/crypto/ssh"
 )
+
+type envRequestPayload struct {
+	Name  string
+	Value string
+}
 
 // Start assigns a pseudo-terminal tty os.File to c.Stdin, c.Stdout,
 // and c.Stderr, calls c.Start, and returns the File of the tty's
@@ -48,6 +54,9 @@ func handleChannelSession(c ssh.NewChannel) {
 	if shell == "" {
 		shell = DEFAULT_SHELL
 	}
+
+	env := map[string]string{}
+
 	for req := range requests {
 		// log.Printf("%v %s", req.Payload, req.Payload)
 		ok := false
@@ -80,7 +89,18 @@ func handleChannelSession(c ssh.NewChannel) {
 		// request an interactive shell
 		case "shell":
 			cmd := exec.Command(shell)
-			cmd.Env = []string{"TERM=xterm"}
+			// cmd.Env = []string{"TERM=xterm"}
+			envVal := make([]string, 0, len(env))
+			for k, v := range env {
+				envVal = append(envVal, fmt.Sprintf("%s=%s", k, v))
+			}
+			envVal = append(envVal, "TERM=xterm")
+
+			usr, _ := user.Current()
+			envVal = append(envVal, fmt.Sprintf("HOME=%s", usr.HomeDir))
+			cmd.Env = envVal
+			log.Printf("[SSHD] env %s", envVal)
+
 			err := ptyRun(cmd, tty)
 			if err != nil {
 				log.Printf("[SSHD] %s", err)
@@ -131,6 +151,14 @@ func handleChannelSession(c ssh.NewChannel) {
 			w, h := parseDims(req.Payload)
 			SetWinsize(f.Fd(), w, h)
 			continue //no response
+
+		case "env":
+			ureq := envRequestPayload{}
+			if err := ssh.Unmarshal(req.Payload, &ureq); err != nil {
+				log.Printf("[SSHD] invalid env payload: %s", req.Payload)
+			}
+			env[ureq.Name] = ureq.Value
+			continue
 		}
 
 		if !ok {

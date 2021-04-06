@@ -74,7 +74,7 @@ func (s *SshServer) loadAuthorizedKeys() map[string]bool {
 }
 
 func (s *SshServer) keyAuth(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
-	log.Println(conn.RemoteAddr(), "authenticate with", pubKey.Type())
+	log.Println("[SSHD] ", conn.RemoteAddr(), "authenticate with", pubKey.Type())
 
 	authorizedKeysMap := s.loadAuthorizedKeys()
 
@@ -118,7 +118,8 @@ func (s *SshServer) Start() {
 			// From a standard TCP connection to an encrypted SSH connection
 			sshConn, chans, reqs, err := ssh.NewServerConn(conn, &config)
 			if err != nil {
-				log.Println(err)
+				log.Printf("[SSHD] %s", err)
+				return
 			}
 			log.Printf("[SSHD] logged in with key %s", sshConn.Permissions.Extensions["pubkey-fp"])
 
