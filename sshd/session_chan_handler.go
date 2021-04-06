@@ -119,6 +119,7 @@ func handleChannelSession(c ssh.NewChannel) {
 				if err != nil {
 					log.Println(fmt.Sprintf("[SSHD] error while copy: %s", err))
 				}
+				cmd.Process.Wait()
 				once.Do(close)
 			}()
 
@@ -127,6 +128,7 @@ func handleChannelSession(c ssh.NewChannel) {
 				if err != nil {
 					log.Println(fmt.Sprintf("[SSHD] error while copy: %s", err))
 				}
+				cmd.Process.Wait()
 				once.Do(close)
 			}()
 
