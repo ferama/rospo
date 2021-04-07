@@ -58,7 +58,7 @@ func handleChannelSession(c ssh.NewChannel) {
 	env := map[string]string{}
 
 	for req := range requests {
-		// log.Printf("%v %s", req.Payload, req.Payload)
+		// log.Printf("### %v %s", req.Type, req.Payload)
 		ok := false
 		switch req.Type {
 		// run a command on remote host and exit
@@ -110,6 +110,7 @@ func handleChannelSession(c ssh.NewChannel) {
 			var once sync.Once
 			close := func() {
 				channel.Close()
+				cmd.Process.Wait()
 				log.Printf("[SSHD] session closed")
 			}
 
@@ -119,7 +120,6 @@ func handleChannelSession(c ssh.NewChannel) {
 				if err != nil {
 					log.Println(fmt.Sprintf("[SSHD] error while copy: %s", err))
 				}
-				cmd.Process.Wait()
 				once.Do(close)
 			}()
 
@@ -128,7 +128,6 @@ func handleChannelSession(c ssh.NewChannel) {
 				if err != nil {
 					log.Println(fmt.Sprintf("[SSHD] error while copy: %s", err))
 				}
-				cmd.Process.Wait()
 				once.Do(close)
 			}()
 
