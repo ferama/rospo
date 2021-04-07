@@ -110,7 +110,7 @@ func handleChannelSession(c ssh.NewChannel) {
 			log.Printf("[SSHD] env %s", envVal)
 
 			if ptyRequested {
-				log.Println("[SSHD] running within a pty")
+				log.Println("[SSHD] running within the pty")
 				if err := ptyRun(cmd, tty); err != nil {
 					log.Printf("[SSHD] %s", err)
 				}

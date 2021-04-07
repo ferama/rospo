@@ -11,12 +11,12 @@ import (
 )
 
 var (
-	DEFAULT_SHELL        string = "sh"
-	hostPrivateKeySigner ssh.Signer
+	DEFAULT_SHELL string = "sh"
 )
 
 type SshServer struct {
 	client            *ssh.ServerConn
+	hostPrivateKey    ssh.Signer
 	authorizedKeyFile *string
 	tcpPort           *string
 }
@@ -32,13 +32,14 @@ func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *Ss
 		}
 	}
 
-	hostPrivateKeySigner, err = ssh.ParsePrivateKey(hostPrivateKey)
+	hostPrivateKeySigner, err := ssh.ParsePrivateKey(hostPrivateKey)
 	if err != nil {
 		panic(err)
 	}
 
 	ss := &SshServer{
 		authorizedKeyFile: authorizedKeys,
+		hostPrivateKey:    hostPrivateKeySigner,
 		tcpPort:           tcpPort,
 	}
 
@@ -94,11 +95,11 @@ func (s *SshServer) Start() {
 		PublicKeyCallback: s.keyAuth,
 		AuthLogCallback: func(conn ssh.ConnMetadata, method string, err error) {
 			if err != nil {
-				log.Printf("[SSHD] Auth error: %s", err)
+				log.Printf("[SSHD] auth error: %s", err)
 			}
 		},
 	}
-	config.AddHostKey(hostPrivateKeySigner)
+	config.AddHostKey(s.hostPrivateKey)
 
 	socket, err := net.Listen("tcp", ":"+*s.tcpPort)
 	if err != nil {
