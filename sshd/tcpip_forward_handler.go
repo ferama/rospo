@@ -10,23 +10,11 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-type tcpIpForwardPayloadReply struct {
-	Port uint32
-}
-
-type tcpIpForwardPayload struct {
-	Addr string
-	Port uint32
-}
-type forwardedTCPPayload struct {
-	Addr       string // Is connected to
-	Port       uint32
-	OriginAddr string
-	OriginPort uint32
-}
-
 func handleTcpIpForward(req *ssh.Request, client *ssh.ServerConn) {
-	var payload tcpIpForwardPayload
+	var payload = struct {
+		Addr string
+		Port uint32
+	}{}
 	if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
 		log.Printf("[SSHD] Unable to unmarshal payload")
 		req.Reply(false, []byte{})
@@ -42,9 +30,9 @@ func handleTcpIpForward(req *ssh.Request, client *ssh.ServerConn) {
 		req.Reply(false, []byte{})
 		return
 	}
+	var replyPayload = struct{ Port uint32 }{lport}
 	// Tell client everything is OK
-	reply := tcpIpForwardPayloadReply{lport}
-	req.Reply(true, ssh.Marshal(&reply))
+	req.Reply(true, ssh.Marshal(replyPayload))
 	// go handleListener(bindinfo, listener)
 	go handleTcpIpForwardSession(client, ln, laddr, lport)
 }
@@ -70,8 +58,17 @@ func handleTcpIpForwardSession(client *ssh.ServerConn, listener net.Listener, la
 			remotetcpaddr := lconn.RemoteAddr().(*net.TCPAddr)
 			raddr := remotetcpaddr.IP.String()
 			rport := uint32(remotetcpaddr.Port)
-			payload := forwardedTCPPayload{laddr, lport, raddr, uint32(rport)}
-			mpayload := ssh.Marshal(&payload)
+
+			var payload = struct {
+				Addr       string // Is connected to
+				Port       uint32
+				OriginAddr string
+				OriginPort uint32
+			}{
+				laddr, lport, raddr, uint32(rport),
+			}
+
+			mpayload := ssh.Marshal(payload)
 
 			c, requests, err := client.OpenChannel("forwarded-tcpip", mpayload)
 			if err != nil {

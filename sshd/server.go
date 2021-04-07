@@ -11,16 +11,13 @@ import (
 )
 
 var (
-	DEFAULT_SHELL string = "sh"
-)
-
-var (
+	DEFAULT_SHELL        string = "sh"
 	hostPrivateKeySigner ssh.Signer
 )
 
 type SshServer struct {
-	authorizedKeyFile *string
 	client            *ssh.ServerConn
+	authorizedKeyFile *string
 	tcpPort           *string
 }
 

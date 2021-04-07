@@ -5,8 +5,11 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"io/ioutil"
 	"log"
+
+	"golang.org/x/crypto/ssh"
 )
 
 func GeneratePrivateKey(keyPath *string) {
@@ -40,4 +43,19 @@ func GeneratePrivateKey(keyPath *string) {
 	}
 
 	log.Printf("Key saved to: %s", *keyPath)
+}
+
+func PublicKeyFile(file string) ssh.AuthMethod {
+	buffer, err := ioutil.ReadFile(file)
+	if err != nil {
+		log.Fatalln(fmt.Sprintf("Cannot read SSH public key file %s", file))
+		return nil
+	}
+
+	key, err := ssh.ParsePrivateKey(buffer)
+	if err != nil {
+		log.Fatalln(fmt.Sprintf("Cannot parse SSH public key file %s", file))
+		return nil
+	}
+	return ssh.PublicKeys(key)
 }

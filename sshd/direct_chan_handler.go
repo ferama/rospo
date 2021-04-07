@@ -10,15 +10,14 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-type directTCPPayload struct {
-	Addr       string // To connect to
-	Port       uint32
-	OriginAddr string
-	OriginPort uint32
-}
-
 func handleChannelDirect(c ssh.NewChannel) {
-	var payload directTCPPayload
+	var payload = struct {
+		Addr       string
+		Port       uint32
+		OriginAddr string
+		OriginPort uint32
+	}{}
+
 	if err := ssh.Unmarshal(c.ExtraData(), &payload); err != nil {
 		log.Printf("[SSHD] Could not unmarshal extra data: %s\n", err)
 

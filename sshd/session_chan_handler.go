@@ -15,11 +15,6 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-type envRequestPayload struct {
-	Name  string
-	Value string
-}
-
 // Start assigns a pseudo-terminal tty os.File to c.Stdin, c.Stdout,
 // and c.Stderr, calls c.Start, and returns the File of the tty's
 // corresponding pty.
@@ -33,6 +28,33 @@ func ptyRun(c *exec.Cmd, tty *os.File) (err error) {
 		Setsid:  true,
 	}
 	return c.Start()
+}
+
+func ptyServe(channel ssh.Channel, pty *os.File, cmd *exec.Cmd) {
+	// Teardown session
+	var once sync.Once
+	close := func() {
+		channel.Close()
+		cmd.Process.Wait()
+		log.Printf("[SSHD] session closed")
+	}
+
+	// Pipe session to bash and visa-versa
+	go func() {
+		_, err := io.Copy(channel, pty)
+		if err != nil {
+			log.Println(fmt.Sprintf("[SSHD] error while copy from channel: %s", err))
+		}
+		once.Do(close)
+	}()
+
+	go func() {
+		_, err := io.Copy(pty, channel)
+		if err != nil {
+			log.Println(fmt.Sprintf("[SSHD] error while copy to channel: %s", err))
+		}
+		once.Do(close)
+	}()
 }
 
 func handleChannelSession(c ssh.NewChannel) {
@@ -92,32 +114,9 @@ func handleChannelSession(c ssh.NewChannel) {
 				if err := ptyRun(cmd, tty); err != nil {
 					log.Printf("[SSHD] %s", err)
 				}
-				// Teardown session
-				var once sync.Once
-				close := func() {
-					channel.Close()
-					cmd.Process.Wait()
-					log.Printf("[SSHD] session closed")
-				}
+				ptyServe(channel, f, cmd)
 
-				// Pipe session to bash and visa-versa
-				go func() {
-					_, err := io.Copy(channel, f)
-					if err != nil {
-						log.Println(fmt.Sprintf("[SSHD] error while copy from channel: %s", err))
-					}
-					once.Do(close)
-				}()
-
-				go func() {
-					_, err := io.Copy(f, channel)
-					if err != nil {
-						log.Println(fmt.Sprintf("[SSHD] error while copy to channel: %s", err))
-					}
-					once.Do(close)
-				}()
 			} else {
-
 				cmd.Stdout = channel
 				cmd.Stderr = channel
 				cmd.Stdin = channel
@@ -147,20 +146,21 @@ func handleChannelSession(c ssh.NewChannel) {
 			termLen := req.Payload[3]
 			termEnv := string(req.Payload[4 : termLen+4])
 			w, h := parseDims(req.Payload[termLen+4:])
-			SetWinsize(f.Fd(), w, h)
+			setWinsize(f.Fd(), w, h)
 			log.Printf("[SSHD] pty-req '%s'", termEnv)
 
 		case "window-change":
 			w, h := parseDims(req.Payload)
-			SetWinsize(f.Fd(), w, h)
+			setWinsize(f.Fd(), w, h)
 			continue //no response
 
 		case "env":
-			ureq := envRequestPayload{}
-			if err := ssh.Unmarshal(req.Payload, &ureq); err != nil {
+			var payload = struct{ Name, Value string }{}
+
+			if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
 				log.Printf("[SSHD] invalid env payload: %s", req.Payload)
 			}
-			env[ureq.Name] = ureq.Value
+			env[payload.Name] = payload.Value
 			continue
 		}
 
