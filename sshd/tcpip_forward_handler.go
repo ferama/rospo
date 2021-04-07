@@ -90,19 +90,19 @@ func forwardServe(cssh ssh.Channel, conn net.Conn) {
 	close := func() {
 		cssh.Close()
 		conn.Close()
-		log.Printf("[SSHD] session closed")
+		log.Printf("[SSHD] forward session closed")
 	}
 	go func() {
 		_, err := io.Copy(cssh, conn)
 		if err != nil {
-			log.Println(fmt.Sprintf("[SSHD] error while copy: %s", err))
+			log.Println(fmt.Sprintf("[SSHD] forward - error while copy: %s", err))
 		}
 		once.Do(close)
 	}()
 	go func() {
 		_, err := io.Copy(conn, cssh)
 		if err != nil {
-			log.Println(fmt.Sprintf("[SSHD] error while copy: %s", err))
+			log.Println(fmt.Sprintf("[SSHD] forward - error while copy: %s", err))
 		}
 		once.Do(close)
 	}()

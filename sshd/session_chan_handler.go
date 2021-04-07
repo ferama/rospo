@@ -104,7 +104,7 @@ func handleChannelSession(c ssh.NewChannel) {
 				go func() {
 					_, err := io.Copy(channel, f)
 					if err != nil {
-						log.Println(fmt.Sprintf("[SSHD] error while copy: %s", err))
+						log.Println(fmt.Sprintf("[SSHD] error while copy from channel: %s", err))
 					}
 					once.Do(close)
 				}()
@@ -112,7 +112,7 @@ func handleChannelSession(c ssh.NewChannel) {
 				go func() {
 					_, err := io.Copy(f, channel)
 					if err != nil {
-						log.Println(fmt.Sprintf("[SSHD] error while copy: %s", err))
+						log.Println(fmt.Sprintf("[SSHD] error while copy to channel: %s", err))
 					}
 					once.Do(close)
 				}()
