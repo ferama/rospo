@@ -41,6 +41,13 @@ func handleChannelSession(c ssh.NewChannel) {
 		log.Printf("[SSHD] could not accept channel (%s)", err)
 		return
 	}
+
+	var shell string
+	shell = os.Getenv("SHELL")
+	if shell == "" {
+		shell = DEFAULT_SHELL
+	}
+
 	// allocate a terminal for this channel
 	log.Print("[SSHD] creating pty...")
 	// Create new pty
@@ -49,46 +56,25 @@ func handleChannelSession(c ssh.NewChannel) {
 		log.Printf("[SSHD] could not start pty (%s)", err)
 		return
 	}
-	var shell string
-	shell = os.Getenv("SHELL")
-	if shell == "" {
-		shell = DEFAULT_SHELL
-	}
 
 	env := map[string]string{}
+	ptyRequested := false
 
 	for req := range requests {
 		// log.Printf("### %v %s", req.Type, req.Payload)
 		ok := false
 		switch req.Type {
-		// run a command on remote host and exit
-		case "exec":
-			ok = true
-			command := string(req.Payload[4 : req.Payload[3]+4])
-			cmd := exec.Command(shell, []string{"-c", command}...)
+		case "shell", "exec":
+			var cmd *exec.Cmd
 
-			cmd.Stdout = channel
-			cmd.Stderr = channel
-			cmd.Stdin = channel
-
-			err := cmd.Start()
-			if err != nil {
-				log.Printf("[SSHD] could not start command (%s)", err)
-				continue
+			if req.Type == "shell" {
+				cmd = exec.Command(shell)
+			} else {
+				var payload = struct{ Value string }{}
+				ssh.Unmarshal(req.Payload, &payload)
+				command := payload.Value
+				cmd = exec.Command(shell, []string{"-c", command}...)
 			}
-
-			// teardown session
-			go func() {
-				_, err := cmd.Process.Wait()
-				if err != nil {
-					log.Printf("[SSHD] failed to exit bash (%s)", err)
-				}
-				channel.Close()
-				log.Printf("[SSHD] session closed")
-			}()
-		// request an interactive shell
-		case "shell":
-			cmd := exec.Command(shell)
 			// cmd.Env = []string{"TERM=xterm"}
 			envVal := make([]string, 0, len(env))
 			for k, v := range env {
@@ -101,46 +87,62 @@ func handleChannelSession(c ssh.NewChannel) {
 			cmd.Env = envVal
 			log.Printf("[SSHD] env %s", envVal)
 
-			err := ptyRun(cmd, tty)
-			if err != nil {
-				log.Printf("[SSHD] %s", err)
-			}
-
-			// Teardown session
-			var once sync.Once
-			close := func() {
-				channel.Close()
-				cmd.Process.Wait()
-				log.Printf("[SSHD] session closed")
-			}
-
-			// Pipe session to bash and visa-versa
-			go func() {
-				_, err := io.Copy(channel, f)
-				if err != nil {
-					log.Println(fmt.Sprintf("[SSHD] error while copy: %s", err))
+			if ptyRequested {
+				log.Println("[SSHD] running within a pty")
+				if err := ptyRun(cmd, tty); err != nil {
+					log.Printf("[SSHD] %s", err)
 				}
-				once.Do(close)
-			}()
-
-			go func() {
-				_, err := io.Copy(f, channel)
-				if err != nil {
-					log.Println(fmt.Sprintf("[SSHD] error while copy: %s", err))
+				// Teardown session
+				var once sync.Once
+				close := func() {
+					channel.Close()
+					cmd.Process.Wait()
+					log.Printf("[SSHD] session closed")
 				}
-				once.Do(close)
-			}()
 
-			// We don't accept any commands (Payload),
-			// only the default shell.
-			if len(req.Payload) == 0 {
-				ok = true
+				// Pipe session to bash and visa-versa
+				go func() {
+					_, err := io.Copy(channel, f)
+					if err != nil {
+						log.Println(fmt.Sprintf("[SSHD] error while copy: %s", err))
+					}
+					once.Do(close)
+				}()
+
+				go func() {
+					_, err := io.Copy(f, channel)
+					if err != nil {
+						log.Println(fmt.Sprintf("[SSHD] error while copy: %s", err))
+					}
+					once.Do(close)
+				}()
+			} else {
+
+				cmd.Stdout = channel
+				cmd.Stderr = channel
+				cmd.Stdin = channel
+				err := cmd.Start()
+				if err != nil {
+					log.Printf("[SSHD] %s", err)
+				}
+
+				go func() {
+					_, err := cmd.Process.Wait()
+					if err != nil {
+						log.Printf("[SSHD] failed to exit bash (%s)", err)
+					}
+					channel.Close()
+					log.Printf("[SSHD] session closed")
+				}()
 			}
+
+			ok = true
 
 		case "pty-req":
 			// Responding 'ok' here will let the client
 			// know we have a pty ready for input
 			ok = true
+			ptyRequested = true
 			// Parse body...
 			termLen := req.Payload[3]
 			termEnv := string(req.Payload[4 : termLen+4])
