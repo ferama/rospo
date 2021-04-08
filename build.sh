@@ -7,6 +7,8 @@ build() {
     go build -o ./bin/gotun-${GOOS}-${GOARCH}${EXT} ./cmd/gotun
 }
 
+go test ./...
+
 GOOS=linux GOARCH=arm build
 GOOS=linux GOARCH=arm64 build
 GOOS=linux GOARCH=amd64 build

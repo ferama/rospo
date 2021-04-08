@@ -35,7 +35,12 @@ func ParseSSHUrl(url string) *sshUrl {
 		if err != nil {
 			log.Fatalln(err)
 		}
-		conf.Host = hostParts[0]
+		if hostParts[0] == "" {
+			conf.Host = "127.0.0.1"
+		} else {
+			conf.Host = hostParts[0]
+
+		}
 		conf.Port = port
 	} else {
 		conf.Host = host
