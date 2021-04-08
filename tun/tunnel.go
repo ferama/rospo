@@ -11,6 +11,7 @@ import (
 )
 
 type Tunnel struct {
+	// indicates if it is a forward or reverse tunnel
 	forward bool
 
 	username string
