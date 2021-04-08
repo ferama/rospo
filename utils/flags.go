@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"strings"
 )
 
 // Flags ...
@@ -16,6 +15,7 @@ type Flags struct {
 	// args
 	Username       *string
 	ServerEndpoint *string
+	JumpHost       *string
 
 	UserIdentity   *string
 	DisableTun     *bool
@@ -46,6 +46,7 @@ func GetFlags() *Flags {
 	flagValues = &Flags{
 		UserIdentity:         flag.String("user-identity", defaultIdentity, "The ssh identity (private) key absolute path"),
 		ServerIdentity:       flag.String("server-identity", "./id_rsa", "The ssh server key path"),
+		JumpHost:             flag.String("jump-host", "", "Optional jump host conf"),
 		ServerAuthorizedKeys: flag.String("server-authorized-keys", "./authorized_keys", "The ssh server authorized keys path"),
 		SshdPort:             flag.String("sshd-port", "2222", "The ssh server tcp port"),
 		LocalEndpoint:        flag.String("local", "localhost:2222", "The local endpoint"),
@@ -65,13 +66,9 @@ func GetFlags() *Flags {
 			flag.PrintDefaults()
 			os.Exit(1)
 		}
-		parts := strings.Split(values[0], "@")
-		if len(parts) == 2 {
-			flagValues.Username = &parts[0]
-			flagValues.ServerEndpoint = &parts[1]
-		} else {
-			flagValues.ServerEndpoint = &parts[0]
-		}
+		parsed := ParseSSHUrl(values[0])
+		flagValues.Username = &parsed.Username
+		flagValues.ServerEndpoint = &parsed.Host
 	}
 
 	return flagValues
