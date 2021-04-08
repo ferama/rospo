@@ -4,7 +4,6 @@ import (
 	"gotun/sshd"
 	"gotun/tun"
 	"gotun/utils"
-	"time"
 )
 
 func main() {
@@ -31,24 +30,13 @@ func main() {
 		serverEndpoint := tun.NewEndpoint(*flags.ServerEndpoint)
 		remoteEndpoint := tun.NewEndpoint(*flags.RemoteEndpoint)
 
-		for {
-			if *flags.Forward {
-				tun.ForwardTunnel(
-					*username,
-					*userIdentity,
-					serverEndpoint,
-					remoteEndpoint,
-					localEndpoint)
-			} else {
-				tun.ReverseTunnel(
-					*username,
-					*userIdentity,
-					serverEndpoint,
-					remoteEndpoint,
-					localEndpoint)
-			}
-
-			time.Sleep(3 * time.Second)
-		}
+		tun.NewTunnel(
+			*username,
+			*userIdentity,
+			serverEndpoint,
+			remoteEndpoint,
+			localEndpoint,
+			*flags.Forward,
+		).Start()
 	}
 }
