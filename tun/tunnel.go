@@ -21,7 +21,7 @@ type Tunnel struct {
 	remoteEndpoint *Endpoint
 	localEndpoint  *Endpoint
 
-	serverConn *ssh.Client
+	client *ssh.Client
 
 	stopKeepAlive        chan bool
 	keepAliveInterval    time.Duration
@@ -57,30 +57,14 @@ func NewTunnel(
 }
 
 func (t *Tunnel) Start() {
+
 	for {
-		// t.stopKeepAlive = make(chan bool)
-		// refer to https://godoc.org/golang.org/x/crypto/ssh for other authentication types
-		sshConfig := &ssh.ClientConfig{
-			// SSH connection username
-			User: t.username,
-			Auth: []ssh.AuthMethod{
-				utils.PublicKeyFile(t.identity),
-				// ssh.Password("your_password_here"),
-			},
-			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		}
-		log.Println("[TUN] Trying to connect to remote server...")
-		// Connect to SSH remote server using serverEndpoint
-		serverConn, err := ssh.Dial("tcp", t.serverEndpoint.String(), sshConfig)
-		if err != nil {
-			log.Println(fmt.Printf("[TUN] Dial INTO remote server error. %s\n", err))
+		if err := t.connectToServer(); err != nil {
 			time.Sleep(t.reconnectionInterval)
 			continue
 		}
-		log.Println("[TUN] connected to remote server.")
 
-		t.serverConn = serverConn
-
+		// start the keepAlive routine
 		go t.keepAlive()
 
 		if t.forward {
@@ -89,10 +73,36 @@ func (t *Tunnel) Start() {
 			t.listenRemote()
 		}
 		t.stopKeepAlive <- true
-		t.serverConn.Close()
+		t.client.Close()
 
 		time.Sleep(t.reconnectionInterval)
 	}
+}
+
+func (t *Tunnel) connectToServer() error {
+	// refer to https://godoc.org/golang.org/x/crypto/ssh for other authentication types
+	sshConfig := &ssh.ClientConfig{
+		// SSH connection username
+		User: t.username,
+		Auth: []ssh.AuthMethod{
+			utils.PublicKeyFile(t.identity),
+			// ssh.Password("your_password_here"),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+	log.Println("[TUN] Trying to connect to remote server...")
+
+	// Connect to SSH remote server using serverEndpoint
+	client, err := ssh.Dial("tcp", t.serverEndpoint.String(), sshConfig)
+	if err != nil {
+		log.Println(fmt.Printf("[TUN] Dial INTO remote server error. %s\n", err))
+		return err
+	}
+	log.Println("[TUN] connected to remote server.")
+
+	t.client = client
+
+	return nil
 }
 
 func (t *Tunnel) listenLocal() {
@@ -105,9 +115,9 @@ func (t *Tunnel) listenLocal() {
 	t.listener = listener
 
 	log.Printf("[TUN] Forward connected. Local: %s <- Remote: %s\n", t.localEndpoint.String(), t.remoteEndpoint.String())
-	if t.serverConn != nil && listener != nil {
+	if t.client != nil && listener != nil {
 		for {
-			remote, err := t.serverConn.Dial("tcp", t.remoteEndpoint.String())
+			remote, err := t.client.Dial("tcp", t.remoteEndpoint.String())
 			// Open a (local) connection to localEndpoint whose content will be forwarded so serverEndpoint
 			if err != nil {
 				log.Println(fmt.Printf("[TUN] Listen open port ON local server error. %s\n", err))
@@ -126,7 +136,7 @@ func (t *Tunnel) listenLocal() {
 
 func (t *Tunnel) listenRemote() {
 	// Listen on remote server port
-	listener, err := t.serverConn.Listen("tcp", t.remoteEndpoint.String())
+	listener, err := t.client.Listen("tcp", t.remoteEndpoint.String())
 	if err != nil {
 		log.Println(fmt.Printf("[TUN] Listen open port ON remote server error. %s\n", err))
 		return
@@ -134,7 +144,7 @@ func (t *Tunnel) listenRemote() {
 	t.listener = listener
 
 	log.Printf("[TUN] Reverse connected. Local: %s -> Remote: %s\n", t.localEndpoint.String(), t.remoteEndpoint.String())
-	if t.serverConn != nil && listener != nil {
+	if t.client != nil && listener != nil {
 		for {
 			// Open a (local) connection to localEndpoint whose content will be forwarded so serverEndpoint
 			local, err := net.Dial("tcp", t.localEndpoint.String())
@@ -161,7 +171,7 @@ func (t *Tunnel) keepAlive() {
 	for {
 		select {
 		case <-ticker.C:
-			_, _, err := t.serverConn.SendRequest("keepalive@gotun", true, nil)
+			_, _, err := t.client.SendRequest("keepalive@gotun", true, nil)
 			if err != nil {
 				log.Printf("[TUN] error while sending keep alive %s", err)
 				t.listener.Close()
