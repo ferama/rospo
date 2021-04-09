@@ -114,6 +114,7 @@ func (t *Tunnel) connectToServer() error {
 		}
 		log.Println("[TUN] reached the jump host")
 
+		log.Printf("[TUN] connecting to %s", t.serverEndpoint.String())
 		conn, err := proxyClient.Dial("tcp", t.serverEndpoint.String())
 		if err != nil {
 			return err
@@ -130,6 +131,7 @@ func (t *Tunnel) connectToServer() error {
 
 	} else {
 		// Connect to SSH remote server using serverEndpoint
+		log.Printf("[TUN] connecting to %s", t.serverEndpoint.String())
 		client, err := ssh.Dial("tcp", t.serverEndpoint.String(), sshConfig)
 		if err != nil {
 			log.Println(fmt.Printf("[TUN] Dial INTO remote server error. %s\n", err))
