@@ -54,7 +54,7 @@ Example:
 		tun.NewTunnel(
 			parsed.Username,
 			identity,
-			tun.NewEndpoint(parsed.Host),
+			tun.NewEndpoint(args[0]),
 			tun.NewEndpoint(remote),
 			tun.NewEndpoint(local),
 			false,
