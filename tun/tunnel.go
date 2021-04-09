@@ -14,6 +14,8 @@ type Tunnel struct {
 	// indicates if it is a forward or reverse tunnel
 	forward bool
 
+	jumpHost string
+
 	username string
 	identity string
 
@@ -38,10 +40,12 @@ func NewTunnel(
 	remoteEndpoint *Endpoint,
 	localEndpoint *Endpoint,
 	isForward bool,
+	jumpHost string,
 ) *Tunnel {
 
 	tunnel := &Tunnel{
 		forward:        isForward,
+		jumpHost:       jumpHost,
 		username:       username,
 		identity:       identity,
 		serverEndpoint: serverEndpoint,
@@ -92,9 +96,8 @@ func (t *Tunnel) connectToServer() error {
 	}
 	log.Println("[TUN] Trying to connect to remote server...")
 
-	flags := utils.GetFlags()
-	if *flags.JumpHost != "" {
-		jhostParsed := utils.ParseSSHUrl(*flags.JumpHost)
+	if t.jumpHost != "" {
+		jhostParsed := utils.ParseSSHUrl(t.jumpHost)
 		proxyConfig := &ssh.ClientConfig{
 			// SSH connection username
 			User: jhostParsed.Username,

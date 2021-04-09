@@ -24,10 +24,10 @@ type Flags struct {
 	Forward        *bool
 
 	//// sshd
-	DisableSshd          *bool
-	ServerIdentity       *string
-	ServerAuthorizedKeys *string
-	SshdPort             *string
+	DisableSshd        *bool
+	SshdIdentity       *string
+	SshdAuthorizedKeys *string
+	SshdPort           *string
 }
 
 var flagValues *Flags
@@ -44,16 +44,16 @@ func GetFlags() *Flags {
 	defaultIdentity := filepath.Join(usr.HomeDir, ".ssh", "id_rsa")
 
 	flagValues = &Flags{
-		UserIdentity:         flag.String("user-identity", defaultIdentity, "The ssh identity (private) key absolute path"),
-		ServerIdentity:       flag.String("server-identity", "./id_rsa", "The ssh server key path"),
-		JumpHost:             flag.String("jump-host", "", "Optional jump host conf"),
-		ServerAuthorizedKeys: flag.String("server-authorized-keys", "./authorized_keys", "The ssh server authorized keys path"),
-		SshdPort:             flag.String("sshd-port", "2222", "The ssh server tcp port"),
-		LocalEndpoint:        flag.String("local", "127.0.0.1:2222", "The local endpoint"),
-		RemoteEndpoint:       flag.String("remote", "127.0.0.1:5555", "The remote endpoint"),
-		Forward:              flag.Bool("forward", false, "forwards a remote port to local"),
-		DisableSshd:          flag.Bool("no-sshd", false, "If set disable the embedded ssh server"),
-		DisableTun:           flag.Bool("no-tun", false, "If set disable the tunnel (starts the sshd service only)"),
+		UserIdentity:       flag.String("user-identity", defaultIdentity, "The ssh identity (private) key absolute path"),
+		SshdIdentity:       flag.String("sshd-identity", "./id_rsa", "The ssh server key path"),
+		JumpHost:           flag.String("jump-host", "", "Optional jump host conf"),
+		SshdAuthorizedKeys: flag.String("sshd-authorized-keys", "./authorized_keys", "The ssh server authorized keys path"),
+		SshdPort:           flag.String("sshd-port", "2222", "The ssh server tcp port"),
+		LocalEndpoint:      flag.String("local", "127.0.0.1:2222", "The local endpoint"),
+		RemoteEndpoint:     flag.String("remote", "127.0.0.1:5555", "The remote endpoint"),
+		Forward:            flag.Bool("forward", false, "forwards a remote port to local"),
+		DisableSshd:        flag.Bool("no-sshd", false, "If set disable the embedded ssh server"),
+		DisableTun:         flag.Bool("no-tun", false, "If set disable the tunnel (starts the sshd service only)"),
 	}
 
 	flag.Parse()

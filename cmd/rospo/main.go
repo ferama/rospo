@@ -11,8 +11,8 @@ func main() {
 
 	if !*flags.DisableSshd {
 		s := sshd.NewSshServer(
-			flags.ServerIdentity,
-			flags.ServerAuthorizedKeys,
+			flags.SshdIdentity,
+			flags.SshdAuthorizedKeys,
 			flags.SshdPort,
 		)
 		if !*flags.DisableTun {
@@ -37,6 +37,7 @@ func main() {
 			remoteEndpoint,
 			localEndpoint,
 			*flags.Forward,
+			*flags.JumpHost,
 		).Start()
 	}
 }
