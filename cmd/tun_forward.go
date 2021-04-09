@@ -25,6 +25,7 @@ Example:
 		remote, _ := cmd.Flags().GetString("remote")
 		jumpHost, _ := cmd.Flags().GetString("jump-host")
 		identity, _ := cmd.Flags().GetString("user-identity")
+		insecure, _ := cmd.Flags().GetBool("insecure")
 		parsed := utils.ParseSSHUrl(args[0])
 
 		tun.NewTunnel(
@@ -33,8 +34,9 @@ Example:
 			tun.NewEndpoint(args[0]),
 			tun.NewEndpoint(remote),
 			tun.NewEndpoint(local),
-			true,
 			jumpHost,
+			true,
+			insecure,
 		).Start()
 	},
 }
