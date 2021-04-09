@@ -64,6 +64,7 @@ func (t *Tunnel) Start() {
 
 	for {
 		if err := t.connectToServer(); err != nil {
+			log.Printf("[RUN] error while connecting %s", err)
 			time.Sleep(t.reconnectionInterval)
 			continue
 		}
@@ -93,6 +94,7 @@ func (t *Tunnel) connectToServer() error {
 			// ssh.Password("your_password_here"),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		// HostKeyCallback: t.knownHostsCallback(),
 	}
 	log.Println("[TUN] Trying to connect to remote server...")
 
@@ -106,6 +108,7 @@ func (t *Tunnel) connectToServer() error {
 				// ssh.Password("your_password_here"),
 			},
 			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+			// HostKeyCallback: t.knownHostsCallback(),
 		}
 		jumpHostService := fmt.Sprintf("%s:%d", jhostParsed.Host, jhostParsed.Port)
 		proxyClient, err := ssh.Dial("tcp", jumpHostService, proxyConfig)
@@ -222,3 +225,20 @@ func (t *Tunnel) keepAlive() {
 		}
 	}
 }
+
+// func (t *Tunnel) knownHostsCallback() ssh.HostKeyCallback {
+// 	var err error
+// 	usr, err := user.Current()
+// 	if err != nil {
+// 		log.Fatalf("could not obtain user home directory :%v", err)
+// 	}
+
+// 	knownHostFile := filepath.Join(usr.HomeDir, ".ssh", "known_hosts")
+// 	log.Printf("[TUN] known_hosts file used: %s", knownHostFile)
+
+// 	clb, err := knownhosts.New(knownHostFile)
+// 	if err != nil {
+// 		log.Fatalf("error while parsing 'known_hosts' file: %s: %v", knownHostFile, err)
+// 	}
+// 	return clb
+// }

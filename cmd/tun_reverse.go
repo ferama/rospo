@@ -25,6 +25,7 @@ var tunReverseCmd = &cobra.Command{
 Example: 
   # Starts an embedded sshd and reverse proxy it to the remote server
   $ rospo tun reverse -S -r :8888 user@server:port
+
   # Start a reverse tunnelt from the local port 5000 to the remote 8888
   # proxing through a jump host server
   $ rospo tun reverse -l :5000 -r :8888 -j jump_host_server user@server

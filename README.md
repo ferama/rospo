@@ -1,19 +1,54 @@
 # Rospo
 
-Rospo is a very simple ssh tunnel tool.
+Rospo is tool meant to create reliable ssh tunnels.
+It embeds an ssh server too if you want to reverse proxy a secured
+shell
 
-It's meant to replace the couple autossh - sshd for forwards and reverse tunnels.
+It's meant to make ssh tunnels fun, reliable and understendable again
 
+## How To Install
+
+Rospo actually only full supports *nix oses.
+A windows version is being evalued
+
+#### Linux amd64
+```
+$ curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-linux-amd64 --output rospo && chmod +x rospo
+```
+
+#### Linux arm64
+```
+$ curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-linux-arm64 --output rospo && chmod +x rospo
+```
+
+#### Linux arm
+```
+$ curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-linux-arm --output rospo && chmod +x rospo
+```
+
+#### Mac OS (apple silicon)
+```
+$ curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-darwin-arm64 --output rospo && chmod +x rospo
+```
+
+## Usage
 Usage example:
 
-Starts an embedded ssh server and proxy the port to remote_server
+Starts an embedded ssh server and reverse proxy the port to remote_server
 
 ```
-$ rospo user@remote_server:port
+$ rospo tun reverse -S -r :8888 user@server:port
 ```
 
 Forwards the local 5000 port to the remote 6000 on the remote_server
 
 ```
-$ rospo -no-sshd -local localhost:5000 -remote localhost:6000 user@remote_server:port
+$ rospo tun forward -l :5000 -r :6000 user@server:port
+```
+
+Get more detailed help on each command runnig
+```
+$ rospo tun forward --help
+$ rospo tun reverse --help
+$ rospo sshd --help
 ```

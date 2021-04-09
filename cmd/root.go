@@ -5,7 +5,7 @@ import "github.com/spf13/cobra"
 var (
 	rootCmd = &cobra.Command{
 		Use:  "rospo",
-		Long: "Tool to create relieable ssh tunnels.",
+		Long: "The tool to create relieable ssh tunnels.",
 	}
 )
 
