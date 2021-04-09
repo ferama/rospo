@@ -4,7 +4,7 @@ build() {
     EXT=""
     [[ $GOOS = "windows" ]] && EXT=".exe"
     echo "Building ${GOOS} ${GOARCH}"
-    go build -o ./bin/gotun-${GOOS}-${GOARCH}${EXT} ./cmd/gotun
+    go build -o ./bin/rospo-${GOOS}-${GOARCH}${EXT} ./cmd/rospo
 }
 
 go test ./...

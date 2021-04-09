@@ -1,4 +1,4 @@
-module gotun
+module rospo
 
 go 1.16
 

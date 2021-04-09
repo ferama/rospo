@@ -2,9 +2,9 @@ package tun
 
 import (
 	"fmt"
-	"gotun/utils"
 	"log"
 	"net"
+	"rospo/utils"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -206,7 +206,7 @@ func (t *Tunnel) keepAlive() {
 	for {
 		select {
 		case <-ticker.C:
-			_, _, err := t.client.SendRequest("keepalive@gotun", true, nil)
+			_, _, err := t.client.SendRequest("keepalive@rospo", true, nil)
 			if err != nil {
 				log.Printf("[TUN] error while sending keep alive %s", err)
 				t.listener.Close()

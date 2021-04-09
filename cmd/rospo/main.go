@@ -1,9 +1,9 @@
 package main
 
 import (
-	"gotun/sshd"
-	"gotun/tun"
-	"gotun/utils"
+	"rospo/sshd"
+	"rospo/tun"
+	"rospo/utils"
 )
 
 func main() {

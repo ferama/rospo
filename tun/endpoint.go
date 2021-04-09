@@ -2,7 +2,7 @@ package tun
 
 import (
 	"fmt"
-	"gotun/utils"
+	"rospo/utils"
 )
 
 type Endpoint struct {
