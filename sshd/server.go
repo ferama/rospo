@@ -56,7 +56,12 @@ func (s *SshServer) loadAuthorizedKeys() map[string]bool {
 	// with the entries in the authorized_keys file.
 	authorizedKeysBytes, err := ioutil.ReadFile(*s.authorizedKeyFile)
 	if err != nil {
-		log.Fatalf("Failed to load authorized_keys, err: %v", err)
+		log.Fatalf(`Failed to load authorized_keys, err: %v
+
+	Please create ./authorized_keys file and fill in with 
+	your authorized users public keys
+
+`, err)
 	}
 	authorizedKeysMap := map[string]bool{}
 	for len(authorizedKeysBytes) > 0 {
