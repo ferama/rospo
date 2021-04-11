@@ -1,12 +1,21 @@
 # Rospo
 
-Rospo is tool meant to create reliable ssh tunnels.
+Rospo is a tool meant to create reliable ssh tunnels.
 It embeds an ssh server too if you want to reverse proxy a secured
 shell
 
 It's meant to make ssh tunnels fun, reliable and understendable again
 
-## How To Install
+### Table of Contents  
+1. [How to Install](#how-to-install)
+    * [Linux (amd64)](#linux-amd64)
+    * [Linux (arm64)](#linux-arm64)
+    * [Linux (arm)](#linux-arm)
+    * [Mac Os (Apple silicon)](#mac-os)
+2. [Usage](#usage)
+
+
+## How to Install
 
 Rospo actually only full supports *nix oses.
 A windows version is being evalued
@@ -26,7 +35,7 @@ $ curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-linux-a
 $ curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-linux-arm --output rospo && chmod +x rospo
 ```
 
-#### Mac OS (apple silicon)
+#### Mac OS
 ```
 $ curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-darwin-arm64 --output rospo && chmod +x rospo
 ```

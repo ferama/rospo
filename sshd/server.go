@@ -134,7 +134,7 @@ func (s *SshServer) Start() {
 			s.client = sshConn
 
 			log.Println("[SSHD] connection from", sshConn.RemoteAddr())
-			// Print incoming out-of-band Requests
+			// handle forwards and keepalive requests
 			go s.handleRequests(reqs)
 			// Accept all channels
 			go s.handleChannels(chans)
