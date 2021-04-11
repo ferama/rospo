@@ -21,7 +21,8 @@ type SshServer struct {
 	authorizedKeyFile *string
 	tcpPort           *string
 
-	tcpIpForwardListener net.Listener
+	// tcpIpForwardListener net.Listener
+	forwards map[string]net.Listener
 }
 
 func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *SshServer {
@@ -44,6 +45,7 @@ func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *Ss
 		authorizedKeyFile: authorizedKeys,
 		hostPrivateKey:    hostPrivateKeySigner,
 		tcpPort:           tcpPort,
+		forwards:          make(map[string]net.Listener),
 	}
 
 	// run here, to make sure I have a valid authorized keys
@@ -144,10 +146,51 @@ func (s *SshServer) handleRequests(reqs <-chan *ssh.Request) {
 	for req := range reqs {
 		switch req.Type {
 		case "tcpip-forward":
-			s.tcpIpForwardListener = handleTcpIpForward(req, s.client)
+			var payload = struct {
+				Addr string
+				Port uint32
+			}{}
+			if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
+				log.Printf("[SSHD] Unable to unmarshal payload")
+				req.Reply(false, []byte{})
+				continue
+			}
+			laddr := payload.Addr
+			lport := payload.Port
+			addr := fmt.Sprintf("[%s]:%d", laddr, lport)
+			ln, ok := s.forwards[addr]
+			if ok {
+				ln.Close()
+			}
+
+			ln, err := net.Listen("tcp", addr)
+			if err != nil {
+				log.Printf("[SSHD] Listen failed for %s %s", addr, err)
+				req.Reply(false, []byte{})
+				continue
+			}
+			var replyPayload = struct{ Port uint32 }{lport}
+			// Tell client everything is OK
+			req.Reply(true, ssh.Marshal(replyPayload))
+			go handleTcpIpForwardSession(s.client, ln, laddr, lport)
+			s.forwards[addr] = ln
+
 		case "cancel-tcpip-forward":
-			if s.tcpIpForwardListener != nil {
-				s.tcpIpForwardListener.Close()
+			var payload = struct {
+				Addr string
+				Port uint32
+			}{}
+			if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
+				log.Printf("[SSHD] Unable to unmarshal payload")
+				req.Reply(false, []byte{})
+				continue
+			}
+			laddr := payload.Addr
+			lport := payload.Port
+			addr := fmt.Sprintf("[%s]:%d", laddr, lport)
+			ln, ok := s.forwards[addr]
+			if ok {
+				ln.Close()
 			}
 		default:
 			if strings.Contains(req.Type, "keepalive") {
