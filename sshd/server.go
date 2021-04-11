@@ -21,7 +21,6 @@ type SshServer struct {
 	authorizedKeyFile *string
 	tcpPort           *string
 
-	// tcpIpForwardListener net.Listener
 	forwards map[string]net.Listener
 }
 
@@ -115,7 +114,7 @@ func (s *SshServer) Start() {
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("[SSHD] Listening on port %s\n", *s.tcpPort)
+	log.Printf("[SSHD] listening on port %s\n", *s.tcpPort)
 	for {
 		conn, err := socket.Accept()
 		if err != nil {
@@ -133,7 +132,7 @@ func (s *SshServer) Start() {
 
 			s.client = sshConn
 
-			log.Println("[SSHD] Connection from", sshConn.RemoteAddr())
+			log.Println("[SSHD] connection from", sshConn.RemoteAddr())
 			// Print incoming out-of-band Requests
 			go s.handleRequests(reqs)
 			// Accept all channels

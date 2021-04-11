@@ -103,7 +103,7 @@ func (t *Tunnel) connectToServer() error {
 		// HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		HostKeyCallback: t.verifyHostCallback(),
 	}
-	log.Println("[TUN] Trying to connect to remote server...")
+	log.Println("[TUN] trying to connect to remote server...")
 
 	if t.jumpHost != "" {
 		jhostParsed := utils.ParseSSHUrl(t.jumpHost)
@@ -159,18 +159,18 @@ func (t *Tunnel) listenLocal() {
 	// Listen on remote server port
 	listener, err := net.Listen("tcp", t.localEndpoint.String())
 	if err != nil {
-		log.Println(fmt.Printf("[TUN] Dial INTO remote service error. %s\n", err))
+		log.Println(fmt.Printf("[TUN] dial INTO remote service error. %s\n", err))
 		return
 	}
 	t.listener = listener
 
-	log.Printf("[TUN] Forward connected. Local: %s <- Remote: %s\n", t.localEndpoint.String(), t.remoteEndpoint.String())
+	log.Printf("[TUN] forward connected. Local: %s <- Remote: %s\n", t.localEndpoint.String(), t.remoteEndpoint.String())
 	if t.client != nil && listener != nil {
 		for {
 			remote, err := t.client.Dial("tcp", t.remoteEndpoint.String())
 			// Open a (local) connection to localEndpoint whose content will be forwarded so serverEndpoint
 			if err != nil {
-				log.Println(fmt.Printf("[TUN] Listen open port ON local server error. %s\n", err))
+				log.Println(fmt.Printf("[TUN] listen open port ON local server error. %s\n", err))
 				break
 			}
 			client, err := listener.Accept()
@@ -188,18 +188,18 @@ func (t *Tunnel) listenRemote() {
 	// Listen on remote server port
 	listener, err := t.client.Listen("tcp", t.remoteEndpoint.String())
 	if err != nil {
-		log.Println(fmt.Printf("[TUN] Listen open port ON remote server error. %s\n", err))
+		log.Println(fmt.Printf("[TUN] listen open port ON remote server error. %s\n", err))
 		return
 	}
 	t.listener = listener
 
-	log.Printf("[TUN] Reverse connected. Local: %s -> Remote: %s\n", t.localEndpoint.String(), t.remoteEndpoint.String())
+	log.Printf("[TUN] reverse connected. Local: %s -> Remote: %s\n", t.localEndpoint.String(), t.remoteEndpoint.String())
 	if t.client != nil && listener != nil {
 		for {
 			// Open a (local) connection to localEndpoint whose content will be forwarded so serverEndpoint
 			local, err := net.Dial("tcp", t.localEndpoint.String())
 			if err != nil {
-				log.Println(fmt.Printf("[TUN] Dial INTO local service error. %s\n", err))
+				log.Println(fmt.Printf("[TUN] dial INTO local service error. %s\n", err))
 				break
 			}
 
