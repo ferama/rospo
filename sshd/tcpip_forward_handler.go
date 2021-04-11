@@ -10,35 +10,6 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func handleTcpIpForward(req *ssh.Request, client *ssh.ServerConn) net.Listener {
-	var payload = struct {
-		Addr string
-		Port uint32
-	}{}
-	if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
-		log.Printf("[SSHD] Unable to unmarshal payload")
-		req.Reply(false, []byte{})
-		return nil
-	}
-	laddr := payload.Addr
-	lport := payload.Port
-
-	bind := fmt.Sprintf("[%s]:%d", laddr, lport)
-	ln, err := net.Listen("tcp", bind)
-	if err != nil {
-		log.Printf("[SSHD] Listen failed for %s", bind)
-		req.Reply(false, []byte{})
-		return nil
-	}
-	var replyPayload = struct{ Port uint32 }{lport}
-	// Tell client everything is OK
-	req.Reply(true, ssh.Marshal(replyPayload))
-	// go handleListener(bindinfo, listener)
-	go handleTcpIpForwardSession(client, ln, laddr, lport)
-
-	return ln
-}
-
 func handleTcpIpForwardSession(client *ssh.ServerConn, listener net.Listener, laddr string, lport uint32) {
 	for {
 		lconn, err := listener.Accept()
@@ -55,6 +26,7 @@ func handleTcpIpForwardSession(client *ssh.ServerConn, listener net.Listener, la
 
 			break
 		}
+		log.Printf("[SSHD] started forward session: %s", lconn.LocalAddr())
 
 		go func(lconn net.Conn, laddr string, lport uint32) {
 			remotetcpaddr := lconn.RemoteAddr().(*net.TCPAddr)
