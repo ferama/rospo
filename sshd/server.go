@@ -7,6 +7,7 @@ import (
 	"net"
 	"rospo/utils"
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -164,14 +165,37 @@ func (s *SshServer) handleRequests(reqs <-chan *ssh.Request) {
 
 			ln, err := net.Listen("tcp", addr)
 			if err != nil {
-				log.Printf("[SSHD] Listen failed for %s %s", addr, err)
+				log.Printf("[SSHD] listen failed for %s %s", addr, err)
 				req.Reply(false, []byte{})
 				continue
 			}
+			log.Printf("[SSHD] tcpip-forward listening  for %s", addr)
 			var replyPayload = struct{ Port uint32 }{lport}
 			// Tell client everything is OK
 			req.Reply(true, ssh.Marshal(replyPayload))
 			go handleTcpIpForwardSession(s.client, ln, laddr, lport)
+
+			go func(s *SshServer, addr string) {
+				ticker := time.NewTicker(1 * time.Second)
+
+				log.Println("[SSHD] starting check for forward availability")
+				stopKeepAlive := make(chan bool)
+				for {
+					select {
+					case <-ticker.C:
+						_, _, err := s.client.SendRequest("checkalive@rospo", true, nil)
+						if err != nil {
+							log.Println("[SSHD] forward endpoint not available anymore. Closing socket")
+							ln.Close()
+							stopKeepAlive <- true
+							delete(s.forwards, addr)
+						}
+					case <-stopKeepAlive:
+						return
+					}
+				}
+			}(s, addr)
+
 			s.forwards[addr] = ln
 
 		case "cancel-tcpip-forward":
