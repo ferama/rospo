@@ -97,7 +97,7 @@ func handleChannelSession(c ssh.NewChannel) {
 				command := payload.Value
 				cmd = exec.Command(shell, []string{"-c", command}...)
 			}
-			// cmd.Env = []string{"TERM=xterm"}
+
 			envVal := make([]string, 0, len(env))
 			for k, v := range env {
 				envVal = append(envVal, fmt.Sprintf("%s=%s", k, v))
