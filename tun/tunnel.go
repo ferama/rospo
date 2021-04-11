@@ -221,6 +221,7 @@ func (t *Tunnel) keepAlive() {
 	for {
 		select {
 		case <-ticker.C:
+			// log.Println("[TUN] keep alive")
 			_, _, err := t.client.SendRequest("keepalive@rospo", true, nil)
 			if err != nil {
 				log.Printf("[TUN] error while sending keep alive %s", err)

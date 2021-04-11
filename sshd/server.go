@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"rospo/utils"
+	"strings"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -19,6 +20,8 @@ type SshServer struct {
 	hostPrivateKey    ssh.Signer
 	authorizedKeyFile *string
 	tcpPort           *string
+
+	tcpIpForwardListener net.Listener
 }
 
 func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *SshServer {
@@ -139,11 +142,20 @@ func (s *SshServer) Start() {
 
 func (s *SshServer) handleRequests(reqs <-chan *ssh.Request) {
 	for req := range reqs {
-		if req.Type == "tcpip-forward" {
-			handleTcpIpForward(req, s.client)
-			continue
+		switch req.Type {
+		case "tcpip-forward":
+			s.tcpIpForwardListener = handleTcpIpForward(req, s.client)
+		case "cancel-tcpip-forward":
+			if s.tcpIpForwardListener != nil {
+				s.tcpIpForwardListener.Close()
+			}
+		default:
+			if strings.Contains(req.Type, "keepalive") {
+				req.Reply(true, nil)
+				continue
+			}
+			log.Printf("[SSHD] received out-of-band request: %+v", req)
 		}
-		log.Printf("[SSHD] recieved out-of-band request: %+v", req)
 	}
 }
 
@@ -151,14 +163,14 @@ func (s *SshServer) handleChannels(chans <-chan ssh.NewChannel) {
 	// Service the incoming Channel channel.
 	for newChannel := range chans {
 		t := newChannel.ChannelType()
-		if t == "session" {
+		switch t {
+		case "session":
 			go handleChannelSession(newChannel)
-			continue
-		}
-		if t == "direct-tcpip" {
+
+		case "direct-tcpip":
 			go handleChannelDirect(newChannel)
-			continue
+		default:
+			newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
 		}
-		newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
 	}
 }

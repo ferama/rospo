@@ -10,7 +10,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func handleTcpIpForward(req *ssh.Request, client *ssh.ServerConn) {
+func handleTcpIpForward(req *ssh.Request, client *ssh.ServerConn) net.Listener {
 	var payload = struct {
 		Addr string
 		Port uint32
@@ -18,7 +18,7 @@ func handleTcpIpForward(req *ssh.Request, client *ssh.ServerConn) {
 	if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
 		log.Printf("[SSHD] Unable to unmarshal payload")
 		req.Reply(false, []byte{})
-		return
+		return nil
 	}
 	laddr := payload.Addr
 	lport := payload.Port
@@ -28,13 +28,15 @@ func handleTcpIpForward(req *ssh.Request, client *ssh.ServerConn) {
 	if err != nil {
 		log.Printf("[SSHD] Listen failed for %s", bind)
 		req.Reply(false, []byte{})
-		return
+		return nil
 	}
 	var replyPayload = struct{ Port uint32 }{lport}
 	// Tell client everything is OK
 	req.Reply(true, ssh.Marshal(replyPayload))
 	// go handleListener(bindinfo, listener)
 	go handleTcpIpForwardSession(client, ln, laddr, lport)
+
+	return ln
 }
 
 func handleTcpIpForwardSession(client *ssh.ServerConn, listener net.Listener, laddr string, lport uint32) {
