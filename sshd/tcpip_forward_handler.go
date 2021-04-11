@@ -1,11 +1,8 @@
 package sshd
 
 import (
-	"fmt"
-	"io"
 	"log"
 	"net"
-	"sync"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -51,30 +48,7 @@ func handleTcpIpForwardSession(client *ssh.ServerConn, listener net.Listener, la
 				return
 			}
 			go ssh.DiscardRequests(requests)
-			forwardServe(c, lconn)
+			serveClient(c, lconn)
 		}(lconn, laddr, lport)
 	}
-}
-
-func forwardServe(cssh ssh.Channel, conn net.Conn) {
-	var once sync.Once
-	close := func() {
-		cssh.Close()
-		conn.Close()
-		log.Printf("[SSHD] forward session closed")
-	}
-	go func() {
-		_, err := io.Copy(cssh, conn)
-		if err != nil {
-			log.Println(fmt.Sprintf("[SSHD] forward - error while copy: %s", err))
-		}
-		once.Do(close)
-	}()
-	go func() {
-		_, err := io.Copy(conn, cssh)
-		if err != nil {
-			log.Println(fmt.Sprintf("[SSHD] forward - error while copy: %s", err))
-		}
-		once.Do(close)
-	}()
 }
