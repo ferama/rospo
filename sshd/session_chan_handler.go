@@ -71,7 +71,6 @@ func handleChannelSession(c ssh.NewChannel) {
 				if err := pty.Run(cmd); err != nil {
 					log.Printf("[SSHD] %s", err)
 				}
-				// sessionClientServe(channel, f, cmd)
 				sessionClientServe(channel, pty, cmd)
 
 			} else {
@@ -142,6 +141,7 @@ func sessionClientServe(channel ssh.Channel, pty rpty.Pty, cmd *exec.Cmd) {
 	// Teardown session
 	var once sync.Once
 	close := func() {
+		channel.Close()
 		pty.Close()
 		cmd.Process.Wait()
 		log.Printf("[SSHD] session closed")

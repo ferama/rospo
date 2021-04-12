@@ -14,7 +14,7 @@ type Pty interface {
 	ReadFrom(io.Reader) (int64, error)
 }
 
-// New creates a new Pty.
+// New creates a new Pty
 func New() (Pty, error) {
 	return newPty()
 }

@@ -35,13 +35,12 @@ func (p *unixPty) Resize(cols uint16, rows uint16) error {
 }
 
 func (p *unixPty) Close() error {
-	// p.pty.Close()
+	p.pty.Close()
 	p.tty.Close()
 	return nil
 }
 
 func (p *unixPty) Run(c *exec.Cmd) error {
-	defer p.Close()
 	c.Stdout = p.tty
 	c.Stdin = p.tty
 	c.Stderr = p.tty
