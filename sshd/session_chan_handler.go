@@ -3,13 +3,13 @@ package sshd
 import (
 	"encoding/binary"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/exec"
 	"os/user"
 	"sync"
 
+	"github.com/ferama/rospo/rpty"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -29,7 +29,8 @@ func handleChannelSession(c ssh.NewChannel) {
 	// allocate a terminal for this channel
 	log.Print("[SSHD] creating pty...")
 	// Create new pty
-	f, tty, err := ptyOpen()
+	pty, err := rpty.New()
+
 	if err != nil {
 		log.Printf("[SSHD] could not start pty (%s)", err)
 		return
@@ -67,10 +68,11 @@ func handleChannelSession(c ssh.NewChannel) {
 
 			if ptyRequested {
 				log.Println("[SSHD] running within the pty")
-				if err := ptyRun(cmd, tty); err != nil {
+				if err := pty.Run(cmd); err != nil {
 					log.Printf("[SSHD] %s", err)
 				}
-				sessionClientServe(channel, f, cmd)
+				// sessionClientServe(channel, f, cmd)
+				sessionClientServe(channel, pty, cmd)
 
 			} else {
 				cmd.Stdout = channel
@@ -102,12 +104,12 @@ func handleChannelSession(c ssh.NewChannel) {
 			termLen := req.Payload[3]
 			termEnv := string(req.Payload[4 : termLen+4])
 			w, h := parseDims(req.Payload[termLen+4:])
-			ptySetSize(tty, w, h)
+			pty.Resize(uint16(w), uint16(h))
 			log.Printf("[SSHD] pty-req '%s'", termEnv)
 
 		case "window-change":
 			w, h := parseDims(req.Payload)
-			ptySetSize(tty, w, h)
+			pty.Resize(uint16(w), uint16(h))
 			continue //no response
 
 		case "env":
@@ -136,18 +138,18 @@ func parseDims(b []byte) (uint32, uint32) {
 	return w, h
 }
 
-func sessionClientServe(channel ssh.Channel, pty *os.File, cmd *exec.Cmd) {
+func sessionClientServe(channel ssh.Channel, pty rpty.Pty, cmd *exec.Cmd) {
 	// Teardown session
 	var once sync.Once
 	close := func() {
-		channel.Close()
+		pty.Close()
 		cmd.Process.Wait()
 		log.Printf("[SSHD] session closed")
 	}
 
 	// Pipe session to shell and vice-versa
 	go func() {
-		_, err := io.Copy(channel, pty)
+		_, err := pty.WriteTo(channel)
 		if err != nil {
 			log.Println(fmt.Sprintf("[SSHD] error while copy from channel: %s", err))
 		}
@@ -155,7 +157,7 @@ func sessionClientServe(channel ssh.Channel, pty *os.File, cmd *exec.Cmd) {
 	}()
 
 	go func() {
-		_, err := io.Copy(pty, channel)
+		_, err := pty.ReadFrom(channel)
 		if err != nil {
 			log.Println(fmt.Sprintf("[SSHD] error while copy to channel: %s", err))
 		}
