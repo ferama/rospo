@@ -17,7 +17,7 @@ It's meant to make ssh tunnels fun, reliable and understendable again
 
 
 ## Why Rospo
-I wanted an easy to use and reliable ssh tunnel tool. The available alternatives doesn't fully satisfy me and doesn't support all the features I need (as the embedded sshd server for example) so I wrote my own
+I wanted an easy to use and reliable ssh tunnel tool. The available alternatives don't  fully satisfy me and doesn't support all the features I need (as the embedded sshd server for example) so I wrote my own
 
 Why use and embedded sshd server you might ask me. 
 
