@@ -14,9 +14,9 @@ func init() {
 var tunForwardCmd = &cobra.Command{
 	Use:   "forward [user@][server]:port",
 	Short: "Creates a forward ssh tunnel",
-	Long: `Creates a forward ssh tunnel
-
-Example: 
+	Long:  `Creates a forward ssh tunnel`,
+	Example: `
+  # Forwards the local 8080 port to the remote 8080 
   $ rospo tun forward -l :8080 -r :8080 user@server:port
 	`,
 	Args: cobra.MinimumNArgs(1),

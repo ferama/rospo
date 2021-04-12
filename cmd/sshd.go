@@ -16,8 +16,8 @@ func init() {
 
 var sshdCmd = &cobra.Command{
 	Use:   "sshd",
-	Short: "Starts a sshd server",
-	Long:  `Starts a sshd server`,
+	Short: "Starts the sshd server",
+	Long:  `Starts the sshd server`,
 	Run: func(cmd *cobra.Command, args []string) {
 		sshdIdentity, _ := cmd.Flags().GetString("sshd-identity")
 		sshdAuthorizedKeys, _ := cmd.Flags().GetString("sshd-authorized-keys")
