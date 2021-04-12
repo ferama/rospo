@@ -1,6 +1,6 @@
 package main
 
-import "rospo/cmd"
+import "github.com/ferama/rospo/cmd"
 
 func main() {
 	cmd.Execute()

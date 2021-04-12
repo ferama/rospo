@@ -1,4 +1,4 @@
-module rospo
+module github.com/ferama/rospo
 
 go 1.16
 

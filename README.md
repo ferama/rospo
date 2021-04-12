@@ -7,13 +7,38 @@ shell
 It's meant to make ssh tunnels fun, reliable and understendable again
 
 ### Table of Contents  
-1. [How to Install](#how-to-install)
+1. [Why Rospo?](#why-rospo)
+2. [How to Install](#how-to-install)
     * [Linux (amd64)](#linux-amd64)
     * [Linux (arm64)](#linux-arm64)
     * [Linux (arm)](#linux-arm)
     * [Mac Os (Apple silicon)](#mac-os)
-2. [Usage](#usage)
+3. [Usage](#usage)
 
+
+## Why Rospo
+I wanted an easy to use and reliable ssh tunnel tool. The available alternatives doesn't fully satisfy me and doesn't support all the features I need (as the embedded sshd server for example) so I wrote my own
+
+Why use and embedded sshd server you could tell me. 
+Example scenario:
+You have a Windows WSL instance that you want to access remotely without complicated setups on firewalls and other hassles and annoyances. With **rospo** you can do it in ONE simple step:
+
+```
+$ rospo run reverse -S external_ssh_server_here
+```
+
+This command will run an embedded sshd server on your wsl instance and reverse proxy its port to the `external_ssh_server_here`
+
+The only assumption here is that you have access to `external_ssh_server_here` using ssh keys.
+The command will open a socket (on port 5555 by default) into `external_ssh_server_here` that you can use to log back to WSL using a standard ssh client with a command like:
+
+```
+$ ssh -p 5555 localhost
+```
+
+The tunnel is fully secured using standard ssh mechanisms. Rospo will generate server identity file on first start and uses standard `authorized_keys` and user `known_hosts` file
+
+Rospo tunnel are monitored and keeped up in the event of network issues.
 
 ## How to Install
 

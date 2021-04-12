@@ -2,7 +2,8 @@ package tun
 
 import (
 	"fmt"
-	"rospo/utils"
+
+	"github.com/ferama/rospo/utils"
 )
 
 type Endpoint struct {

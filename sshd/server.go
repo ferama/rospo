@@ -5,9 +5,10 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
-	"rospo/utils"
 	"strings"
 	"time"
+
+	"github.com/ferama/rospo/utils"
 
 	"golang.org/x/crypto/ssh"
 )

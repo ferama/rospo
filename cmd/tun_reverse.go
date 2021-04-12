@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"rospo/sshd"
-	"rospo/tun"
-	"rospo/utils"
+	"github.com/ferama/rospo/sshd"
+	"github.com/ferama/rospo/tun"
+	"github.com/ferama/rospo/utils"
 
 	"github.com/spf13/cobra"
 )
