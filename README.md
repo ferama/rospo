@@ -20,6 +20,7 @@ It's meant to make ssh tunnels fun, reliable and understendable again
 I wanted an easy to use and reliable ssh tunnel tool. The available alternatives doesn't fully satisfy me and doesn't support all the features I need (as the embedded sshd server for example) so I wrote my own
 
 Why use and embedded sshd server you could tell me. 
+
 Example scenario:
 You have a Windows WSL instance that you want to access remotely without complicated setups on firewalls and other hassles and annoyances. With **rospo** you can do it in ONE simple step:
 
@@ -36,7 +37,9 @@ The command will open a socket (on port 5555 by default) into `external_ssh_serv
 $ ssh -p 5555 localhost
 ```
 
-The tunnel is fully secured using standard ssh mechanisms. Rospo will generate server identity file on first start and uses standard `authorized_keys` and user `known_hosts` file
+But this is just an example. Rospo can do a lot more.
+
+The tunnel is fully secured using standard ssh mechanisms. Rospo will generate server identity file on first run and uses standard `authorized_keys` and user `known_hosts` files.
 
 Rospo tunnel are monitored and keeped up in the event of network issues.
 
