@@ -20,9 +20,8 @@ func init() {
 var tunReverseCmd = &cobra.Command{
 	Use:   "reverse [user@][server]:port",
 	Short: "Creates a reverse ssh tunnel",
-	Long: `Creates a reverse ssh tunnel
-	
-Example: 
+	Long:  `Creates a reverse ssh tunnel`,
+	Example: `
   # Starts an embedded sshd and reverse proxy it to the remote server
   $ rospo tun reverse -S -r :8888 user@server:port
 
