@@ -25,6 +25,7 @@ func ptyRun(c *exec.Cmd, tty *os.File) (err error) {
 	c.Stderr = tty
 	c.SysProcAttr = &syscall.SysProcAttr{
 		Setctty: true,
+		Noctty:  false,
 		Setsid:  true,
 	}
 	return c.Start()
