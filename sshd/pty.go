@@ -1,16 +1,12 @@
 package sshd
 
 import (
-	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/exec"
-	"sync"
 	"syscall"
 
 	"github.com/creack/pty"
-	"golang.org/x/crypto/ssh"
 )
 
 func ptyOpen() (ptyFile, tty *os.File, err error) {
@@ -33,29 +29,10 @@ func ptyRun(c *exec.Cmd, tty *os.File) (err error) {
 	return c.Start()
 }
 
-func ptyServe(channel ssh.Channel, pty *os.File, cmd *exec.Cmd) {
-	// Teardown session
-	var once sync.Once
-	close := func() {
-		channel.Close()
-		cmd.Process.Wait()
-		log.Printf("[SSHD] session closed")
-	}
-
-	// Pipe session to shell and vice-versa
-	go func() {
-		_, err := io.Copy(channel, pty)
-		if err != nil {
-			log.Println(fmt.Sprintf("[SSHD] error while copy from channel: %s", err))
-		}
-		once.Do(close)
-	}()
-
-	go func() {
-		_, err := io.Copy(pty, channel)
-		if err != nil {
-			log.Println(fmt.Sprintf("[SSHD] error while copy to channel: %s", err))
-		}
-		once.Do(close)
-	}()
+func ptySetSize(tty *os.File, w, h uint32) {
+	log.Printf("[SSHD] set window resize %dx%d", w, h)
+	pty.Setsize(tty, &pty.Winsize{
+		Rows: uint16(h),
+		Cols: uint16(w),
+	})
 }
