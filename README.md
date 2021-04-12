@@ -19,7 +19,7 @@ It's meant to make ssh tunnels fun, reliable and understendable again
 ## Why Rospo
 I wanted an easy to use and reliable ssh tunnel tool. The available alternatives doesn't fully satisfy me and doesn't support all the features I need (as the embedded sshd server for example) so I wrote my own
 
-Why use and embedded sshd server you could tell me. 
+Why use and embedded sshd server you might ask me. 
 
 Example scenario:
 You have a Windows WSL instance that you want to access remotely without complicated setups on firewalls and other hassles and annoyances. With **rospo** you can do it in ONE simple step:
