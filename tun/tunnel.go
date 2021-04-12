@@ -61,7 +61,7 @@ func NewTunnel(
 		localEndpoint:  localEndpoint,
 
 		stopKeepAlive:        make(chan bool),
-		keepAliveInterval:    1 * time.Second,
+		keepAliveInterval:    5 * time.Second,
 		reconnectionInterval: 5 * time.Second,
 	}
 

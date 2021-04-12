@@ -24,6 +24,8 @@ type SshServer struct {
 	tcpPort           *string
 
 	forwards map[string]net.Listener
+
+	forwardsKeepAliveInterval time.Duration
 }
 
 func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *SshServer {
@@ -43,10 +45,11 @@ func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *Ss
 	}
 
 	ss := &SshServer{
-		authorizedKeyFile: authorizedKeys,
-		hostPrivateKey:    hostPrivateKeySigner,
-		tcpPort:           tcpPort,
-		forwards:          make(map[string]net.Listener),
+		authorizedKeyFile:         authorizedKeys,
+		hostPrivateKey:            hostPrivateKeySigner,
+		tcpPort:                   tcpPort,
+		forwards:                  make(map[string]net.Listener),
+		forwardsKeepAliveInterval: 5 * time.Second,
 	}
 
 	// run here, to make sure I have a valid authorized keys
@@ -177,7 +180,7 @@ func (s *SshServer) handleRequests(reqs <-chan *ssh.Request) {
 			go handleTcpIpForwardSession(s.client, ln, laddr, lport)
 
 			go func(s *SshServer, addr string) {
-				ticker := time.NewTicker(1 * time.Second)
+				ticker := time.NewTicker(s.forwardsKeepAliveInterval)
 
 				log.Println("[SSHD] starting check for forward availability")
 				stopKeepAlive := make(chan bool)
