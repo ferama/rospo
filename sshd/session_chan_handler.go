@@ -3,10 +3,12 @@ package sshd
 import (
 	"encoding/binary"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
 	"os/user"
+	"sync"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -68,7 +70,7 @@ func handleChannelSession(c ssh.NewChannel) {
 				if err := ptyRun(cmd, tty); err != nil {
 					log.Printf("[SSHD] %s", err)
 				}
-				ptyServe(channel, f, cmd)
+				sessionClientServe(channel, f, cmd)
 
 			} else {
 				cmd.Stdout = channel
@@ -100,12 +102,12 @@ func handleChannelSession(c ssh.NewChannel) {
 			termLen := req.Payload[3]
 			termEnv := string(req.Payload[4 : termLen+4])
 			w, h := parseDims(req.Payload[termLen+4:])
-			setWinsize(f.Fd(), w, h)
+			ptySetSize(tty, w, h)
 			log.Printf("[SSHD] pty-req '%s'", termEnv)
 
 		case "window-change":
 			w, h := parseDims(req.Payload)
-			setWinsize(f.Fd(), w, h)
+			ptySetSize(tty, w, h)
 			continue //no response
 
 		case "env":
@@ -132,4 +134,31 @@ func parseDims(b []byte) (uint32, uint32) {
 	w := binary.BigEndian.Uint32(b)
 	h := binary.BigEndian.Uint32(b[4:])
 	return w, h
+}
+
+func sessionClientServe(channel ssh.Channel, pty *os.File, cmd *exec.Cmd) {
+	// Teardown session
+	var once sync.Once
+	close := func() {
+		channel.Close()
+		cmd.Process.Wait()
+		log.Printf("[SSHD] session closed")
+	}
+
+	// Pipe session to shell and vice-versa
+	go func() {
+		_, err := io.Copy(channel, pty)
+		if err != nil {
+			log.Println(fmt.Sprintf("[SSHD] error while copy from channel: %s", err))
+		}
+		once.Do(close)
+	}()
+
+	go func() {
+		_, err := io.Copy(pty, channel)
+		if err != nil {
+			log.Println(fmt.Sprintf("[SSHD] error while copy to channel: %s", err))
+		}
+		once.Do(close)
+	}()
 }
