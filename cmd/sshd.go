@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"rospo/sshd"
+	"github.com/ferama/rospo/sshd"
 
 	"github.com/spf13/cobra"
 )
