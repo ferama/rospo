@@ -153,8 +153,14 @@ func sessionClientServe(channel ssh.Channel, pty rpty.Pty, cmd *exec.Cmd) {
 	var once sync.Once
 	close := func() {
 		channel.Close()
-		pty.Close()
-		cmd.Process.Wait()
+
+		if runtime.GOOS != "windows" {
+			// windows pty and command exec is handled differently
+			// There is no process running in cmd and the pty is already
+			// closed from the conpty
+			cmd.Process.Wait()
+			pty.Close()
+		}
 		log.Printf("[SSHD] session closed")
 	}
 

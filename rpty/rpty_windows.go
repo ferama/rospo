@@ -25,7 +25,7 @@ func newConPty(cols int16, rows int16) (*rconPty, error) {
 }
 
 func (c *rconPty) Resize(cols uint16, rows uint16) error {
-
+	// TODO
 	return nil
 }
 
@@ -42,6 +42,7 @@ func (c *rconPty) Run(cm *exec.Cmd) error {
 	// So here I'm going to take the cm.Path and pass it to the
 	// ConPTYStart directly
 	cpty, err := ConPTYStart(cm.Path)
+
 	if err != nil {
 		log.Fatalf("Failed to spawn a pty:  %v", err)
 	}
