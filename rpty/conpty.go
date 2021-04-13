@@ -77,6 +77,8 @@ type ConPty struct {
 
 	mu     sync.Mutex
 	closed bool
+
+	ready bool
 }
 
 func win32ClosePseudoConsole(hPc HPCON) {
@@ -263,6 +265,8 @@ func ConPTYStart(commandLine string) (*ConPty, error) {
 		ptyOut: &handleIO{ptyOut},
 		cmdIn:  &handleIO{cmdIn},
 		cmdOut: &handleIO{cmdOut},
+
+		closed: false,
 	}
 
 	go func() {

@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"os/exec"
+	"time"
 )
 
 func newPty() (Pty, error) {
@@ -25,7 +26,29 @@ func newConPty(cols int16, rows int16) (*rconPty, error) {
 }
 
 func (c *rconPty) Resize(cols uint16, rows uint16) error {
-	// TODO
+	// Very VERY hackish, but works
+	// The problem here is that I could not have a cpty (ConPty)
+	// ready when this function is called.
+	// The cpty will not become ready until the Run function is called
+	// There should be a better way to handle this one but I'm not
+	// expert with windows API and I'm still trying to hack the conpty
+	// library
+	go func() {
+		t := 3
+		for {
+			if c.cpty == nil {
+				time.Sleep(1 * time.Second)
+				t--
+				if t == 0 {
+					break
+				}
+			}
+			win32ResizePseudoConsole(c.cpty.hpc, &COORD{
+				X: int16(cols),
+				Y: int16(rows),
+			})
+		}
+	}()
 	return nil
 }
 
@@ -38,7 +61,7 @@ func (c *rconPty) Run(cm *exec.Cmd) error {
 	// The Pty on windows is handled from
 	// the conpty library. The subprocess it not
 	// created directly using the os/exec go library
-	// but using the windows.CreateProcess function instead
+	// but using the windows.CreateProcess syscall instead
 	// So here I'm going to take the cm.Path and pass it to the
 	// ConPTYStart directly
 	cpty, err := ConPTYStart(cm.Path)
