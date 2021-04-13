@@ -13,6 +13,7 @@ type sshUrl struct {
 	Port     int
 }
 
+// ParseSSHUrl build an sshUrl object from an url string
 func ParseSSHUrl(url string) *sshUrl {
 	parts := strings.Split(url, "@")
 

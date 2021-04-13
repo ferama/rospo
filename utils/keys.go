@@ -12,6 +12,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// GeneratePrivateKey generate an rsa key (actually used from the sshd server)
 func GeneratePrivateKey(keyPath *string) {
 	bitSize := 4096
 	privateKey, err := rsa.GenerateKey(rand.Reader, bitSize)
@@ -45,6 +46,8 @@ func GeneratePrivateKey(keyPath *string) {
 	log.Printf("Key saved to: %s", *keyPath)
 }
 
+// PublicKeyFile reads a public key file and loads the keys to
+// an ssh.PublicKeys object
 func PublicKeyFile(file string) ssh.AuthMethod {
 	buffer, err := ioutil.ReadFile(file)
 	if err != nil {
