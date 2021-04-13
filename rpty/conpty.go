@@ -13,6 +13,7 @@ package rpty
 import (
 	"fmt"
 	"golang.org/x/sys/windows"
+	"sync"
 	"unsafe"
 )
 
@@ -73,6 +74,9 @@ type ConPty struct {
 	hpc                          HPCON
 	pi                           *windows.ProcessInformation
 	ptyIn, ptyOut, cmdIn, cmdOut *handleIO
+
+	mu     sync.Mutex
+	closed bool
 }
 
 func win32ClosePseudoConsole(hPc HPCON) {
@@ -186,6 +190,15 @@ func closeHandles(handles ...windows.Handle) {
 }
 
 func (cpty *ConPty) Close() uint32 {
+	// prevent panic from calling this method more then once
+	// from diffent places
+	cpty.mu.Lock()
+	defer cpty.mu.Unlock()
+	if cpty.closed {
+		return 0
+	}
+	cpty.closed = true
+
 	win32ClosePseudoConsole(cpty.hpc)
 	cpty.ptyIn.Close()
 	cpty.ptyOut.Close()

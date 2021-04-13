@@ -25,6 +25,7 @@ func newPty() (Pty, error) {
 
 type nixPty struct {
 	pty, tty *os.File
+	cmd      *exec.Cmd
 }
 
 func (p *nixPty) Resize(cols uint16, rows uint16) error {
@@ -35,12 +36,14 @@ func (p *nixPty) Resize(cols uint16, rows uint16) error {
 }
 
 func (p *nixPty) Close() error {
+	p.cmd.Process.Wait()
 	p.pty.Close()
 	p.tty.Close()
 	return nil
 }
 
 func (p *nixPty) Run(c *exec.Cmd) error {
+	p.cmd = c
 	c.Stdout = p.tty
 	c.Stdin = p.tty
 	c.Stderr = p.tty
