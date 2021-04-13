@@ -10,7 +10,11 @@ type Pty interface {
 	Resize(cols uint16, rows uint16) error
 	Close() error
 	Run(c *exec.Cmd) error
+
+	// reads from pty and write to io.Writeer
 	WriteTo(io.Writer) (int64, error)
+
+	// Reads from io.Reader and write to pty
 	ReadFrom(io.Reader) (int64, error)
 }
 
