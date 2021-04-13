@@ -43,6 +43,8 @@ func (p *nixPty) Close() error {
 }
 
 func (p *nixPty) Run(c *exec.Cmd) error {
+	defer p.tty.Close()
+
 	p.cmd = c
 	c.Stdout = p.tty
 	c.Stdin = p.tty
