@@ -15,12 +15,12 @@ import (
 )
 
 var (
-	DEFAULT_SHELL string = "sh"
+	defaultShell string = "sh"
 )
 
 func init() {
 	if runtime.GOOS == "windows" {
-		DEFAULT_SHELL = "c:\\windows\\system32\\windowspowershell\\v1.0\\powershell.exe"
+		defaultShell = "c:\\windows\\system32\\windowspowershell\\v1.0\\powershell.exe"
 	}
 }
 
@@ -34,7 +34,7 @@ func handleChannelSession(c ssh.NewChannel) {
 	var shell string
 	shell = os.Getenv("SHELL")
 	if shell == "" {
-		shell = DEFAULT_SHELL
+		shell = defaultShell
 	}
 
 	// allocate a terminal for this channel

@@ -1,4 +1,7 @@
 # Rospo
+[![Go Reference](https://pkg.go.dev/badge/github.com/ferama/rospo.svg)](https://pkg.go.dev/github.com/ferama/rospo)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ferama/rospo)](https://goreportcard.com/report/github.com/ferama/rospo)
+
 
 Rospo is a tool meant to create reliable ssh tunnels.
 It embeds an ssh server too if you want to reverse proxy a secured
@@ -46,7 +49,7 @@ Rospo tunnel are monitored and keeped up in the event of network issues.
 ## How to Install
 
 Rospo actually only full supports *nix oses.
-A windows version is being evalued
+A windows version is being developed
 
 #### Linux amd64
 ```

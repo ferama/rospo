@@ -13,6 +13,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// SshServer instance
 type SshServer struct {
 	client            *ssh.ServerConn
 	hostPrivateKey    ssh.Signer
@@ -24,6 +25,7 @@ type SshServer struct {
 	forwardsKeepAliveInterval time.Duration
 }
 
+// NewSshServer builds an SshServer object
 func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *SshServer {
 	hostPrivateKey, err := ioutil.ReadFile(*identity)
 	if err != nil {
@@ -97,6 +99,8 @@ func (s *SshServer) keyAuth(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.P
 	return nil, fmt.Errorf("unknown public key for %q", conn.User())
 }
 
+// Start the sshServer actually listening for incoming connections
+// and handling requests and ssh channels
 func (s *SshServer) Start() {
 	config := ssh.ServerConfig{
 		// one try only. I'm supporting public key auth only.

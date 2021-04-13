@@ -14,6 +14,7 @@ import (
 	"golang.org/x/crypto/ssh/knownhosts"
 )
 
+// Tunnel object
 type Tunnel struct {
 	// indicates if it is a forward or reverse tunnel
 	forward bool
@@ -39,6 +40,7 @@ type Tunnel struct {
 	listener net.Listener
 }
 
+// NewTunnel builds a Tunnel object
 func NewTunnel(
 	username string,
 	identity string,
@@ -68,6 +70,7 @@ func NewTunnel(
 	return tunnel
 }
 
+// Start activates the tunnel connections
 func (t *Tunnel) Start() {
 
 	for {
