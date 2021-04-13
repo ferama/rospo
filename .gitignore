@@ -1,4 +1,4 @@
 bin
-id_rsa
+server_key
 authorized_keys
 .DS_Store

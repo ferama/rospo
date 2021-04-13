@@ -11,7 +11,7 @@ func init() {
 
 	sshdCmd.Flags().StringP("sshd-authorized-keys", "K", "./authorized_keys", "ssh server authorized keys path")
 	sshdCmd.Flags().StringP("sshd-port", "P", "2222", "the ssh server tcp port")
-	sshdCmd.Flags().StringP("sshd-identity", "I", "./id_rsa", "the ssh server key path")
+	sshdCmd.Flags().StringP("sshd-identity", "I", "./server_key", "the ssh server key path")
 }
 
 var sshdCmd = &cobra.Command{

@@ -14,7 +14,7 @@ func init() {
 	tunReverseCmd.Flags().BoolP("start-sshd", "S", false, "optional start the embedded sshd")
 	tunReverseCmd.Flags().StringP("sshd-authorized-keys", "K", "./authorized_keys", "ssh server authorized keys path")
 	tunReverseCmd.Flags().StringP("sshd-port", "P", "2222", "the ssh server tcp port")
-	tunReverseCmd.Flags().StringP("sshd-identity", "I", "./id_rsa", "the ssh server key path")
+	tunReverseCmd.Flags().StringP("sshd-identity", "I", "./server_key", "the ssh server key path")
 }
 
 var tunReverseCmd = &cobra.Command{
