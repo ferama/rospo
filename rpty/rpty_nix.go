@@ -17,30 +17,30 @@ func newPty() (Pty, error) {
 		return nil, err
 	}
 
-	return &unixPty{
+	return &nixPty{
 		pty: pty,
 		tty: tty,
 	}, nil
 }
 
-type unixPty struct {
+type nixPty struct {
 	pty, tty *os.File
 }
 
-func (p *unixPty) Resize(cols uint16, rows uint16) error {
+func (p *nixPty) Resize(cols uint16, rows uint16) error {
 	return pty.Setsize(p.tty, &pty.Winsize{
 		Rows: rows,
 		Cols: cols,
 	})
 }
 
-func (p *unixPty) Close() error {
+func (p *nixPty) Close() error {
 	p.pty.Close()
 	p.tty.Close()
 	return nil
 }
 
-func (p *unixPty) Run(c *exec.Cmd) error {
+func (p *nixPty) Run(c *exec.Cmd) error {
 	c.Stdout = p.tty
 	c.Stdin = p.tty
 	c.Stderr = p.tty
@@ -52,10 +52,10 @@ func (p *unixPty) Run(c *exec.Cmd) error {
 	return c.Start()
 }
 
-func (p *unixPty) WriteTo(dest io.Writer) (int64, error) {
+func (p *nixPty) WriteTo(dest io.Writer) (int64, error) {
 	return io.Copy(dest, p.pty)
 }
 
-func (p *unixPty) ReadFrom(src io.Reader) (int64, error) {
+func (p *nixPty) ReadFrom(src io.Reader) (int64, error) {
 	return io.Copy(p.pty, src)
 }

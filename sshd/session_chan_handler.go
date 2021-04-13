@@ -7,11 +7,22 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"runtime"
 	"sync"
 
 	"github.com/ferama/rospo/rpty"
 	"golang.org/x/crypto/ssh"
 )
+
+var (
+	DEFAULT_SHELL string = "sh"
+)
+
+func init() {
+	if runtime.GOOS == "windows" {
+		DEFAULT_SHELL = "c:\\windows\\system32\\windowspowershell\\v1.0\\powershell.exe"
+	}
+}
 
 func handleChannelSession(c ssh.NewChannel) {
 	channel, requests, err := c.Accept()

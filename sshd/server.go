@@ -13,10 +13,6 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-var (
-	DEFAULT_SHELL string = "sh"
-)
-
 type SshServer struct {
 	client            *ssh.ServerConn
 	hostPrivateKey    ssh.Signer
