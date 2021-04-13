@@ -47,6 +47,7 @@ func (c *rconPty) Resize(cols uint16, rows uint16) error {
 				X: int16(cols),
 				Y: int16(rows),
 			})
+			break
 		}
 	}()
 	return nil
