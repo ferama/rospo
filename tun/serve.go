@@ -11,7 +11,6 @@ func serveClient(client net.Conn, remote net.Conn) {
 	close := func() {
 		client.Close()
 		remote.Close()
-		// log.Printf("session closed")
 	}
 
 	// Start remote -> local data transfer
