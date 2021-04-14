@@ -11,10 +11,10 @@ type Pty interface {
 	Close() error
 	Run(c *exec.Cmd) error
 
-	// reads from pty and write to io.Writeer
+	// reads from pty and writes to io.Writeer
 	WriteTo(io.Writer) (int64, error)
 
-	// Reads from io.Reader and write to pty
+	// Reads from io.Reader and writes to pty
 	ReadFrom(io.Reader) (int64, error)
 }
 
