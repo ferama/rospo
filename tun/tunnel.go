@@ -38,7 +38,7 @@ type Tunnel struct {
 	keepAliveInterval    time.Duration
 	reconnectionInterval time.Duration
 
-	// the tunnell connection listener
+	// the tunnel connection listener
 	listener net.Listener
 }
 
@@ -111,52 +111,66 @@ func (t *Tunnel) connectToServer() error {
 	log.Println("[TUN] trying to connect to remote server...")
 
 	if t.jumpHost != "" {
-		jhostParsed := utils.ParseSSHUrl(t.jumpHost)
-		proxyConfig := &ssh.ClientConfig{
-			// SSH connection username
-			User: jhostParsed.Username,
-			Auth: []ssh.AuthMethod{
-				utils.PublicKeyFile(t.identity),
-				// ssh.Password("your_password_here"),
-			},
-			HostKeyCallback: t.verifyHostCallback(),
-		}
-		jumpHostService := fmt.Sprintf("%s:%d", jhostParsed.Host, jhostParsed.Port)
-		proxyClient, err := ssh.Dial("tcp", jumpHostService, proxyConfig)
+		client, err := t.jumpHostConnect(sshConfig)
 		if err != nil {
 			return err
 		}
-		log.Println("[TUN] reached the jump host")
-
-		log.Printf("[TUN] connecting to %s", t.serverEndpoint.String())
-		conn, err := proxyClient.Dial("tcp", t.serverEndpoint.String())
-		if err != nil {
-			return err
-		}
-		log.Println("[TUN] connected to remote server")
-
-		ncc, chans, reqs, err := ssh.NewClientConn(conn, t.serverEndpoint.String(), sshConfig)
-		if err != nil {
-			return err
-		}
-
-		client := ssh.NewClient(ncc, chans, reqs)
 		t.client = client
 
 	} else {
-		// Connect to SSH remote server using serverEndpoint
-		log.Printf("[TUN] connecting to %s", t.serverEndpoint.String())
-		client, err := ssh.Dial("tcp", t.serverEndpoint.String(), sshConfig)
+		client, err := t.directConnect(sshConfig)
 		if err != nil {
-			log.Printf("[TUN] dial INTO remote server error. %s", err)
 			return err
 		}
-		log.Println("[TUN] connected to remote server.")
-
 		t.client = client
 	}
 
 	return nil
+}
+func (t *Tunnel) jumpHostConnect(sshConfig *ssh.ClientConfig) (*ssh.Client, error) {
+	jhostParsed := utils.ParseSSHUrl(t.jumpHost)
+	proxyConfig := &ssh.ClientConfig{
+		// SSH connection username
+		User: jhostParsed.Username,
+		Auth: []ssh.AuthMethod{
+			utils.PublicKeyFile(t.identity),
+			// ssh.Password("your_password_here"),
+		},
+		HostKeyCallback: t.verifyHostCallback(),
+	}
+
+	jumpHostService := fmt.Sprintf("%s:%d", jhostParsed.Host, jhostParsed.Port)
+	proxyClient, err := ssh.Dial("tcp", jumpHostService, proxyConfig)
+	if err != nil {
+		return nil, err
+	}
+	log.Println("[TUN] reached the jump host")
+
+	log.Printf("[TUN] connecting to %s", t.serverEndpoint.String())
+	conn, err := proxyClient.Dial("tcp", t.serverEndpoint.String())
+	if err != nil {
+		return nil, err
+	}
+	log.Println("[TUN] connected to remote server")
+
+	ncc, chans, reqs, err := ssh.NewClientConn(conn, t.serverEndpoint.String(), sshConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	client := ssh.NewClient(ncc, chans, reqs)
+	return client, nil
+}
+
+func (t *Tunnel) directConnect(sshConfig *ssh.ClientConfig) (*ssh.Client, error) {
+	log.Printf("[TUN] connecting to %s", t.serverEndpoint.String())
+	client, err := ssh.Dial("tcp", t.serverEndpoint.String(), sshConfig)
+	if err != nil {
+		log.Printf("[TUN] dial INTO remote server error. %s", err)
+		return nil, err
+	}
+	log.Println("[TUN] connected to remote server.")
+	return client, nil
 }
 
 func (t *Tunnel) listenLocal() {
