@@ -1,9 +1,11 @@
 package tun
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"os/user"
 	"path/filepath"
 	"time"
@@ -104,7 +106,6 @@ func (t *Tunnel) connectToServer() error {
 			utils.PublicKeyFile(t.identity),
 			// ssh.Password("your_password_here"),
 		},
-		// HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		HostKeyCallback: t.verifyHostCallback(),
 	}
 	log.Println("[TUN] trying to connect to remote server...")
@@ -118,7 +119,6 @@ func (t *Tunnel) connectToServer() error {
 				utils.PublicKeyFile(t.identity),
 				// ssh.Password("your_password_here"),
 			},
-			// HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 			HostKeyCallback: t.verifyHostCallback(),
 		}
 		jumpHostService := fmt.Sprintf("%s:%d", jhostParsed.Host, jhostParsed.Port)
@@ -148,7 +148,7 @@ func (t *Tunnel) connectToServer() error {
 		log.Printf("[TUN] connecting to %s", t.serverEndpoint.String())
 		client, err := ssh.Dial("tcp", t.serverEndpoint.String(), sshConfig)
 		if err != nil {
-			log.Println(fmt.Printf("[TUN] Dial INTO remote server error. %s\n", err))
+			log.Printf("[TUN] dial INTO remote server error. %s", err)
 			return err
 		}
 		log.Println("[TUN] connected to remote server.")
@@ -241,23 +241,42 @@ func (t *Tunnel) keepAlive() {
 func (t *Tunnel) verifyHostCallback() ssh.HostKeyCallback {
 
 	if t.insecure {
-		return func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+		return func(host string, remote net.Addr, key ssh.PublicKey) error {
 			return nil
 		}
 	}
+	return func(host string, remote net.Addr, key ssh.PublicKey) error {
+		var err error
+		usr, err := user.Current()
+		if err != nil {
+			log.Fatalf("[TUN] could not obtain user home directory :%v", err)
+		}
 
-	var err error
-	usr, err := user.Current()
-	if err != nil {
-		log.Fatalf("could not obtain user home directory :%v", err)
+		knownHostFile := filepath.Join(usr.HomeDir, ".ssh", "known_hosts")
+		log.Printf("[TUN] known_hosts file used: %s", knownHostFile)
+
+		clb, err := knownhosts.New(knownHostFile)
+		if err != nil {
+			log.Printf("[TUN] error while parsing 'known_hosts' file: %s: %v", knownHostFile, err)
+			f, fErr := os.OpenFile(knownHostFile, os.O_CREATE, 0600)
+			if fErr != nil {
+				log.Fatalf("[TUN] %s", fErr)
+			}
+			f.Close()
+			clb, err = knownhosts.New(knownHostFile)
+			if err != nil {
+				log.Fatalf("[TUN] %s", err)
+			}
+		}
+		var keyErr *knownhosts.KeyError
+		e := clb(host, remote, key)
+		if errors.As(e, &keyErr) && len(keyErr.Want) > 0 {
+			log.Printf("[TUN] ERROR: %v is not a key of %s, either a man in the middle attack or %s host pub key was changed.", key, host, host)
+			return e
+		} else if errors.As(e, &keyErr) && len(keyErr.Want) == 0 {
+			log.Printf("[TUN] WARNING: %s is not trusted, adding this key: \n\n%s\n\nto known_hosts file.", host, utils.SerializeKey(key))
+			return utils.AddHostKeyToKnownHosts(host, key)
+		}
+		return e
 	}
-
-	knownHostFile := filepath.Join(usr.HomeDir, ".ssh", "known_hosts")
-	log.Printf("[TUN] known_hosts file used: %s", knownHostFile)
-
-	clb, err := knownhosts.New(knownHostFile)
-	if err != nil {
-		log.Fatalf("error while parsing 'known_hosts' file: %s: %v", knownHostFile, err)
-	}
-	return clb
 }

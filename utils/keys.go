@@ -4,12 +4,17 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
+	"os/user"
+	"path/filepath"
 
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 )
 
 // GeneratePrivateKey generate an rsa key (actually used from the sshd server)
@@ -61,4 +66,32 @@ func PublicKeyFile(file string) ssh.AuthMethod {
 		return nil
 	}
 	return ssh.PublicKeys(key)
+}
+
+// AddHostKeyToKnownHosts updates user known_hosts file adding the host key
+func AddHostKeyToKnownHosts(host string, key ssh.PublicKey) error {
+	// add host key if host is not found in known_hosts, error object is return, if nil then connection proceeds,
+	// if not nil then connection stops.
+	var err error
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatalf("[TUN] could not obtain user home directory :%v", err)
+	}
+	knownHostFile := filepath.Join(usr.HomeDir, ".ssh", "known_hosts")
+
+	f, fErr := os.OpenFile(knownHostFile, os.O_APPEND|os.O_WRONLY, 0600)
+	if fErr != nil {
+		return fErr
+	}
+	defer f.Close()
+
+	knownHosts := knownhosts.Normalize(host)
+	out := fmt.Sprintf("%s\n", knownhosts.Line([]string{knownHosts}, key))
+	_, fileErr := f.WriteString(out)
+	return fileErr
+}
+
+// SerilizeKey converts an ssh.PublicKey to printable bas64 string
+func SerializeKey(k ssh.PublicKey) string {
+	return k.Type() + " " + base64.StdEncoding.EncodeToString(k.Marshal())
 }
