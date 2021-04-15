@@ -4,7 +4,7 @@ import (
 	"io"
 	"log"
 	"os/exec"
-	"time"
+	"sync"
 )
 
 func newPty() (Pty, error) {
@@ -17,38 +17,28 @@ func newPty() (Pty, error) {
 
 type rconPty struct {
 	cpty *ConPty
+
+	ready sync.WaitGroup
 }
 
 func newConPty(cols int16, rows int16) (*rconPty, error) {
 	c := &rconPty{}
-
+	c.ready.Add(1)
 	return c, nil
 }
 
 func (c *rconPty) Resize(cols uint16, rows uint16) error {
-	// Very VERY hackish, but works
-	// The problem here is that I could not have a cpty (ConPty)
-	// ready when this function is called.
-	// The cpty will not become ready until the Run function is called
-	// There should be a better way to handle this one but I'm not
-	// expert with windows API and I'm still trying to hack the conpty
-	// library
 	go func() {
-		t := 3
-		for {
-			if c.cpty == nil {
-				time.Sleep(1 * time.Second)
-				t--
-				if t == 0 {
-					break
-				}
-			}
-			win32ResizePseudoConsole(c.cpty.hpc, &COORD{
-				X: int16(cols),
-				Y: int16(rows),
-			})
-			break
-		}
+		// The problem here is that I could not have a cpty (ConPty)
+		// ready when this function is called.
+		// The cpty will not become ready until the Run function is called
+		// So I need to wait here in a non blocking goroutine for the pty
+		// to become ready
+		c.ready.Wait()
+		win32ResizePseudoConsole(c.cpty.hpc, &COORD{
+			X: int16(cols),
+			Y: int16(rows),
+		})
 	}()
 	return nil
 }
@@ -71,6 +61,7 @@ func (c *rconPty) Run(cm *exec.Cmd) error {
 		log.Fatalf("Failed to spawn a pty:  %v", err)
 	}
 	c.cpty = cpty
+	c.ready.Done()
 
 	return err
 }
