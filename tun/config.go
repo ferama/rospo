@@ -2,20 +2,20 @@ package tun
 
 // Config holds the tunnel config values
 type Config struct {
+	//// Client conf
 	Username string
 	Identity string
-
 	Server   string
-	Remote   string
-	Local    string
-	JumpHost string
-
-	// indicates if it is a forward or reverse tunnel
-	Forward bool
-
 	// it this value is true host keys are not checked
 	// against known_hosts file
 	Insecure bool
+	JumpHost string
+
+	//// Tunnel conf
+	Remote string
+	Local  string
+	// indicates if it is a forward or reverse tunnel
+	Forward bool
 }
 
 // Builds a server endpoint object from the Server string
