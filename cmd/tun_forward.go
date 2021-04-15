@@ -28,15 +28,17 @@ var tunForwardCmd = &cobra.Command{
 		insecure, _ := cmd.Flags().GetBool("insecure")
 		parsed := utils.ParseSSHUrl(args[0])
 
-		tun.NewTunnel(
-			parsed.Username,
-			identity,
-			tun.NewEndpoint(args[0]),
-			tun.NewEndpoint(remote),
-			tun.NewEndpoint(local),
-			jumpHost,
-			true,
-			insecure,
-		).Start()
+		config := &tun.Config{
+			Username: parsed.Username,
+			Identity: identity,
+			Server:   args[0],
+			Remote:   remote,
+			Local:    local,
+			JumpHost: jumpHost,
+			Forward:  true,
+			Insecure: insecure,
+		}
+
+		tun.NewTunnel(config).Start()
 	},
 }

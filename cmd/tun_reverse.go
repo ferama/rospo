@@ -51,15 +51,17 @@ var tunReverseCmd = &cobra.Command{
 			go s.Start()
 		}
 
-		tun.NewTunnel(
-			parsed.Username,
-			identity,
-			tun.NewEndpoint(args[0]),
-			tun.NewEndpoint(remote),
-			tun.NewEndpoint(local),
-			jumpHost,
-			false,
-			insecure,
-		).Start()
+		config := &tun.Config{
+			Username: parsed.Username,
+			Identity: identity,
+			Server:   args[0],
+			Remote:   remote,
+			Local:    local,
+			JumpHost: jumpHost,
+			Forward:  false,
+			Insecure: insecure,
+		}
+
+		tun.NewTunnel(config).Start()
 	},
 }
