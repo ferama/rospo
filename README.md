@@ -16,6 +16,7 @@ It's meant to make ssh tunnels fun, reliable and understendable again
     * [Linux (arm64)](#linux-arm64)
     * [Linux (arm)](#linux-arm)
     * [Mac Os (Apple silicon)](#mac-os)
+    * [Windows](#windows)
 3. [Usage](#usage)
 
 
@@ -48,8 +49,7 @@ Rospo tunnel are monitored and keeped up in the event of network issues.
 
 ## How to Install
 
-Rospo actually only full supports *nix oses.
-A windows version is being developed
+Rospo actually only full supports *nix oses and Windows 10
 
 #### Linux amd64
 ```
@@ -70,6 +70,15 @@ curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-linux-arm
 ```
 curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-darwin-arm64 --output rospo && chmod +x rospo
 ```
+
+#### Windows
+
+You will require Windows 10
+
+```
+(New-Object System.Net.WebClient).DownloadFile("https://github.com/ferama/rospo/releases/latest/download/rospo-windows-amd64.exe", "rospo.exe")
+```
+
 
 ## Usage
 Usage example:
