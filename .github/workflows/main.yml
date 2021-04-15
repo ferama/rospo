@@ -32,14 +32,6 @@ jobs:
         run: |
           ./build.sh
 
-      - name: "Build Changelog"
-        id: build_changelog
-        uses: mikepenz/release-changelog-builder-action@v1.7.2
-        with:
-          commitMode: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
       - uses: ncipollo/release-action@v1
         with:
           artifacts: "bin/*"
