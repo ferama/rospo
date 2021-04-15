@@ -43,26 +43,17 @@ type Tunnel struct {
 }
 
 // NewTunnel builds a Tunnel object
-func NewTunnel(
-	username string,
-	identity string,
-	serverEndpoint *Endpoint,
-	remoteEndpoint *Endpoint,
-	localEndpoint *Endpoint,
-	jumpHost string,
-	isForward bool,
-	insecure bool,
-) *Tunnel {
+func NewTunnel(conf *Config) *Tunnel {
 
 	tunnel := &Tunnel{
-		forward:        isForward,
-		insecure:       insecure,
-		jumpHost:       jumpHost,
-		username:       username,
-		identity:       identity,
-		serverEndpoint: serverEndpoint,
-		remoteEndpoint: remoteEndpoint,
-		localEndpoint:  localEndpoint,
+		forward:        conf.Forward,
+		insecure:       conf.Insecure,
+		jumpHost:       conf.JumpHost,
+		username:       conf.Username,
+		identity:       conf.Identity,
+		serverEndpoint: conf.GetServerEndpoint(),
+		remoteEndpoint: conf.GetRemotEndpoint(),
+		localEndpoint:  conf.GetLocalEndpoint(),
 
 		stopKeepAlive:        make(chan bool),
 		keepAliveInterval:    5 * time.Second,
