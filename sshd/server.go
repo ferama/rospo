@@ -13,8 +13,8 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// SshServer instance
-type SshServer struct {
+// sshServer instance
+type sshServer struct {
 	client            *ssh.ServerConn
 	hostPrivateKey    ssh.Signer
 	authorizedKeyFile *string
@@ -26,7 +26,7 @@ type SshServer struct {
 }
 
 // NewSshServer builds an SshServer object
-func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *SshServer {
+func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *sshServer {
 	hostPrivateKey, err := ioutil.ReadFile(*identity)
 	if err != nil {
 		log.Println("[SSHD] server identity do not exists. Generating one...")
@@ -42,7 +42,7 @@ func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *Ss
 		panic(err)
 	}
 
-	ss := &SshServer{
+	ss := &sshServer{
 		authorizedKeyFile:         authorizedKeys,
 		hostPrivateKey:            hostPrivateKeySigner,
 		tcpPort:                   tcpPort,
@@ -57,7 +57,7 @@ func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *Ss
 	return ss
 }
 
-func (s *SshServer) loadAuthorizedKeys() map[string]bool {
+func (s *sshServer) loadAuthorizedKeys() map[string]bool {
 	// Public key authentication is done by comparing
 	// the public key of a received connection
 	// with the entries in the authorized_keys file.
@@ -83,7 +83,7 @@ func (s *SshServer) loadAuthorizedKeys() map[string]bool {
 	return authorizedKeysMap
 }
 
-func (s *SshServer) keyAuth(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
+func (s *sshServer) keyAuth(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
 	log.Println("[SSHD] ", conn.RemoteAddr(), "authenticate with", pubKey.Type())
 
 	authorizedKeysMap := s.loadAuthorizedKeys()
@@ -101,7 +101,7 @@ func (s *SshServer) keyAuth(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.P
 
 // Start the sshServer actually listening for incoming connections
 // and handling requests and ssh channels
-func (s *SshServer) Start() {
+func (s *sshServer) Start() {
 	config := ssh.ServerConfig{
 		// one try only. I'm supporting public key auth only.
 		// If it fails, there is nothing more to try
@@ -146,7 +146,7 @@ func (s *SshServer) Start() {
 	}
 }
 
-func (s *SshServer) handleRequests(reqs <-chan *ssh.Request) {
+func (s *sshServer) handleRequests(reqs <-chan *ssh.Request) {
 	for req := range reqs {
 		switch req.Type {
 		case "tcpip-forward":
@@ -179,7 +179,7 @@ func (s *SshServer) handleRequests(reqs <-chan *ssh.Request) {
 			req.Reply(true, ssh.Marshal(replyPayload))
 			go handleTcpIpForwardSession(s.client, ln, laddr, lport)
 
-			go func(s *SshServer, addr string) {
+			go func(s *sshServer, addr string) {
 				ticker := time.NewTicker(s.forwardsKeepAliveInterval)
 
 				log.Println("[SSHD] starting check for forward availability")
@@ -229,7 +229,7 @@ func (s *SshServer) handleRequests(reqs <-chan *ssh.Request) {
 	}
 }
 
-func (s *SshServer) handleChannels(chans <-chan ssh.NewChannel) {
+func (s *sshServer) handleChannels(chans <-chan ssh.NewChannel) {
 	// Service the incoming Channel channel.
 	for newChannel := range chans {
 		t := newChannel.ChannelType()

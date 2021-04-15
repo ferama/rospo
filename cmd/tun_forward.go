@@ -39,6 +39,8 @@ var tunForwardCmd = &cobra.Command{
 			Insecure: insecure,
 		}
 
-		tun.NewTunnel(config).Start()
+		client := tun.NewSshClient(config)
+		go client.Start()
+		tun.NewTunnel(client, config).Start()
 	},
 }
