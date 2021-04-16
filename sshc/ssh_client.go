@@ -1,4 +1,4 @@
-package tun
+package sshc
 
 import (
 	"errors"
@@ -11,18 +11,20 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ferama/rospo/conf"
 	"github.com/ferama/rospo/utils"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
 )
 
-type sshClient struct {
+// SshClient implements an ssh client
+type SshClient struct {
 	username string
 	identity string
 
-	serverEndpoint *Endpoint
+	serverEndpoint *utils.Endpoint
 
-	client   *ssh.Client
+	Client   *ssh.Client
 	insecure bool
 	jumpHost string
 
@@ -30,14 +32,14 @@ type sshClient struct {
 	keepAliveInterval    time.Duration
 
 	// used to tell the tunnels if this sshClient
-	// is connected. Tunnels will wait on this waitGroup to
-	// know if the ssh client is connected or no
-	connected sync.WaitGroup
+	// is Connected. Tunnels will wait on this waitGroup to
+	// know if the ssh client is Connected or no
+	Connected sync.WaitGroup
 }
 
-// NewSshClient creates a new sshClient instance
-func NewSshClient(conf *Config) *sshClient {
-	c := &sshClient{
+// NewSshClient creates a new SshClient instance
+func NewSshClient(conf *conf.SshClientConf) *SshClient {
+	c := &SshClient{
 		username:       conf.Username,
 		identity:       conf.Identity,
 		serverEndpoint: conf.GetServerEndpoint(),
@@ -48,19 +50,19 @@ func NewSshClient(conf *Config) *sshClient {
 		reconnectionInterval: 5 * time.Second,
 	}
 	// client not connected on startup, so add 1 here
-	c.connected.Add(1)
+	c.Connected.Add(1)
 	return c
 }
 
 // Close closes the ssh client instance connection
-func (s *sshClient) Close() {
-	s.client.Close()
+func (s *SshClient) Close() {
+	s.Client.Close()
 }
 
 // Start connects the ssh client to the remote server
 // and keeps it connected sending keep alive packet
 // and reconnecting in the event of network failures
-func (s *sshClient) Start() {
+func (s *SshClient) Start() {
 	for {
 		if err := s.connect(); err != nil {
 			log.Printf("[TUN] error while connecting %s", err)
@@ -68,18 +70,18 @@ func (s *sshClient) Start() {
 			continue
 		}
 		// client connected. Free the wait group
-		s.connected.Done()
+		s.Connected.Done()
 		s.keepAlive()
 		s.Close()
-		s.connected.Add(1)
+		s.Connected.Add(1)
 	}
 }
 
-func (s *sshClient) keepAlive() {
+func (s *SshClient) keepAlive() {
 	log.Println("[TUN] starting client keep alive")
 	for {
 		// log.Println("[TUN] keep alive")
-		_, _, err := s.client.SendRequest("keepalive@rospo", true, nil)
+		_, _, err := s.Client.SendRequest("keepalive@rospo", true, nil)
 		if err != nil {
 			log.Printf("[TUN] error while sending keep alive %s", err)
 			return
@@ -87,7 +89,7 @@ func (s *sshClient) keepAlive() {
 		time.Sleep(s.keepAliveInterval)
 	}
 }
-func (s *sshClient) connect() error {
+func (s *SshClient) connect() error {
 	// refer to https://godoc.org/golang.org/x/crypto/ssh for other authentication types
 	sshConfig := &ssh.ClientConfig{
 		// SSH connection username
@@ -104,20 +106,20 @@ func (s *sshClient) connect() error {
 		if err != nil {
 			return err
 		}
-		s.client = client
+		s.Client = client
 
 	} else {
 		client, err := s.directConnect(sshConfig)
 		if err != nil {
 			return err
 		}
-		s.client = client
+		s.Client = client
 	}
 
 	return nil
 }
 
-func (s *sshClient) verifyHostCallback() ssh.HostKeyCallback {
+func (s *SshClient) verifyHostCallback() ssh.HostKeyCallback {
 
 	if s.insecure {
 		return func(host string, remote net.Addr, key ssh.PublicKey) error {
@@ -160,7 +162,7 @@ func (s *sshClient) verifyHostCallback() ssh.HostKeyCallback {
 	}
 }
 
-func (s *sshClient) jumpHostConnect(sshConfig *ssh.ClientConfig) (*ssh.Client, error) {
+func (s *SshClient) jumpHostConnect(sshConfig *ssh.ClientConfig) (*ssh.Client, error) {
 	jhostParsed := utils.ParseSSHUrl(s.jumpHost)
 	proxyConfig := &ssh.ClientConfig{
 		// SSH connection username
@@ -194,7 +196,7 @@ func (s *sshClient) jumpHostConnect(sshConfig *ssh.ClientConfig) (*ssh.Client, e
 	return client, nil
 }
 
-func (s *sshClient) directConnect(sshConfig *ssh.ClientConfig) (*ssh.Client, error) {
+func (s *SshClient) directConnect(sshConfig *ssh.ClientConfig) (*ssh.Client, error) {
 	log.Printf("[TUN] connecting to %s", s.serverEndpoint.String())
 	client, err := ssh.Dial("tcp", s.serverEndpoint.String(), sshConfig)
 	if err != nil {

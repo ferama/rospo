@@ -7,6 +7,10 @@ import (
 	"net"
 	"sync"
 	"time"
+
+	"github.com/ferama/rospo/conf"
+	"github.com/ferama/rospo/sshc"
+	"github.com/ferama/rospo/utils"
 )
 
 // Tunnel object
@@ -14,10 +18,10 @@ type Tunnel struct {
 	// indicates if it is a forward or reverse tunnel
 	forward bool
 
-	remoteEndpoint *Endpoint
-	localEndpoint  *Endpoint
+	remoteEndpoint *utils.Endpoint
+	localEndpoint  *utils.Endpoint
 
-	sshConn              *sshClient
+	sshConn              *sshc.SshClient
 	reconnectionInterval time.Duration
 
 	// the tunnel connection listener
@@ -25,7 +29,7 @@ type Tunnel struct {
 }
 
 // NewTunnel builds a Tunnel object
-func NewTunnel(sshConn *sshClient, conf *Config) *Tunnel {
+func NewTunnel(sshConn *sshc.SshClient, conf *conf.TunnnelConf) *Tunnel {
 
 	tunnel := &Tunnel{
 		forward:        conf.Forward,
@@ -42,7 +46,8 @@ func NewTunnel(sshConn *sshClient, conf *Config) *Tunnel {
 // Start activates the tunnel connections
 func (t *Tunnel) Start() {
 	for {
-		t.sshConn.connected.Wait()
+		// waits for the ssh client to be connected to the server
+		t.sshConn.Connected.Wait()
 
 		if t.forward {
 			t.listenLocal()
@@ -65,7 +70,7 @@ func (t *Tunnel) listenLocal() {
 	log.Printf("[TUN] forward connected. Local: %s <- Remote: %s\n", t.localEndpoint.String(), t.remoteEndpoint.String())
 	if t.sshConn != nil && listener != nil {
 		for {
-			remote, err := t.sshConn.client.Dial("tcp", t.remoteEndpoint.String())
+			remote, err := t.sshConn.Client.Dial("tcp", t.remoteEndpoint.String())
 			// Open a (local) connection to localEndpoint whose content will be forwarded so serverEndpoint
 			if err != nil {
 				log.Printf("[TUN] listen open port ON local server error. %s\n", err)
@@ -84,7 +89,7 @@ func (t *Tunnel) listenLocal() {
 
 func (t *Tunnel) listenRemote() {
 	// Listen on remote server port
-	listener, err := t.sshConn.client.Listen("tcp", t.remoteEndpoint.String())
+	listener, err := t.sshConn.Client.Listen("tcp", t.remoteEndpoint.String())
 	if err != nil {
 		log.Printf("[TUN] listen open port ON remote server error. %s\n", err)
 		return

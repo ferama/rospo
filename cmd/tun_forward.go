@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"github.com/ferama/rospo/conf"
+	"github.com/ferama/rospo/sshc"
 	"github.com/ferama/rospo/tun"
 	"github.com/ferama/rospo/utils"
 
@@ -28,19 +30,23 @@ var tunForwardCmd = &cobra.Command{
 		insecure, _ := cmd.Flags().GetBool("insecure")
 		parsed := utils.ParseSSHUrl(args[0])
 
-		config := &tun.Config{
-			Username: parsed.Username,
-			Identity: identity,
-			Server:   args[0],
-			Remote:   remote,
-			Local:    local,
-			JumpHost: jumpHost,
-			Forward:  true,
-			Insecure: insecure,
+		config := &conf.Config{
+			SshClient: &conf.SshClientConf{
+				Username: parsed.Username,
+				Identity: identity,
+				Server:   args[0],
+				JumpHost: jumpHost,
+				Insecure: insecure,
+			},
+			Tunnel: &conf.TunnnelConf{
+				Remote:  remote,
+				Local:   local,
+				Forward: true,
+			},
 		}
 
-		client := tun.NewSshClient(config)
+		client := sshc.NewSshClient(config.SshClient)
 		go client.Start()
-		tun.NewTunnel(client, config).Start()
+		tun.NewTunnel(client, config.Tunnel).Start()
 	},
 }

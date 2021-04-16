@@ -35,10 +35,10 @@ $ rospo run reverse -S external_ssh_server_here
 This command will run an embedded sshd server on your wsl instance and reverse proxy its port to the `external_ssh_server_here`
 
 The only assumption here is that you have access to `external_ssh_server_here` using ssh keys.
-The command will open a socket (on port 5555 by default) into `external_ssh_server_here` that you can use to log back to WSL using a standard ssh client with a command like:
+The command will open a socket (on port 2222 by default) into `external_ssh_server_here` that you can use to log back to WSL using a standard ssh client with a command like:
 
 ```
-$ ssh -p 5555 localhost
+$ ssh -p 2222 localhost
 ```
 
 But this is just an example. Rospo can do a lot more.
