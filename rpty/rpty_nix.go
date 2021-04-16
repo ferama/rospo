@@ -4,7 +4,6 @@ package rpty
 
 import (
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"syscall"
@@ -15,6 +14,7 @@ import (
 func newPty() (Pty, error) {
 	pty, tty, err := pty.Open()
 	if err != nil {
+		tty.Close()
 		return nil, err
 	}
 
@@ -37,12 +37,10 @@ func (p *nixPty) Resize(cols uint16, rows uint16) error {
 }
 
 func (p *nixPty) Close() error {
-	if _, err := p.cmd.Process.Wait(); err != nil {
-		log.Printf("[PTY] failed to exit process, killing. %s", err)
-		p.cmd.Process.Kill()
-	}
 	p.pty.Close()
 	p.tty.Close()
+	p.cmd.Process.Kill()
+	p.cmd.Process.Wait()
 	return nil
 }
 
@@ -55,7 +53,6 @@ func (p *nixPty) Run(c *exec.Cmd) error {
 	c.Stderr = p.tty
 	c.SysProcAttr = &syscall.SysProcAttr{
 		Setctty: true,
-		Noctty:  false,
 		Setsid:  true,
 	}
 	return c.Start()
