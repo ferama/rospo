@@ -4,6 +4,7 @@ package rpty
 
 import (
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"syscall"
@@ -36,7 +37,10 @@ func (p *nixPty) Resize(cols uint16, rows uint16) error {
 }
 
 func (p *nixPty) Close() error {
-	p.cmd.Process.Wait()
+	if _, err := p.cmd.Process.Wait(); err != nil {
+		log.Printf("[PTY] failed to exit process, killing. %s", err)
+		p.cmd.Process.Kill()
+	}
 	p.pty.Close()
 	p.tty.Close()
 	return nil

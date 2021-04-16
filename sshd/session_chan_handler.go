@@ -97,6 +97,7 @@ func handleChannelSession(c ssh.NewChannel) {
 					_, err := cmd.Process.Wait()
 					if err != nil {
 						log.Printf("[SSHD] failed to exit bash (%s)", err)
+						cmd.Process.Kill()
 					}
 					channel.Close()
 					log.Printf("[SSHD] session closed")
