@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/ferama/rospo/conf"
 	"github.com/ferama/rospo/sshd"
 
 	"github.com/spf13/cobra"
@@ -22,10 +23,12 @@ var sshdCmd = &cobra.Command{
 		sshdIdentity, _ := cmd.Flags().GetString("sshd-identity")
 		sshdAuthorizedKeys, _ := cmd.Flags().GetString("sshd-authorized-keys")
 		sshdPort, _ := cmd.Flags().GetString("sshd-port")
-		sshd.NewSshServer(
-			&sshdIdentity,
-			&sshdAuthorizedKeys,
-			&sshdPort,
-		).Start()
+
+		config := &conf.SshDConf{
+			Identity:          sshdIdentity,
+			AuthorizedKeyFile: sshdAuthorizedKeys,
+			Port:              sshdPort,
+		}
+		sshd.NewSshServer(config).Start()
 	},
 }

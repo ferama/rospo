@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"github.com/ferama/rospo/conf"
+	"github.com/ferama/rospo/sshc"
 	"github.com/ferama/rospo/sshd"
 	"github.com/ferama/rospo/tun"
 	"github.com/ferama/rospo/utils"
@@ -39,31 +41,36 @@ var tunReverseCmd = &cobra.Command{
 		insecure, _ := cmd.Flags().GetBool("insecure")
 		parsed := utils.ParseSSHUrl(args[0])
 
+		config := &conf.Config{
+			SshClient: &conf.SshClientConf{
+				Username: parsed.Username,
+				Identity: identity,
+				Server:   args[0],
+				JumpHost: jumpHost,
+				Insecure: insecure,
+			},
+			Tunnel: &conf.TunnnelConf{
+				Remote:  remote,
+				Local:   local,
+				Forward: false,
+			},
+		}
 		if startSshD {
 			sshdIdentity, _ := cmd.Flags().GetString("sshd-identity")
 			sshdAuthorizedKeys, _ := cmd.Flags().GetString("sshd-authorized-keys")
 			sshdPort, _ := cmd.Flags().GetString("sshd-port")
-			s := sshd.NewSshServer(
-				&sshdIdentity,
-				&sshdAuthorizedKeys,
-				&sshdPort,
-			)
+
+			config.SshD = &conf.SshDConf{
+				Identity:          sshdIdentity,
+				AuthorizedKeyFile: sshdAuthorizedKeys,
+				Port:              sshdPort,
+			}
+			s := sshd.NewSshServer(config.SshD)
 			go s.Start()
 		}
 
-		config := &tun.Config{
-			Username: parsed.Username,
-			Identity: identity,
-			Server:   args[0],
-			Remote:   remote,
-			Local:    local,
-			JumpHost: jumpHost,
-			Forward:  false,
-			Insecure: insecure,
-		}
-
-		client := tun.NewSshClient(config)
+		client := sshc.NewSshClient(config.SshClient)
 		go client.Start()
-		tun.NewTunnel(client, config).Start()
+		tun.NewTunnel(client, config.Tunnel).Start()
 	},
 }

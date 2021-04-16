@@ -1,9 +1,7 @@
-package tun
+package utils
 
 import (
 	"fmt"
-
-	"github.com/ferama/rospo/utils"
 )
 
 // Endpoint holds the tunnel endpoint details
@@ -14,7 +12,7 @@ type Endpoint struct {
 
 // NewEndpoint builds an Endpoint object
 func NewEndpoint(s string) *Endpoint {
-	parsed := utils.ParseSSHUrl(s)
+	parsed := ParseSSHUrl(s)
 	e := &Endpoint{
 		Host: parsed.Host,
 		Port: parsed.Port,

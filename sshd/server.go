@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ferama/rospo/conf"
 	"github.com/ferama/rospo/utils"
 
 	"golang.org/x/crypto/ssh"
@@ -26,12 +27,13 @@ type sshServer struct {
 }
 
 // NewSshServer builds an SshServer object
-func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *sshServer {
-	hostPrivateKey, err := ioutil.ReadFile(*identity)
+// func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *sshServer {
+func NewSshServer(conf *conf.SshDConf) *sshServer {
+	hostPrivateKey, err := ioutil.ReadFile(conf.Identity)
 	if err != nil {
 		log.Println("[SSHD] server identity do not exists. Generating one...")
-		utils.GeneratePrivateKey(identity)
-		hostPrivateKey, err = ioutil.ReadFile(*identity)
+		utils.GeneratePrivateKey(&conf.Identity)
+		hostPrivateKey, err = ioutil.ReadFile(conf.Identity)
 		if err != nil {
 			panic(err)
 		}
@@ -43,9 +45,9 @@ func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *ss
 	}
 
 	ss := &sshServer{
-		authorizedKeyFile:         authorizedKeys,
+		authorizedKeyFile:         &conf.AuthorizedKeyFile,
 		hostPrivateKey:            hostPrivateKeySigner,
-		tcpPort:                   tcpPort,
+		tcpPort:                   &conf.Port,
 		forwards:                  make(map[string]net.Listener),
 		forwardsKeepAliveInterval: 5 * time.Second,
 	}
