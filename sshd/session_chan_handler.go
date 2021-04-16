@@ -155,7 +155,7 @@ func sessionClientServe(channel ssh.Channel, pty rpty.Pty, cmd *exec.Cmd) {
 	close := func() {
 		channel.Close()
 		pty.Close()
-		log.Printf("[SSHD] session closed")
+		log.Printf("[SSHD] client session closed")
 	}
 
 	// Pipe session to shell and vice-versa
