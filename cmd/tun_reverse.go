@@ -46,7 +46,12 @@ var tunReverseCmd = &cobra.Command{
 				Username: parsed.Username,
 				Identity: identity,
 				Server:   args[0],
-				JumpHost: jumpHost,
+				JumpHosts: []conf.JumpHostConf{
+					{
+						URI:      jumpHost,
+						Identity: identity,
+					},
+				},
 				Insecure: insecure,
 			},
 			Tunnel: &conf.TunnnelConf{

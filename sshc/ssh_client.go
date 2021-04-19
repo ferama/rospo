@@ -2,7 +2,6 @@ package sshc
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -24,9 +23,9 @@ type SshClient struct {
 
 	serverEndpoint *utils.Endpoint
 
-	Client   *ssh.Client
-	insecure bool
-	jumpHost string
+	Client    *ssh.Client
+	insecure  bool
+	jumpHosts []conf.JumpHostConf
 
 	reconnectionInterval time.Duration
 	keepAliveInterval    time.Duration
@@ -44,7 +43,7 @@ func NewSshClient(conf *conf.SshClientConf) *SshClient {
 		identity:       conf.Identity,
 		serverEndpoint: conf.GetServerEndpoint(),
 		insecure:       conf.Insecure,
-		jumpHost:       conf.JumpHost,
+		jumpHosts:      conf.JumpHosts,
 
 		keepAliveInterval:    5 * time.Second,
 		reconnectionInterval: 5 * time.Second,
@@ -101,15 +100,15 @@ func (s *SshClient) connect() error {
 	}
 	log.Println("[TUN] trying to connect to remote server...")
 
-	if s.jumpHost != "" {
-		client, err := s.jumpHostConnect(sshConfig)
+	if len(s.jumpHosts) != 0 {
+		client, err := s.jumpHostConnect(s.serverEndpoint, sshConfig)
 		if err != nil {
 			return err
 		}
 		s.Client = client
 
 	} else {
-		client, err := s.directConnect(sshConfig)
+		client, err := s.directConnect(s.serverEndpoint, sshConfig)
 		if err != nil {
 			return err
 		}
@@ -162,32 +161,39 @@ func (s *SshClient) verifyHostCallback() ssh.HostKeyCallback {
 	}
 }
 
-func (s *SshClient) jumpHostConnect(sshConfig *ssh.ClientConfig) (*ssh.Client, error) {
-	jhostParsed := utils.ParseSSHUrl(s.jumpHost)
+func (s *SshClient) jumpHostConnect(
+	server *utils.Endpoint,
+	sshConfig *ssh.ClientConfig,
+) (*ssh.Client, error) {
+
+	jhost := s.jumpHosts[0]
+	jhostParsed := utils.ParseSSHUrl(jhost.URI)
 	proxyConfig := &ssh.ClientConfig{
 		// SSH connection username
 		User: jhostParsed.Username,
 		Auth: []ssh.AuthMethod{
-			utils.PublicKeyFile(s.identity),
+			utils.PublicKeyFile(jhost.Identity),
 		},
 		HostKeyCallback: s.verifyHostCallback(),
 	}
 
-	jumpHostService := fmt.Sprintf("%s:%d", jhostParsed.Host, jhostParsed.Port)
-	proxyClient, err := ssh.Dial("tcp", jumpHostService, proxyConfig)
+	proxyClient, err := s.directConnect(&utils.Endpoint{
+		Host: jhostParsed.Host,
+		Port: jhostParsed.Port,
+	}, proxyConfig)
 	if err != nil {
 		return nil, err
 	}
 	log.Println("[TUN] reached the jump host")
 
-	log.Printf("[TUN] connecting to %s", s.serverEndpoint.String())
-	conn, err := proxyClient.Dial("tcp", s.serverEndpoint.String())
+	log.Printf("[TUN] connecting to %s", server.String())
+	conn, err := proxyClient.Dial("tcp", server.String())
 	if err != nil {
 		return nil, err
 	}
 	log.Println("[TUN] connected to remote server")
 
-	ncc, chans, reqs, err := ssh.NewClientConn(conn, s.serverEndpoint.String(), sshConfig)
+	ncc, chans, reqs, err := ssh.NewClientConn(conn, server.String(), sshConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -196,9 +202,13 @@ func (s *SshClient) jumpHostConnect(sshConfig *ssh.ClientConfig) (*ssh.Client, e
 	return client, nil
 }
 
-func (s *SshClient) directConnect(sshConfig *ssh.ClientConfig) (*ssh.Client, error) {
-	log.Printf("[TUN] connecting to %s", s.serverEndpoint.String())
-	client, err := ssh.Dial("tcp", s.serverEndpoint.String(), sshConfig)
+func (s *SshClient) directConnect(
+	server *utils.Endpoint,
+	sshConfig *ssh.ClientConfig,
+) (*ssh.Client, error) {
+
+	log.Printf("[TUN] connecting to %s", server.String())
+	client, err := ssh.Dial("tcp", server.String(), sshConfig)
 	if err != nil {
 		log.Printf("[TUN] dial INTO remote server error. %s", err)
 		return nil, err
