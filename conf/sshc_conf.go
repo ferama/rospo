@@ -2,6 +2,12 @@ package conf
 
 import "github.com/ferama/rospo/utils"
 
+type JumpHostConf struct {
+	// user@server:port
+	URI      string
+	Identity string
+}
+
 // SshClientConf holds the ssh client configuration
 type SshClientConf struct {
 	Username string
@@ -9,8 +15,8 @@ type SshClientConf struct {
 	Server   string
 	// it this value is true host keys are not checked
 	// against known_hosts file
-	Insecure bool
-	JumpHost string
+	Insecure  bool
+	JumpHosts []JumpHostConf
 }
 
 // Builds a server endpoint object from the Server string
