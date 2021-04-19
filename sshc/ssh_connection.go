@@ -16,29 +16,29 @@ import (
 	"golang.org/x/crypto/ssh/knownhosts"
 )
 
-// SshClient implements an ssh client
-type SshClient struct {
+// SshConnection implements an ssh client
+type SshConnection struct {
 	username string
 	identity string
 
 	serverEndpoint *utils.Endpoint
 
-	Client    *ssh.Client
 	insecure  bool
 	jumpHosts []conf.JumpHostConf
 
 	reconnectionInterval time.Duration
 	keepAliveInterval    time.Duration
 
+	Client *ssh.Client
 	// used to tell the tunnels if this sshClient
 	// is Connected. Tunnels will wait on this waitGroup to
 	// know if the ssh client is Connected or no
 	Connected sync.WaitGroup
 }
 
-// NewSshClient creates a new SshClient instance
-func NewSshClient(conf *conf.SshClientConf) *SshClient {
-	c := &SshClient{
+// NewSshConnection creates a new SshConnection instance
+func NewSshConnection(conf *conf.SshClientConf) *SshConnection {
+	c := &SshConnection{
 		username:       conf.Username,
 		identity:       conf.Identity,
 		serverEndpoint: conf.GetServerEndpoint(),
@@ -53,15 +53,15 @@ func NewSshClient(conf *conf.SshClientConf) *SshClient {
 	return c
 }
 
-// Close closes the ssh client instance connection
-func (s *SshClient) Close() {
+// Close closes the ssh conn instance client connection
+func (s *SshConnection) Close() {
 	s.Client.Close()
 }
 
 // Start connects the ssh client to the remote server
 // and keeps it connected sending keep alive packet
 // and reconnecting in the event of network failures
-func (s *SshClient) Start() {
+func (s *SshConnection) Start() {
 	for {
 		if err := s.connect(); err != nil {
 			log.Printf("[TUN] error while connecting %s", err)
@@ -76,7 +76,7 @@ func (s *SshClient) Start() {
 	}
 }
 
-func (s *SshClient) keepAlive() {
+func (s *SshConnection) keepAlive() {
 	log.Println("[TUN] starting client keep alive")
 	for {
 		// log.Println("[TUN] keep alive")
@@ -88,7 +88,7 @@ func (s *SshClient) keepAlive() {
 		time.Sleep(s.keepAliveInterval)
 	}
 }
-func (s *SshClient) connect() error {
+func (s *SshConnection) connect() error {
 	// refer to https://godoc.org/golang.org/x/crypto/ssh for other authentication types
 	sshConfig := &ssh.ClientConfig{
 		// SSH connection username
@@ -118,7 +118,7 @@ func (s *SshClient) connect() error {
 	return nil
 }
 
-func (s *SshClient) verifyHostCallback() ssh.HostKeyCallback {
+func (s *SshConnection) verifyHostCallback() ssh.HostKeyCallback {
 
 	if s.insecure {
 		return func(host string, remote net.Addr, key ssh.PublicKey) error {
@@ -161,7 +161,7 @@ func (s *SshClient) verifyHostCallback() ssh.HostKeyCallback {
 	}
 }
 
-func (s *SshClient) jumpHostConnect(
+func (s *SshConnection) jumpHostConnect(
 	server *utils.Endpoint,
 	sshConfig *ssh.ClientConfig,
 ) (*ssh.Client, error) {
@@ -202,7 +202,7 @@ func (s *SshClient) jumpHostConnect(
 	return client, nil
 }
 
-func (s *SshClient) directConnect(
+func (s *SshConnection) directConnect(
 	server *utils.Endpoint,
 	sshConfig *ssh.ClientConfig,
 ) (*ssh.Client, error) {
