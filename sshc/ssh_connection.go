@@ -166,39 +166,61 @@ func (s *SshConnection) jumpHostConnect(
 	sshConfig *ssh.ClientConfig,
 ) (*ssh.Client, error) {
 
-	jhost := s.jumpHosts[0]
-	jhostParsed := utils.ParseSSHUrl(jhost.URI)
-	proxyConfig := &ssh.ClientConfig{
-		// SSH connection username
-		User: jhostParsed.Username,
-		Auth: []ssh.AuthMethod{
-			utils.PublicKeyFile(jhost.Identity),
-		},
-		HostKeyCallback: s.verifyHostCallback(),
+	var (
+		jhClient *ssh.Client
+		jhConn   net.Conn
+		err      error
+	)
+
+	// traverse all the hops
+	for idx, jh := range s.jumpHosts {
+		parsed := utils.ParseSSHUrl(jh.URI)
+		hop := &utils.Endpoint{
+			Host: parsed.Host,
+			Port: parsed.Port,
+		}
+		config := &ssh.ClientConfig{
+			User: parsed.Username,
+			Auth: []ssh.AuthMethod{
+				utils.PublicKeyFile(jh.Identity),
+			},
+			HostKeyCallback: s.verifyHostCallback(),
+		}
+		log.Printf("[TUN] connecting to hop %s@%s", parsed.Username, hop.String())
+
+		// if it is the first hop, use ssh Dial to create the first client
+		if idx == 0 {
+			jhClient, err = ssh.Dial("tcp", hop.String(), config)
+			if err != nil {
+				log.Printf("[TUN] dial INTO remote server error. %s", err)
+				return nil, err
+			}
+		} else {
+			jhConn, err = jhClient.Dial("tcp", hop.String())
+			if err != nil {
+				return nil, err
+			}
+			ncc, chans, reqs, err := ssh.NewClientConn(jhConn, hop.String(), config)
+			if err != nil {
+				return nil, err
+			}
+			jhClient = ssh.NewClient(ncc, chans, reqs)
+		}
+		log.Printf("[TUN] reached the jump host %s@%s", parsed.Username, hop.String())
 	}
 
-	proxyClient, err := s.directConnect(&utils.Endpoint{
-		Host: jhostParsed.Host,
-		Port: jhostParsed.Port,
-	}, proxyConfig)
+	// now I'm ready to reach the final hop, the server
+	log.Printf("[TUN] connecting to %s@%s", sshConfig.User, server.String())
+	jhConn, err = jhClient.Dial("tcp", server.String())
 	if err != nil {
 		return nil, err
 	}
-	log.Println("[TUN] reached the jump host")
-
-	log.Printf("[TUN] connecting to %s", server.String())
-	conn, err := proxyClient.Dial("tcp", server.String())
+	ncc, chans, reqs, err := ssh.NewClientConn(jhConn, server.String(), sshConfig)
 	if err != nil {
 		return nil, err
 	}
-	log.Println("[TUN] connected to remote server")
-
-	ncc, chans, reqs, err := ssh.NewClientConn(conn, server.String(), sshConfig)
-	if err != nil {
-		return nil, err
-	}
-
 	client := ssh.NewClient(ncc, chans, reqs)
+
 	return client, nil
 }
 
