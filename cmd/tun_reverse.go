@@ -74,7 +74,7 @@ var tunReverseCmd = &cobra.Command{
 			go s.Start()
 		}
 
-		client := sshc.NewSshClient(config.SshClient)
+		client := sshc.NewSshConnection(config.SshClient)
 		go client.Start()
 		tun.NewTunnel(client, config.Tunnel).Start()
 	},

@@ -21,7 +21,7 @@ type Tunnel struct {
 	remoteEndpoint *utils.Endpoint
 	localEndpoint  *utils.Endpoint
 
-	sshConn              *sshc.SshClient
+	sshConn              *sshc.SshConnection
 	reconnectionInterval time.Duration
 
 	// the tunnel connection listener
@@ -29,7 +29,7 @@ type Tunnel struct {
 }
 
 // NewTunnel builds a Tunnel object
-func NewTunnel(sshConn *sshc.SshClient, conf *conf.TunnnelConf) *Tunnel {
+func NewTunnel(sshConn *sshc.SshConnection, conf *conf.TunnnelConf) *Tunnel {
 
 	tunnel := &Tunnel{
 		forward:        conf.Forward,

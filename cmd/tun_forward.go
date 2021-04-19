@@ -50,7 +50,7 @@ var tunForwardCmd = &cobra.Command{
 			},
 		}
 
-		client := sshc.NewSshClient(config.SshClient)
+		client := sshc.NewSshConnection(config.SshClient)
 		go client.Start()
 		tun.NewTunnel(client, config.Tunnel).Start()
 	},
