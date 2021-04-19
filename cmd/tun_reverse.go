@@ -76,6 +76,8 @@ var tunReverseCmd = &cobra.Command{
 
 		client := sshc.NewSshConnection(config.SshClient)
 		go client.Start()
+		// I can easily run multiple tunnels in their respective
+		// go routine here using the same client
 		tun.NewTunnel(client, config.Tunnel).Start()
 	},
 }
