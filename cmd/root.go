@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/ferama/rospo/conf"
@@ -12,13 +11,11 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:  "rospo",
+	Use:  "rospo config_file_path.yaml",
 	Long: "The tool to create relieable ssh tunnels.",
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		conf := conf.LoadConfig(args[0])
-		fmt.Printf("%+v\n", conf.SshD)
-
 		if conf.SshD != nil {
 			if conf.Tunnel != nil {
 				go sshd.NewSshServer(conf.SshD).Start()

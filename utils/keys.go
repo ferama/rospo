@@ -55,12 +55,16 @@ func GeneratePrivateKey(keyPath *string) {
 // PublicKeyFile reads a public key file and loads the keys to
 // an ssh.PublicKeys object
 func PublicKeyFile(file string) ssh.AuthMethod {
-	// supports paths like "~/.ssh/id_rsa"
 	usr, _ := user.Current()
-	dir := usr.HomeDir
 	path := file
+
+	// supports paths like "~/.ssh/id_rsa"
 	if strings.HasPrefix(file, "~/") {
-		path = filepath.Join(dir, file[2:])
+		path = filepath.Join(usr.HomeDir, file[2:])
+	}
+	// no path is set, try with a reasonable default
+	if path == "" {
+		path = filepath.Join(usr.HomeDir, ".ssh", "id_rsa")
 	}
 
 	buffer, err := ioutil.ReadFile(path)

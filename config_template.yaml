@@ -1,11 +1,20 @@
+# the ssh client configuration
 sshclient:
-  username: user
+  # private key path. Default to ~/.ssh/id_rsa
   identity: "~/.ssh/id_rsa"
-  server: 192.168.0.10
+  server: user@192.168.0.10:22
+  # if the check agains know_hosts is enabled or not
+  # default true
   insecure: false
+  # list of jump hosts hop to traverse
+  # comment the section for a direct connection
   jump_hosts:
     - uri: user@server:port
       identity: "~/.ssh/id_rsa"
+
+# tunnel configuration. Requires that the sshclient section
+# is configured too. We are going to use one ssh connection 
+# configured into the sshclient section to enable multiple tunnels
 tunnel:
   - remote: ":8000"
     local: ":8000"
@@ -14,6 +23,7 @@ tunnel:
     local: ":2222"
     forward: no
 
+# Comment this section to disable the embedded ssh server
 sshd:
   server_key: "./server_key"
   authorized_keys: "./authorized_keys"
