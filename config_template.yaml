@@ -1,0 +1,20 @@
+sshclient:
+  username: user
+  identity: "~/.ssh/id_rsa"
+  server: 192.168.0.10
+  insecure: false
+  jump_hosts:
+    - uri: user@server:port
+      identity: "~/.ssh/id_rsa"
+tunnel:
+  - remote: ":8000"
+    local: ":8000"
+    forward: yes
+  - remote: ":2222"
+    local: ":2222"
+    forward: no
+
+sshd:
+  server_key: "./server_key"
+  authorized_keys: "./authorized_keys"
+  port: "2222"

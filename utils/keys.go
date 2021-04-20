@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"strings"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
@@ -54,9 +55,17 @@ func GeneratePrivateKey(keyPath *string) {
 // PublicKeyFile reads a public key file and loads the keys to
 // an ssh.PublicKeys object
 func PublicKeyFile(file string) ssh.AuthMethod {
-	buffer, err := ioutil.ReadFile(file)
+	// supports paths like "~/.ssh/id_rsa"
+	usr, _ := user.Current()
+	dir := usr.HomeDir
+	path := file
+	if strings.HasPrefix(file, "~/") {
+		path = filepath.Join(dir, file[2:])
+	}
+
+	buffer, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Fatalln(fmt.Sprintf("Cannot read SSH public key file %s", file))
+		log.Fatalln(fmt.Sprintf("Cannot read SSH public key file %s", path))
 		return nil
 	}
 

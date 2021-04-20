@@ -2,3 +2,4 @@ bin
 server_key
 authorized_keys
 .DS_Store
+config.yaml

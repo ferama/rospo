@@ -5,10 +5,10 @@ import "github.com/ferama/rospo/utils"
 // TunnelConf is a struct that holds the tunnel configuration
 type TunnnelConf struct {
 	//// Tunnel conf
-	Remote string
-	Local  string
+	Remote string `yaml:"remote"`
+	Local  string `yaml:"local"`
 	// indicates if it is a forward or reverse tunnel
-	Forward bool
+	Forward bool `yaml:"forward"`
 }
 
 // Builds a remote endpoint object from the Remote string
