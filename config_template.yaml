@@ -5,7 +5,7 @@ sshclient:
   # REQUIRED: server url
   server: user@192.168.0.10:22
   # OPTIONAL: if the check against know_hosts is enabled or not
-  # default true
+  # default insecure false
   insecure: false
   # OPTIONAL: list of jump hosts hop to traverse
   # comment the section for a direct connection
