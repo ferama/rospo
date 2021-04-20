@@ -26,11 +26,11 @@ It's meant to make ssh tunnels fun, reliable and understendable again
 I wanted an easy to use and reliable ssh tunnel tool. The available alternatives don't fully satisfy me and don't support all the features I need (as the embedded sshd server for example, or an out of the box connection monitoring mechanism) so I wrote my own
 
 ### Example scenario: Windows WSL reverse shell
-Why use and embedded sshd server you might ask me. 
+Why use an embedded sshd server you might ask me. 
 You have a Windows WSL instance that you want to access remotely without complicated setups on firewalls and other hassles and annoyances. With **rospo** you can do it in ONE simple step:
 
 ```
-$ rospo run reverse -S external_ssh_server_here
+$ rospo run reverse -S remote_ssh_server
 ```
 
 This command will run an embedded sshd server on your wsl instance and reverse proxy its port to the `remote_ssh_server`
