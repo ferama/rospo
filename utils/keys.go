@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"strings"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
@@ -20,6 +19,7 @@ import (
 
 // GeneratePrivateKey generate an rsa key (actually used from the sshd server)
 func GeneratePrivateKey(keyPath *string) {
+	path, _ := ExpandUserHome(*keyPath)
 	bitSize := 4096
 	privateKey, err := rsa.GenerateKey(rand.Reader, bitSize)
 	if err != nil {
@@ -32,7 +32,7 @@ func GeneratePrivateKey(keyPath *string) {
 		log.Println(err)
 	}
 
-	log.Println("Private Key generated")
+	log.Println("private Key generated")
 
 	privDER := x509.MarshalPKCS1PrivateKey(privateKey)
 
@@ -45,23 +45,19 @@ func GeneratePrivateKey(keyPath *string) {
 
 	// Private key in PEM format
 	privatePEM := pem.EncodeToMemory(&privBlock)
-	if err := ioutil.WriteFile(*keyPath, privatePEM, 0600); err != nil {
+	if err := ioutil.WriteFile(path, privatePEM, 0600); err != nil {
 		log.Println(err)
 	}
 
-	log.Printf("Key saved to: %s", *keyPath)
+	log.Printf("key saved to: %s", path)
 }
 
 // PublicKeyFile reads a public key file and loads the keys to
 // an ssh.PublicKeys object
 func PublicKeyFile(file string) ssh.AuthMethod {
-	usr, _ := user.Current()
-	path := file
+	path, _ := ExpandUserHome(file)
 
-	// supports paths like "~/.ssh/id_rsa"
-	if strings.HasPrefix(file, "~/") {
-		path = filepath.Join(usr.HomeDir, file[2:])
-	}
+	usr, _ := user.Current()
 	// no path is set, try with a reasonable default
 	if path == "" {
 		path = filepath.Join(usr.HomeDir, ".ssh", "id_rsa")
@@ -69,13 +65,13 @@ func PublicKeyFile(file string) ssh.AuthMethod {
 
 	buffer, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Fatalln(fmt.Sprintf("Cannot read SSH public key file %s", path))
+		log.Fatalln(fmt.Sprintf("cannot read SSH public key file %s", path))
 		return nil
 	}
 
 	key, err := ssh.ParsePrivateKey(buffer)
 	if err != nil {
-		log.Fatalln(fmt.Sprintf("Cannot parse SSH public key file %s", file))
+		log.Fatalln(fmt.Sprintf("cannot parse SSH public key file %s", file))
 		return nil
 	}
 	return ssh.PublicKeys(key)
@@ -88,7 +84,7 @@ func AddHostKeyToKnownHosts(host string, key ssh.PublicKey) error {
 	var err error
 	usr, err := user.Current()
 	if err != nil {
-		log.Fatalf("[TUN] could not obtain user home directory :%v", err)
+		log.Fatalf("could not obtain user home directory :%v", err)
 	}
 	knownHostFile := filepath.Join(usr.HomeDir, ".ssh", "known_hosts")
 
