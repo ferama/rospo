@@ -4,7 +4,6 @@ import (
 	"github.com/ferama/rospo/conf"
 	"github.com/ferama/rospo/sshc"
 	"github.com/ferama/rospo/tun"
-	"github.com/ferama/rospo/utils"
 
 	"github.com/spf13/cobra"
 )
@@ -28,13 +27,11 @@ var tunForwardCmd = &cobra.Command{
 		jumpHost, _ := cmd.Flags().GetString("jump-host")
 		identity, _ := cmd.Flags().GetString("user-identity")
 		insecure, _ := cmd.Flags().GetBool("insecure")
-		parsed := utils.ParseSSHUrl(args[0])
 
 		config := &conf.Config{
 			SshClient: &conf.SshClientConf{
-				Username: parsed.Username,
-				Identity: identity,
-				Server:   args[0],
+				Identity:  identity,
+				ServerURI: args[0],
 				JumpHosts: []*conf.JumpHostConf{
 					{
 						URI:      jumpHost,

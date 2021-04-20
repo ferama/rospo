@@ -21,21 +21,14 @@ func LoadConfig(filePath string) *Config {
 	}
 	defer f.Close()
 
-	// usr, _ := user.Current()
-	// defaultIdentity := filepath.Join(usr.HomeDir, ".ssh", "id_rsa")
-
-	// cfg := Config{
-	// 	&SshClientConf{
-	// 		// Username: usr.Username,
-	// 		Identity: defaultIdentity,
-	// 		// Server:    "",
-	// 		// Insecure:  false,
-	// 		// JumpHosts: nil,
-	// 	},
-	// 	nil,
-	// 	nil,
-	// }
-	var cfg Config
+	// set some reasonable defaults
+	cfg := Config{
+		&SshClientConf{
+			Insecure: false,
+		},
+		nil,
+		nil,
+	}
 
 	decoder := yaml.NewDecoder(f)
 	err = decoder.Decode(&cfg)
