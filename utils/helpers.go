@@ -3,6 +3,7 @@ package utils
 import (
 	"log"
 	"os/user"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -49,4 +50,19 @@ func ParseSSHUrl(url string) *sshUrl {
 	}
 
 	return conf
+}
+
+// ExpandUserHome resolve paths like "~/.ssh/id_rsa"
+func ExpandUserHome(path string) (string, error) {
+	usr, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+	ret := path
+
+	// supports paths like "~/.ssh/id_rsa"
+	if strings.HasPrefix(path, "~/") {
+		ret = filepath.Join(usr.HomeDir, path[2:])
+	}
+	return ret, nil
 }

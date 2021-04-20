@@ -29,11 +29,12 @@ type sshServer struct {
 // NewSshServer builds an SshServer object
 // func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *sshServer {
 func NewSshServer(conf *conf.SshDConf) *sshServer {
-	hostPrivateKey, err := ioutil.ReadFile(conf.Key)
+	keyPath, _ := utils.ExpandUserHome(conf.Key)
+	hostPrivateKey, err := ioutil.ReadFile(keyPath)
 	if err != nil {
 		log.Println("[SSHD] server identity do not exists. Generating one...")
-		utils.GeneratePrivateKey(&conf.Key)
-		hostPrivateKey, err = ioutil.ReadFile(conf.Key)
+		utils.GeneratePrivateKey(&keyPath)
+		hostPrivateKey, err = ioutil.ReadFile(keyPath)
 		if err != nil {
 			panic(err)
 		}
@@ -63,9 +64,13 @@ func (s *sshServer) loadAuthorizedKeys() map[string]bool {
 	// Public key authentication is done by comparing
 	// the public key of a received connection
 	// with the entries in the authorized_keys file.
-	authorizedKeysBytes, err := ioutil.ReadFile(*s.authorizedKeyFile)
+	path, err := utils.ExpandUserHome(*s.authorizedKeyFile)
 	if err != nil {
-		log.Fatalf(`Failed to load authorized_keys, err: %v
+		log.Fatalln(err)
+	}
+	authorizedKeysBytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		log.Fatalf(`failed to load authorized_keys, err: %v
 
 	Please create ./authorized_keys file and fill in with 
 	your authorized users public keys
