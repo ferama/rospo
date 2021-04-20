@@ -65,7 +65,7 @@ func (s *SshConnection) Close() {
 func (s *SshConnection) Start() {
 	for {
 		if err := s.connect(); err != nil {
-			log.Printf("[TUN] error while connecting %s", err)
+			log.Printf("[SSHC] error while connecting %s", err)
 			time.Sleep(s.reconnectionInterval)
 			continue
 		}
@@ -78,12 +78,12 @@ func (s *SshConnection) Start() {
 }
 
 func (s *SshConnection) keepAlive() {
-	log.Println("[TUN] starting client keep alive")
+	log.Println("[SSHC] starting client keep alive")
 	for {
-		// log.Println("[TUN] keep alive")
+		// log.Println("[SSHC] keep alive")
 		_, _, err := s.Client.SendRequest("keepalive@rospo", true, nil)
 		if err != nil {
-			log.Printf("[TUN] error while sending keep alive %s", err)
+			log.Printf("[SSHC] error while sending keep alive %s", err)
 			return
 		}
 		time.Sleep(s.keepAliveInterval)
@@ -99,7 +99,7 @@ func (s *SshConnection) connect() error {
 		},
 		HostKeyCallback: s.verifyHostCallback(),
 	}
-	log.Println("[TUN] trying to connect to remote server...")
+	log.Println("[SSHC] trying to connect to remote server...")
 
 	if len(s.jumpHosts) != 0 {
 		client, err := s.jumpHostConnect(s.serverEndpoint, sshConfig)
@@ -130,32 +130,32 @@ func (s *SshConnection) verifyHostCallback() ssh.HostKeyCallback {
 		var err error
 		usr, err := user.Current()
 		if err != nil {
-			log.Fatalf("[TUN] could not obtain user home directory :%v", err)
+			log.Fatalf("[SSHC] could not obtain user home directory :%v", err)
 		}
 
 		knownHostFile := filepath.Join(usr.HomeDir, ".ssh", "known_hosts")
-		log.Printf("[TUN] known_hosts file used: %s", knownHostFile)
+		log.Printf("[SSHC] known_hosts file used: %s", knownHostFile)
 
 		clb, err := knownhosts.New(knownHostFile)
 		if err != nil {
-			log.Printf("[TUN] error while parsing 'known_hosts' file: %s: %v", knownHostFile, err)
+			log.Printf("[SSHC] error while parsing 'known_hosts' file: %s: %v", knownHostFile, err)
 			f, fErr := os.OpenFile(knownHostFile, os.O_CREATE, 0600)
 			if fErr != nil {
-				log.Fatalf("[TUN] %s", fErr)
+				log.Fatalf("[SSHC] %s", fErr)
 			}
 			f.Close()
 			clb, err = knownhosts.New(knownHostFile)
 			if err != nil {
-				log.Fatalf("[TUN] %s", err)
+				log.Fatalf("[SSHC] %s", err)
 			}
 		}
 		var keyErr *knownhosts.KeyError
 		e := clb(host, remote, key)
 		if errors.As(e, &keyErr) && len(keyErr.Want) > 0 {
-			log.Printf("[TUN] ERROR: %v is not a key of %s, either a man in the middle attack or %s host pub key was changed.", key, host, host)
+			log.Printf("[SSHC] ERROR: %v is not a key of %s, either a man in the middle attack or %s host pub key was changed.", key, host, host)
 			return e
 		} else if errors.As(e, &keyErr) && len(keyErr.Want) == 0 {
-			log.Printf("[TUN] WARNING: %s is not trusted, adding this key: \n\n%s\n\nto known_hosts file.", host, utils.SerializeKey(key))
+			log.Printf("[SSHC] WARNING: %s is not trusted, adding this key: \n\n%s\n\nto known_hosts file.", host, utils.SerializeKey(key))
 			return utils.AddHostKeyToKnownHosts(host, key)
 		}
 		return e
@@ -187,13 +187,13 @@ func (s *SshConnection) jumpHostConnect(
 			},
 			HostKeyCallback: s.verifyHostCallback(),
 		}
-		log.Printf("[TUN] connecting to hop %s@%s", parsed.Username, hop.String())
+		log.Printf("[SSHC] connecting to hop %s@%s", parsed.Username, hop.String())
 
 		// if it is the first hop, use ssh Dial to create the first client
 		if idx == 0 {
 			jhClient, err = ssh.Dial("tcp", hop.String(), config)
 			if err != nil {
-				log.Printf("[TUN] dial INTO remote server error. %s", err)
+				log.Printf("[SSHC] dial INTO remote server error. %s", err)
 				return nil, err
 			}
 		} else {
@@ -207,11 +207,11 @@ func (s *SshConnection) jumpHostConnect(
 			}
 			jhClient = ssh.NewClient(ncc, chans, reqs)
 		}
-		log.Printf("[TUN] reached the jump host %s@%s", parsed.Username, hop.String())
+		log.Printf("[SSHC] reached the jump host %s@%s", parsed.Username, hop.String())
 	}
 
 	// now I'm ready to reach the final hop, the server
-	log.Printf("[TUN] connecting to %s@%s", sshConfig.User, server.String())
+	log.Printf("[SSHC] connecting to %s@%s", sshConfig.User, server.String())
 	jhConn, err = jhClient.Dial("tcp", server.String())
 	if err != nil {
 		return nil, err
@@ -230,12 +230,12 @@ func (s *SshConnection) directConnect(
 	sshConfig *ssh.ClientConfig,
 ) (*ssh.Client, error) {
 
-	log.Printf("[TUN] connecting to %s", server.String())
+	log.Printf("[SSHC] connecting to %s", server.String())
 	client, err := ssh.Dial("tcp", server.String(), sshConfig)
 	if err != nil {
-		log.Printf("[TUN] dial INTO remote server error. %s", err)
+		log.Printf("[SSHC] dial INTO remote server error. %s", err)
 		return nil, err
 	}
-	log.Println("[TUN] connected to remote server.")
+	log.Println("[SSHC] connected to remote server.")
 	return client, nil
 }
