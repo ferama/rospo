@@ -33,10 +33,10 @@ You have a Windows WSL instance that you want to access remotely without complic
 $ rospo run reverse -S external_ssh_server_here
 ```
 
-This command will run an embedded sshd server on your wsl instance and reverse proxy its port to the `external_ssh_server_here`
+This command will run an embedded sshd server on your wsl instance and reverse proxy its port to the `remote_ssh_server`
 
-The only assumption here is that you have access to `external_ssh_server_here` using ssh keys.
-The command will open a socket (on port 2222 by default) into `external_ssh_server_here` that you can use to log back to WSL using a standard ssh client with a command like:
+The only assumption here is that you have access to `remote_ssh_server` using ssh keys.
+The command will open a socket (on port 2222 by default) into `remote_ssh_server` that you can use to log back to WSL using a standard ssh client with a command like:
 
 ```
 $ ssh -p 2222 localhost
@@ -75,7 +75,7 @@ What's happens here is that rospo will connect to `remote_server_address` throug
 
 1. open a socket on the local machine listening on port 8000 that forwards all the traffic to the service listening on port 8000 on the `remote_server_address` machine
 2. open a socket on the local machine listening on port 9999 that forwards all the traffic to the service listening on port 9999 on the `remote_server_address` machinev
-3. open a socket on the removte machine listening on port 5000 that forwards all the traffic from remote machine to a local service (on the local machine) listening on port 5000
+3. open a socket on the remote machine listening on port 5000 that forwards all the traffic from remote machine to a local service (on the local machine) listening on port 5000
 
 But these are just an examples. Rospo can do a lot more.
 
