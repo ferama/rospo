@@ -16,7 +16,7 @@ func init() {
 	tunReverseCmd.Flags().BoolP("start-sshd", "S", false, "optional start the embedded sshd")
 	tunReverseCmd.Flags().StringP("sshd-authorized-keys", "K", "./authorized_keys", "ssh server authorized keys path")
 	tunReverseCmd.Flags().StringP("sshd-port", "P", "2222", "the ssh server tcp port")
-	tunReverseCmd.Flags().StringP("sshd-identity", "I", "./server_key", "the ssh server key path")
+	tunReverseCmd.Flags().StringP("sshd-key", "I", "./server_key", "the ssh server key path")
 }
 
 var tunReverseCmd = &cobra.Command{
@@ -46,7 +46,7 @@ var tunReverseCmd = &cobra.Command{
 				Username: parsed.Username,
 				Identity: identity,
 				Server:   args[0],
-				JumpHosts: []conf.JumpHostConf{
+				JumpHosts: []*conf.JumpHostConf{
 					{
 						URI:      jumpHost,
 						Identity: identity,
@@ -54,21 +54,23 @@ var tunReverseCmd = &cobra.Command{
 				},
 				Insecure: insecure,
 			},
-			Tunnel: &conf.TunnnelConf{
-				Remote:  remote,
-				Local:   local,
-				Forward: false,
+			Tunnel: []*conf.TunnnelConf{
+				{
+					Remote:  remote,
+					Local:   local,
+					Forward: false,
+				},
 			},
 		}
 		if startSshD {
-			sshdIdentity, _ := cmd.Flags().GetString("sshd-identity")
+			sshdKey, _ := cmd.Flags().GetString("sshd-key")
 			sshdAuthorizedKeys, _ := cmd.Flags().GetString("sshd-authorized-keys")
 			sshdPort, _ := cmd.Flags().GetString("sshd-port")
 
 			config.SshD = &conf.SshDConf{
-				Identity:          sshdIdentity,
-				AuthorizedKeyFile: sshdAuthorizedKeys,
-				Port:              sshdPort,
+				Key:                sshdKey,
+				AuthorizedKeysFile: sshdAuthorizedKeys,
+				Port:               sshdPort,
 			}
 			s := sshd.NewSshServer(config.SshD)
 			go s.Start()
@@ -78,6 +80,6 @@ var tunReverseCmd = &cobra.Command{
 		go client.Start()
 		// I can easily run multiple tunnels in their respective
 		// go routine here using the same client
-		tun.NewTunnel(client, config.Tunnel).Start()
+		tun.NewTunnel(client, config.Tunnel[0]).Start()
 	},
 }

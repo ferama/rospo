@@ -24,7 +24,7 @@ type SshConnection struct {
 	serverEndpoint *utils.Endpoint
 
 	insecure  bool
-	jumpHosts []conf.JumpHostConf
+	jumpHosts []*conf.JumpHostConf
 
 	reconnectionInterval time.Duration
 	keepAliveInterval    time.Duration

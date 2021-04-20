@@ -29,11 +29,11 @@ type sshServer struct {
 // NewSshServer builds an SshServer object
 // func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *sshServer {
 func NewSshServer(conf *conf.SshDConf) *sshServer {
-	hostPrivateKey, err := ioutil.ReadFile(conf.Identity)
+	hostPrivateKey, err := ioutil.ReadFile(conf.Key)
 	if err != nil {
 		log.Println("[SSHD] server identity do not exists. Generating one...")
-		utils.GeneratePrivateKey(&conf.Identity)
-		hostPrivateKey, err = ioutil.ReadFile(conf.Identity)
+		utils.GeneratePrivateKey(&conf.Key)
+		hostPrivateKey, err = ioutil.ReadFile(conf.Key)
 		if err != nil {
 			panic(err)
 		}
@@ -45,7 +45,7 @@ func NewSshServer(conf *conf.SshDConf) *sshServer {
 	}
 
 	ss := &sshServer{
-		authorizedKeyFile:         &conf.AuthorizedKeyFile,
+		authorizedKeyFile:         &conf.AuthorizedKeysFile,
 		hostPrivateKey:            hostPrivateKeySigner,
 		tcpPort:                   &conf.Port,
 		forwards:                  make(map[string]net.Listener),
@@ -116,6 +116,9 @@ func (s *sshServer) Start() {
 		},
 	}
 	config.AddHostKey(s.hostPrivateKey)
+	if *s.tcpPort == "" {
+		log.Fatalf("[SSHD] listen port can't be empty")
+	}
 
 	socket, err := net.Listen("tcp", ":"+*s.tcpPort)
 	if err != nil {
