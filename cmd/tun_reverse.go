@@ -43,13 +43,8 @@ var tunReverseCmd = &cobra.Command{
 			SshClient: &conf.SshClientConf{
 				Identity:  identity,
 				ServerURI: args[0],
-				JumpHosts: []*conf.JumpHostConf{
-					{
-						URI:      jumpHost,
-						Identity: identity,
-					},
-				},
-				Insecure: insecure,
+				JumpHosts: make([]*conf.JumpHostConf, 0),
+				Insecure:  insecure,
 			},
 			Tunnel: []*conf.TunnnelConf{
 				{
@@ -59,6 +54,14 @@ var tunReverseCmd = &cobra.Command{
 				},
 			},
 		}
+
+		if jumpHost != "" {
+			config.SshClient.JumpHosts = append(config.SshClient.JumpHosts, &conf.JumpHostConf{
+				URI:      jumpHost,
+				Identity: identity,
+			})
+		}
+
 		if startSshD {
 			sshdKey, _ := cmd.Flags().GetString("sshd-key")
 			sshdAuthorizedKeys, _ := cmd.Flags().GetString("sshd-authorized-keys")

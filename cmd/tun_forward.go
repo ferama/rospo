@@ -32,13 +32,8 @@ var tunForwardCmd = &cobra.Command{
 			SshClient: &conf.SshClientConf{
 				Identity:  identity,
 				ServerURI: args[0],
-				JumpHosts: []*conf.JumpHostConf{
-					{
-						URI:      jumpHost,
-						Identity: identity,
-					},
-				},
-				Insecure: insecure,
+				JumpHosts: make([]*conf.JumpHostConf, 0),
+				Insecure:  insecure,
 			},
 			Tunnel: []*conf.TunnnelConf{
 				{
@@ -47,6 +42,13 @@ var tunForwardCmd = &cobra.Command{
 					Forward: true,
 				},
 			},
+		}
+
+		if jumpHost != "" {
+			config.SshClient.JumpHosts = append(config.SshClient.JumpHosts, &conf.JumpHostConf{
+				URI:      jumpHost,
+				Identity: identity,
+			})
 		}
 
 		client := sshc.NewSshConnection(config.SshClient)
