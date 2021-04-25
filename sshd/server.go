@@ -221,8 +221,7 @@ func (s *sshServer) handleRequests(reqs <-chan *ssh.Request) {
 					}
 				}
 			}
-			// if the forward for the address is not registered
-			// register it and start a checkAlive routine
+
 			go checkAliveFun(s, ln, addr)
 			s.forwadsMu.Lock()
 			s.forwards[addr] = ln
