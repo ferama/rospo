@@ -26,6 +26,7 @@ type sshServer struct {
 	forwadsMu sync.Mutex
 
 	forwardsKeepAliveInterval time.Duration
+	checkAliveStop            chan bool
 }
 
 // NewSshServer builds an SshServer object
@@ -53,6 +54,7 @@ func NewSshServer(conf *conf.SshDConf) *sshServer {
 		tcpPort:                   &conf.Port,
 		forwards:                  make(map[string]net.Listener),
 		forwardsKeepAliveInterval: 5 * time.Second,
+		checkAliveStop:            make(chan bool),
 	}
 
 	// run here, to make sure I have a valid authorized keys
@@ -179,6 +181,9 @@ func (s *sshServer) handleRequests(reqs <-chan *ssh.Request) {
 			if ok {
 				log.Println("[SSHD] closing old socket")
 				ln.Close()
+				// be sure to stop the running checkAliveFun and start a new one
+				// it needs to point to the new ln to be able to correctly close it
+				s.checkAliveStop <- true
 			}
 			s.forwadsMu.Unlock()
 
@@ -199,23 +204,25 @@ func (s *sshServer) handleRequests(reqs <-chan *ssh.Request) {
 
 				log.Println("[SSHD] starting check for forward availability")
 				for {
-					<-ticker.C
-					_, _, err := s.client.SendRequest("checkalive@rospo", true, nil)
-					if err != nil {
-						log.Println("[SSHD] forward endpoint not available anymore. Closing socket")
-						ln.Close()
-						s.forwadsMu.Lock()
-						delete(s.forwards, addr)
-						s.forwadsMu.Unlock()
-						log.Println("[SSHD] closed")
+					select {
+					case <-ticker.C:
+						_, _, err := s.client.SendRequest("checkalive@rospo", true, nil)
+						if err != nil {
+							log.Println("[SSHD] forward endpoint not available anymore. Closing socket")
+							ln.Close()
+							s.forwadsMu.Lock()
+							delete(s.forwards, addr)
+							s.forwadsMu.Unlock()
+							return
+						}
+					case <-s.checkAliveStop:
+						log.Println("[SSHD] stop keep alive")
 						return
 					}
 				}
 			}
 			// if the forward for the address is not registered
 			// register it and start a checkAlive routine
-			// TODO: stop the running checkAliveFun and start a new one
-			// it needs to point to the new ln to be able to correctly close it
 			go checkAliveFun(s, ln, addr)
 			s.forwadsMu.Lock()
 			s.forwards[addr] = ln
