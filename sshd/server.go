@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ferama/rospo/conf"
@@ -21,7 +22,8 @@ type sshServer struct {
 	authorizedKeyFile *string
 	tcpPort           *string
 
-	forwards map[string]net.Listener
+	forwards  map[string]net.Listener
+	forwadsMu sync.Mutex
 
 	forwardsKeepAliveInterval time.Duration
 }
@@ -172,10 +174,13 @@ func (s *sshServer) handleRequests(reqs <-chan *ssh.Request) {
 			laddr := payload.Addr
 			lport := payload.Port
 			addr := fmt.Sprintf("[%s]:%d", laddr, lport)
+			s.forwadsMu.Lock()
 			ln, ok := s.forwards[addr]
 			if ok {
+				log.Println("[SSHD] closing old socket")
 				ln.Close()
 			}
+			s.forwadsMu.Unlock()
 
 			ln, err := net.Listen("tcp", addr)
 			if err != nil {
@@ -183,34 +188,38 @@ func (s *sshServer) handleRequests(reqs <-chan *ssh.Request) {
 				req.Reply(false, []byte{})
 				continue
 			}
-			log.Printf("[SSHD] tcpip-forward listening  for %s", addr)
+			log.Printf("[SSHD] tcpip-forward listening for %s", addr)
 			var replyPayload = struct{ Port uint32 }{lport}
 			// Tell client everything is OK
 			req.Reply(true, ssh.Marshal(replyPayload))
 			go handleTcpIpForwardSession(s.client, ln, laddr, lport)
 
-			go func(s *sshServer, addr string) {
+			checkAliveFun := func(s *sshServer, ln net.Listener, addr string) {
 				ticker := time.NewTicker(s.forwardsKeepAliveInterval)
 
 				log.Println("[SSHD] starting check for forward availability")
-				stopKeepAlive := make(chan bool)
 				for {
-					select {
-					case <-ticker.C:
-						_, _, err := s.client.SendRequest("checkalive@rospo", true, nil)
-						if err != nil {
-							log.Println("[SSHD] forward endpoint not available anymore. Closing socket")
-							ln.Close()
-							stopKeepAlive <- true
-							delete(s.forwards, addr)
-						}
-					case <-stopKeepAlive:
+					<-ticker.C
+					_, _, err := s.client.SendRequest("checkalive@rospo", true, nil)
+					if err != nil {
+						log.Println("[SSHD] forward endpoint not available anymore. Closing socket")
+						ln.Close()
+						s.forwadsMu.Lock()
+						delete(s.forwards, addr)
+						s.forwadsMu.Unlock()
+						log.Println("[SSHD] closed")
 						return
 					}
 				}
-			}(s, addr)
-
+			}
+			// if the forward for the address is not registered
+			// register it and start a checkAlive routine
+			// TODO: stop the running checkAliveFun and start a new one
+			// it needs to point to the new ln to be able to correctly close it
+			go checkAliveFun(s, ln, addr)
+			s.forwadsMu.Lock()
 			s.forwards[addr] = ln
+			s.forwadsMu.Unlock()
 
 		case "cancel-tcpip-forward":
 			var payload = struct {
