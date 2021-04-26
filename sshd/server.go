@@ -181,7 +181,7 @@ func (s *sshServer) handleRequests(reqs <-chan *ssh.Request) {
 			if ok {
 				log.Println("[SSHD] closing old socket")
 				ln.Close()
-				// be sure to stop the running checkAliveFun and start a new one
+				// be sure to stop the running checkAlive and start a new one
 				// it needs to point to the new ln to be able to correctly close it
 				s.checkAliveStop <- true
 			}
@@ -199,30 +199,8 @@ func (s *sshServer) handleRequests(reqs <-chan *ssh.Request) {
 			req.Reply(true, ssh.Marshal(replyPayload))
 			go handleTcpIpForwardSession(s.client, ln, laddr, lport)
 
-			checkAliveFun := func(s *sshServer, ln net.Listener, addr string) {
-				ticker := time.NewTicker(s.forwardsKeepAliveInterval)
+			go s.checkAlive(ln, addr)
 
-				log.Println("[SSHD] starting check for forward availability")
-				for {
-					select {
-					case <-ticker.C:
-						_, _, err := s.client.SendRequest("checkalive@rospo", true, nil)
-						if err != nil {
-							log.Println("[SSHD] forward endpoint not available anymore. Closing socket")
-							ln.Close()
-							s.forwadsMu.Lock()
-							delete(s.forwards, addr)
-							s.forwadsMu.Unlock()
-							return
-						}
-					case <-s.checkAliveStop:
-						log.Println("[SSHD] stop keep alive")
-						return
-					}
-				}
-			}
-
-			go checkAliveFun(s, ln, addr)
 			s.forwadsMu.Lock()
 			s.forwards[addr] = ln
 			s.forwadsMu.Unlock()
@@ -250,6 +228,29 @@ func (s *sshServer) handleRequests(reqs <-chan *ssh.Request) {
 				continue
 			}
 			log.Printf("[SSHD] received out-of-band request: %+v", req)
+		}
+	}
+}
+
+func (s *sshServer) checkAlive(ln net.Listener, addr string) {
+	ticker := time.NewTicker(s.forwardsKeepAliveInterval)
+
+	log.Println("[SSHD] starting check for forward availability")
+	for {
+		select {
+		case <-ticker.C:
+			_, _, err := s.client.SendRequest("checkalive@rospo", true, nil)
+			if err != nil {
+				log.Println("[SSHD] forward endpoint not available anymore. Closing socket")
+				ln.Close()
+				s.forwadsMu.Lock()
+				delete(s.forwards, addr)
+				s.forwadsMu.Unlock()
+				return
+			}
+		case <-s.checkAliveStop:
+			log.Println("[SSHD] stop keep alive")
+			return
 		}
 	}
 }
