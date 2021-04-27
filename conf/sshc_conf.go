@@ -2,6 +2,7 @@ package conf
 
 import "github.com/ferama/rospo/utils"
 
+// JumpHostConf holds a jump host configuration
 type JumpHostConf struct {
 	// user@server:port
 	URI      string `yaml:"uri"`

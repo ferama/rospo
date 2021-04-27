@@ -82,7 +82,7 @@ func handleChannelSession(c ssh.NewChannel) {
 				if err := pty.Run(cmd); err != nil {
 					log.Printf("[SSHD] %s", err)
 				}
-				sessionClientServe(channel, pty, cmd)
+				sessionClientServe(channel, pty)
 
 			} else {
 				cmd.Stdout = channel
@@ -149,7 +149,7 @@ func parseDims(b []byte) (uint32, uint32) {
 	return w, h
 }
 
-func sessionClientServe(channel ssh.Channel, pty rpty.Pty, cmd *exec.Cmd) {
+func sessionClientServe(channel ssh.Channel, pty rpty.Pty) {
 	// Teardown session
 	var once sync.Once
 	close := func() {

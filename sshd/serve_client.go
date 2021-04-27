@@ -15,7 +15,7 @@ func serveClient(cssh ssh.Channel, conn net.Conn) {
 	close := func() {
 		cssh.Close()
 		conn.Close()
-		log.Printf("[SSHD] direct session closed")
+		log.Printf("[SSHD] direct-tcpip session closed")
 	}
 	go func() {
 		_, err := io.Copy(cssh, conn)
