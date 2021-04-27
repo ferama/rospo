@@ -14,6 +14,8 @@ type Config struct {
 	SshD      *SshDConf      `yaml:"sshd"`
 }
 
+// LoadConfig parses the [config].yaml file and loads its values
+// into the Config struct
 func LoadConfig(filePath string) *Config {
 	f, err := os.Open(filePath)
 	if err != nil {
