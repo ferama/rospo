@@ -1,9 +1,12 @@
 package utils
 
 import (
+	"bufio"
 	"log"
+	"os"
 	"os/user"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -65,4 +68,38 @@ func ExpandUserHome(path string) (string, error) {
 		ret = filepath.Join(usr.HomeDir, path[2:])
 	}
 	return ret, nil
+}
+
+// GetUserDefaultShell try to get the best shell for the user
+func GetUserDefaultShell(username string) string {
+	if runtime.GOOS == "windows" {
+		return "c:\\windows\\system32\\windowspowershell\\v1.0\\powershell.exe"
+	}
+	fallabck := "/bin/sh"
+
+	file, err := os.Open("/etc/passwd")
+	if err != nil {
+		return fallabck
+	}
+	defer file.Close()
+
+	lines := bufio.NewReader(file)
+	for {
+		line, _, err := lines.ReadLine()
+		if err != nil {
+			log.Println(err)
+			break
+		}
+		fs := strings.Split(string(line), ":")
+		if len(fs) != 7 {
+			continue
+		}
+		if fs[0] != username {
+			continue
+		}
+		shell := fs[6]
+		return shell
+	}
+
+	return fallabck
 }
