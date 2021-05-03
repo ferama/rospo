@@ -75,11 +75,11 @@ func GetUserDefaultShell(username string) string {
 	if runtime.GOOS == "windows" {
 		return "c:\\windows\\system32\\windowspowershell\\v1.0\\powershell.exe"
 	}
-	fallabck := "/bin/sh"
+	fallback := "/bin/sh"
 
 	file, err := os.Open("/etc/passwd")
 	if err != nil {
-		return fallabck
+		return fallback
 	}
 	defer file.Close()
 
@@ -101,5 +101,5 @@ func GetUserDefaultShell(username string) string {
 		return shell
 	}
 
-	return fallabck
+	return fallback
 }
