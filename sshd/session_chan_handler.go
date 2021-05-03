@@ -4,25 +4,14 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
-	"os"
 	"os/exec"
 	"os/user"
-	"runtime"
 	"sync"
 
 	"github.com/ferama/rospo/rpty"
+	"github.com/ferama/rospo/utils"
 	"golang.org/x/crypto/ssh"
 )
-
-var (
-	defaultShell string = "sh"
-)
-
-func init() {
-	if runtime.GOOS == "windows" {
-		defaultShell = "c:\\windows\\system32\\windowspowershell\\v1.0\\powershell.exe"
-	}
-}
 
 func handleChannelSession(c ssh.NewChannel) {
 	channel, requests, err := c.Accept()
@@ -32,10 +21,12 @@ func handleChannelSession(c ssh.NewChannel) {
 	}
 
 	var shell string
-	shell = os.Getenv("SHELL")
-	if shell == "" {
-		shell = defaultShell
+
+	usr, err := user.Current()
+	if err != nil {
+		panic(err)
 	}
+	shell = utils.GetUserDefaultShell(usr.Username)
 
 	// allocate a terminal for this channel
 	log.Print("[SSHD] creating pty...")
