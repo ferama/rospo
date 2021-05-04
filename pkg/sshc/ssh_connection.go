@@ -38,12 +38,11 @@ type SshConnection struct {
 // NewSshConnection creates a new SshConnection instance
 func NewSshConnection(conf *conf.SshClientConf) *SshConnection {
 	parsed := utils.ParseSSHUrl(conf.ServerURI)
-	knownHostsPath, _ := utils.ExpandUserHome(conf.KnownHosts)
 
 	c := &SshConnection{
 		username:       parsed.Username,
 		identity:       conf.Identity,
-		knownHosts:     knownHostsPath,
+		knownHosts:     conf.KnownHosts,
 		serverEndpoint: conf.GetServerEndpoint(),
 		insecure:       conf.Insecure,
 		jumpHosts:      conf.JumpHosts,

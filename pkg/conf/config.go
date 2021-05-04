@@ -3,7 +3,10 @@ package conf
 import (
 	"log"
 	"os"
+	"os/user"
+	"path/filepath"
 
+	"github.com/ferama/rospo/pkg/utils"
 	"gopkg.in/yaml.v2"
 )
 
@@ -36,6 +39,16 @@ func LoadConfig(filePath string) *Config {
 
 	decoder := yaml.NewDecoder(f)
 	err = decoder.Decode(&cfg)
+
+	var knownHostsPath string
+	if cfg.SshClient.KnownHosts == "" {
+		usr, _ := user.Current()
+		knownHostsPath = filepath.Join(usr.HomeDir, ".ssh", "known_hosts")
+	} else {
+		knownHostsPath, _ = utils.ExpandUserHome(cfg.SshClient.KnownHosts)
+	}
+	cfg.SshClient.KnownHosts = knownHostsPath
+
 	if err != nil {
 		log.Fatalf("Error while parsing config file: %s", err)
 	}
