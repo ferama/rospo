@@ -18,8 +18,7 @@ import (
 )
 
 // GeneratePrivateKey generate an rsa key (actually used from the sshd server)
-func GeneratePrivateKey(keyPath *string) {
-	path, _ := ExpandUserHome(*keyPath)
+func GeneratePrivateKey() (*rsa.PrivateKey, error) {
 	bitSize := 4096
 	privateKey, err := rsa.GenerateKey(rand.Reader, bitSize)
 	if err != nil {
@@ -29,11 +28,14 @@ func GeneratePrivateKey(keyPath *string) {
 	// Validate Private Key
 	err = privateKey.Validate()
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
-
 	log.Println("private Key generated")
+	return privateKey, nil
+}
 
+// EncodePrivateKeyToPEM
+func EncodePrivateKeyToPEM(privateKey *rsa.PrivateKey) []byte {
 	privDER := x509.MarshalPKCS1PrivateKey(privateKey)
 
 	// pem.Block
@@ -45,16 +47,36 @@ func GeneratePrivateKey(keyPath *string) {
 
 	// Private key in PEM format
 	privatePEM := pem.EncodeToMemory(&privBlock)
-	if err := ioutil.WriteFile(path, privatePEM, 0600); err != nil {
-		log.Println(err)
-	}
-
-	log.Printf("key saved to: %s", path)
+	return privatePEM
 }
 
-// PublicKeyFile reads a public key file and loads the keys to
+// GeneratePublicKey generates a public key from a private one
+func GeneratePublicKey(privateKey *rsa.PrivateKey) ([]byte, error) {
+	publicRsaKey, err := ssh.NewPublicKey(privateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	pubKeyBytes := ssh.MarshalAuthorizedKey(publicRsaKey)
+
+	log.Println("Public key generated")
+	return pubKeyBytes, nil
+}
+
+// WriteKeyToFile stores a key to the specified path
+func WriteKeyToFile(keyBytes []byte, keyPath string) error {
+	path, _ := ExpandUserHome(keyPath)
+
+	if err := ioutil.WriteFile(path, keyBytes, 0600); err != nil {
+		log.Println(err)
+		return err
+	}
+	return nil
+}
+
+// LoadIdentityFile reads a public key file and loads the keys to
 // an ssh.PublicKeys object
-func PublicKeyFile(file string) ssh.AuthMethod {
+func LoadIdentityFile(file string) ssh.AuthMethod {
 	path, _ := ExpandUserHome(file)
 
 	usr, _ := user.Current()
@@ -65,13 +87,13 @@ func PublicKeyFile(file string) ssh.AuthMethod {
 
 	buffer, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Fatalln(fmt.Sprintf("cannot read SSH public key file %s", path))
+		log.Fatalln(fmt.Sprintf("cannot read SSH idendity key file %s", path))
 		return nil
 	}
 
 	key, err := ssh.ParsePrivateKey(buffer)
 	if err != nil {
-		log.Fatalln(fmt.Sprintf("cannot parse SSH public key file %s", file))
+		log.Fatalln(fmt.Sprintf("cannot parse SSH identity key file %s", file))
 		return nil
 	}
 	return ssh.PublicKeys(key)
@@ -101,6 +123,6 @@ func AddHostKeyToKnownHosts(host string, key ssh.PublicKey) error {
 }
 
 // SerilizeKey converts an ssh.PublicKey to printable bas64 string
-func SerializeKey(k ssh.PublicKey) string {
+func SerializePublicKey(k ssh.PublicKey) string {
 	return k.Type() + " " + base64.StdEncoding.EncodeToString(k.Marshal())
 }

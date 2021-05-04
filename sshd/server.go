@@ -36,11 +36,15 @@ func NewSshServer(conf *conf.SshDConf) *sshServer {
 	hostPrivateKey, err := ioutil.ReadFile(keyPath)
 	if err != nil {
 		log.Println("[SSHD] server identity do not exists. Generating one...")
-		utils.GeneratePrivateKey(&keyPath)
-		hostPrivateKey, err = ioutil.ReadFile(keyPath)
+		key, err := utils.GeneratePrivateKey()
 		if err != nil {
 			panic(err)
 		}
+		encoded := utils.EncodePrivateKeyToPEM(key)
+		if err := utils.WriteKeyToFile(encoded, keyPath); err != nil {
+			panic(err)
+		}
+		hostPrivateKey = encoded
 	}
 
 	hostPrivateKeySigner, err := ssh.ParsePrivateKey(hostPrivateKey)
