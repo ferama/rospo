@@ -52,21 +52,21 @@ func (r *Pipe) Start() {
 	listener.Close()
 }
 
-func (r *Pipe) serveClient(leftEnd net.Conn, rightEnd net.Conn) {
+func (r *Pipe) serveClient(local net.Conn, remote net.Conn) {
 	var once sync.Once
 	close := func() {
-		leftEnd.Close()
-		rightEnd.Close()
+		local.Close()
+		remote.Close()
 	}
 
 	go func() {
-		io.Copy(leftEnd, rightEnd)
+		io.Copy(local, remote)
 		once.Do(close)
 
 	}()
 
 	go func() {
-		io.Copy(rightEnd, leftEnd)
+		io.Copy(remote, local)
 		once.Do(close)
 	}()
 }
