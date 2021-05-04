@@ -5,6 +5,8 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/user"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -38,11 +40,18 @@ type SshConnection struct {
 // NewSshConnection creates a new SshConnection instance
 func NewSshConnection(conf *conf.SshClientConf) *SshConnection {
 	parsed := utils.ParseSSHUrl(conf.ServerURI)
+	var knownHostsPath string
+	if conf.KnownHosts == "" {
+		usr, _ := user.Current()
+		knownHostsPath = filepath.Join(usr.HomeDir, ".ssh", "known_hosts")
+	} else {
+		knownHostsPath, _ = utils.ExpandUserHome(conf.KnownHosts)
+	}
 
 	c := &SshConnection{
 		username:       parsed.Username,
 		identity:       conf.Identity,
-		knownHosts:     conf.KnownHosts,
+		knownHosts:     knownHostsPath,
 		serverEndpoint: conf.GetServerEndpoint(),
 		insecure:       conf.Insecure,
 		jumpHosts:      conf.JumpHosts,
