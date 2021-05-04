@@ -1,3 +1,7 @@
+# This is a config template file
+# The sections below are almost all optional.
+# You need to always set at least one of the tunnel or sshd section
+
 # the ssh client configuration
 sshclient:
   # OPTIONAL: private key path. Default to ~/.ssh/id_rsa
@@ -24,6 +28,13 @@ tunnel:
   - remote: ":2222"
     local: ":2222"
     forward: no
+  # reverse proxy the local 5432 (forwarded in the forward section below)
+  # to the remote server (the one configured into sshclient section)
+  - remote: ":5432"
+    local: ":5432"
+    # this one is not a forward (copy from local to remote)
+    # but a reverse (copy from remote to local)
+    forward: no
 
 # sshd server configuration
 # Comment this section to disable the embedded ssh server
@@ -31,3 +42,13 @@ sshd:
   server_key: "./server_key"
   authorized_keys: "./authorized_keys"
   port: "2222"
+
+# starts a forward from local port 5432 to my_remote_postgres:5432
+# This will copy packets from local to remote endpoint
+# Think about a service only reachable from the local host that you
+# want to reverse proxy through a secured tunnel to a remote host.
+# You can do it with the following section and enabling a reverse tunnel
+# on the tunnel section
+forward:
+  - remote: "my_remote_postgres:5432"
+    local: ":5432"
