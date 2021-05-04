@@ -29,20 +29,20 @@ func NewForward(conf *conf.ForwardConf) *Forward {
 func (r *Forward) Start() {
 	listener, err := net.Listen("tcp", r.local.String())
 	if err != nil {
-		log.Printf("[ROUTER] listening on %s error.\n", err)
+		log.Printf("[FORWARD] listening on %s error.\n", err)
 		return
 	}
-	log.Printf("[ROUTER] listening on %s\n", r.local)
+	log.Printf("[FORWARD] listening on %s\n", r.local)
 	for {
 		client, err := listener.Accept()
 		if err != nil {
-			log.Println("[ROUTER] disconnected")
+			log.Println("[FORWARD] disconnected")
 			break
 		}
 		go func() {
 			conn, err := net.Dial("tcp", r.remote.String())
 			if err != nil {
-				log.Println("[ROUTER] remote connection refused")
+				log.Println("[FORWARD] remote connection refused")
 				client.Close()
 				return
 			}
