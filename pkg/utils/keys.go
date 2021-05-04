@@ -100,17 +100,11 @@ func LoadIdentityFile(file string) ssh.AuthMethod {
 }
 
 // AddHostKeyToKnownHosts updates user known_hosts file adding the host key
-func AddHostKeyToKnownHosts(host string, key ssh.PublicKey) error {
+func AddHostKeyToKnownHosts(host string, key ssh.PublicKey, knownHostsPath string) error {
 	// add host key if host is not found in known_hosts, error object is return, if nil then connection proceeds,
 	// if not nil then connection stops.
-	var err error
-	usr, err := user.Current()
-	if err != nil {
-		log.Fatalf("could not obtain user home directory :%v", err)
-	}
-	knownHostFile := filepath.Join(usr.HomeDir, ".ssh", "known_hosts")
 
-	f, fErr := os.OpenFile(knownHostFile, os.O_APPEND|os.O_WRONLY, 0600)
+	f, fErr := os.OpenFile(knownHostsPath, os.O_APPEND|os.O_WRONLY, 0600)
 	if fErr != nil {
 		return fErr
 	}

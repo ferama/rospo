@@ -26,14 +26,16 @@ var tunForwardCmd = &cobra.Command{
 		remote, _ := cmd.Flags().GetString("remote")
 		jumpHost, _ := cmd.Flags().GetString("jump-host")
 		identity, _ := cmd.Flags().GetString("user-identity")
+		knownHosts, _ := cmd.Flags().GetString("known-hosts")
 		insecure, _ := cmd.Flags().GetBool("insecure")
 
 		config := &conf.Config{
 			SshClient: &conf.SshClientConf{
-				Identity:  identity,
-				ServerURI: args[0],
-				JumpHosts: make([]*conf.JumpHostConf, 0),
-				Insecure:  insecure,
+				Identity:   identity,
+				KnownHosts: knownHosts,
+				ServerURI:  args[0],
+				JumpHosts:  make([]*conf.JumpHostConf, 0),
+				Insecure:   insecure,
 			},
 			Tunnel: []*conf.TunnnelConf{
 				{

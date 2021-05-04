@@ -5,8 +5,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"os/user"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -18,8 +16,9 @@ import (
 
 // SshConnection implements an ssh client
 type SshConnection struct {
-	username string
-	identity string
+	username   string
+	identity   string
+	knownHosts string
 
 	serverEndpoint *utils.Endpoint
 
@@ -39,9 +38,12 @@ type SshConnection struct {
 // NewSshConnection creates a new SshConnection instance
 func NewSshConnection(conf *conf.SshClientConf) *SshConnection {
 	parsed := utils.ParseSSHUrl(conf.ServerURI)
+	knownHostsPath, _ := utils.ExpandUserHome(conf.KnownHosts)
+
 	c := &SshConnection{
 		username:       parsed.Username,
 		identity:       conf.Identity,
+		knownHosts:     knownHostsPath,
 		serverEndpoint: conf.GetServerEndpoint(),
 		insecure:       conf.Insecure,
 		jumpHosts:      conf.JumpHosts,
@@ -128,23 +130,18 @@ func (s *SshConnection) verifyHostCallback() ssh.HostKeyCallback {
 	}
 	return func(host string, remote net.Addr, key ssh.PublicKey) error {
 		var err error
-		usr, err := user.Current()
-		if err != nil {
-			log.Fatalf("[SSHC] could not obtain user home directory :%v", err)
-		}
 
-		knownHostFile := filepath.Join(usr.HomeDir, ".ssh", "known_hosts")
-		log.Printf("[SSHC] known_hosts file used: %s", knownHostFile)
+		log.Printf("[SSHC] known_hosts file used: %s", s.knownHosts)
 
-		clb, err := knownhosts.New(knownHostFile)
+		clb, err := knownhosts.New(s.knownHosts)
 		if err != nil {
-			log.Printf("[SSHC] error while parsing 'known_hosts' file: %s: %v", knownHostFile, err)
-			f, fErr := os.OpenFile(knownHostFile, os.O_CREATE, 0600)
+			log.Printf("[SSHC] error while parsing 'known_hosts' file: %s: %v", s.knownHosts, err)
+			f, fErr := os.OpenFile(s.knownHosts, os.O_CREATE, 0600)
 			if fErr != nil {
 				log.Fatalf("[SSHC] %s", fErr)
 			}
 			f.Close()
-			clb, err = knownhosts.New(knownHostFile)
+			clb, err = knownhosts.New(s.knownHosts)
 			if err != nil {
 				log.Fatalf("[SSHC] %s", err)
 			}
@@ -156,7 +153,7 @@ func (s *SshConnection) verifyHostCallback() ssh.HostKeyCallback {
 			return e
 		} else if errors.As(e, &keyErr) && len(keyErr.Want) == 0 {
 			log.Printf("[SSHC] WARNING: %s is not trusted, adding this key: \n\n%s\n\nto known_hosts file.", host, utils.SerializePublicKey(key))
-			return utils.AddHostKeyToKnownHosts(host, key)
+			return utils.AddHostKeyToKnownHosts(host, key, s.knownHosts)
 		}
 		return e
 	}
