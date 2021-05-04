@@ -95,7 +95,7 @@ func (s *SshConnection) connect() error {
 		// SSH connection username
 		User: s.username,
 		Auth: []ssh.AuthMethod{
-			utils.PublicKeyFile(s.identity),
+			utils.LoadIdentityFile(s.identity),
 		},
 		HostKeyCallback: s.verifyHostCallback(),
 	}
@@ -155,7 +155,7 @@ func (s *SshConnection) verifyHostCallback() ssh.HostKeyCallback {
 			log.Printf("[SSHC] ERROR: %v is not a key of %s, either a man in the middle attack or %s host pub key was changed.", key, host, host)
 			return e
 		} else if errors.As(e, &keyErr) && len(keyErr.Want) == 0 {
-			log.Printf("[SSHC] WARNING: %s is not trusted, adding this key: \n\n%s\n\nto known_hosts file.", host, utils.SerializeKey(key))
+			log.Printf("[SSHC] WARNING: %s is not trusted, adding this key: \n\n%s\n\nto known_hosts file.", host, utils.SerializePublicKey(key))
 			return utils.AddHostKeyToKnownHosts(host, key)
 		}
 		return e
@@ -183,7 +183,7 @@ func (s *SshConnection) jumpHostConnect(
 		config := &ssh.ClientConfig{
 			User: parsed.Username,
 			Auth: []ssh.AuthMethod{
-				utils.PublicKeyFile(jh.Identity),
+				utils.LoadIdentityFile(jh.Identity),
 			},
 			HostKeyCallback: s.verifyHostCallback(),
 		}
