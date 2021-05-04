@@ -1,6 +1,6 @@
 package conf
 
-import "github.com/ferama/rospo/utils"
+import "github.com/ferama/rospo/pkg/utils"
 
 // TunnelConf is a struct that holds the tunnel configuration
 type TunnnelConf struct {

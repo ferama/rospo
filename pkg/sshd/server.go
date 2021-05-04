@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ferama/rospo/conf"
-	"github.com/ferama/rospo/utils"
+	"github.com/ferama/rospo/pkg/conf"
+	"github.com/ferama/rospo/pkg/utils"
 
 	"golang.org/x/crypto/ssh"
 )

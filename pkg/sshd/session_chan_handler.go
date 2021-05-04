@@ -8,8 +8,8 @@ import (
 	"os/user"
 	"sync"
 
-	"github.com/ferama/rospo/rpty"
-	"github.com/ferama/rospo/utils"
+	"github.com/ferama/rospo/pkg/rpty"
+	"github.com/ferama/rospo/pkg/utils"
 	"golang.org/x/crypto/ssh"
 )
 
