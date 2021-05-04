@@ -45,7 +45,7 @@ sshd:
   authorized_keys: "./authorized_keys"
   port: "2222"
 
-# starts a forward from local port 5432 to my_remote_postgres:5432
+# starts a pipe from local port 5432 to my_remote_postgres:5432
 # This will copy packets from local to remote endpoint
 # Think about a service only reachable from the local host that you
 # want to reverse proxy through a secured tunnel to a remote host.

@@ -1,5 +1,6 @@
 bin
 server_key
 authorized_keys
+known_hosts
 .DS_Store
 config.yaml
