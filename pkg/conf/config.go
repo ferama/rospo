@@ -12,7 +12,7 @@ type Config struct {
 	SshClient *SshClientConf `yaml:"sshclient"`
 	Tunnel    []*TunnnelConf `yaml:"tunnel"`
 	SshD      *SshDConf      `yaml:"sshd"`
-	Forward   []*ForwardConf `yaml:"forward"`
+	Pipe      []*PipeConf    `yaml:"pipe"`
 }
 
 // LoadConfig parses the [config].yaml file and loads its values

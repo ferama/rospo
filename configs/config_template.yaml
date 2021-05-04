@@ -51,6 +51,6 @@ sshd:
 # want to reverse proxy through a secured tunnel to a remote host.
 # You can do it with the following section and enabling a reverse tunnel
 # on the tunnel section
-forward:
+pipe:
   - remote: "my_remote_postgres:5432"
     local: ":5432"

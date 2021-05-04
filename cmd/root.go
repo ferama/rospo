@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/ferama/rospo/pkg/conf"
-	"github.com/ferama/rospo/pkg/forward"
+	"github.com/ferama/rospo/pkg/pipe"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/sshd"
 	"github.com/ferama/rospo/pkg/tun"
@@ -22,9 +22,9 @@ var rootCmd = &cobra.Command{
 			log.Fatalln("Invalid config: you need to fill at least one of the `sshd` or `tunnel` sections")
 		}
 
-		if conf.Forward != nil {
-			for _, f := range conf.Forward {
-				go forward.NewForward(f).Start()
+		if conf.Pipe != nil {
+			for _, f := range conf.Pipe {
+				go pipe.NewPipe(f).Start()
 			}
 		}
 
