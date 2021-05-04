@@ -1,6 +1,6 @@
 package conf
 
-import "github.com/ferama/rospo/utils"
+import "github.com/ferama/rospo/pkg/utils"
 
 // JumpHostConf holds a jump host configuration
 type JumpHostConf struct {
