@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/ferama/rospo/pkg/conf"
+	"github.com/ferama/rospo/pkg/forward"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/sshd"
 	"github.com/ferama/rospo/pkg/tun"
@@ -16,6 +17,17 @@ var rootCmd = &cobra.Command{
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		conf := conf.LoadConfig(args[0])
+
+		if conf.SshD == nil && conf.Tunnel == nil {
+			log.Fatalln("Invalid config: you need to fill at least one of the `sshd` or `tunnel` sections")
+		}
+
+		if conf.Forward != nil {
+			for _, f := range conf.Forward {
+				go forward.NewForward(f).Start()
+			}
+		}
+
 		if conf.SshD != nil {
 			if conf.Tunnel != nil {
 				go sshd.NewSshServer(conf.SshD).Start()

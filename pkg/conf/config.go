@@ -12,6 +12,7 @@ type Config struct {
 	SshClient *SshClientConf `yaml:"sshclient"`
 	Tunnel    []*TunnnelConf `yaml:"tunnel"`
 	SshD      *SshDConf      `yaml:"sshd"`
+	Forward   []*ForwardConf `yaml:"forward"`
 }
 
 // LoadConfig parses the [config].yaml file and loads its values
@@ -28,6 +29,7 @@ func LoadConfig(filePath string) *Config {
 		&SshClientConf{
 			Insecure: false,
 		},
+		nil,
 		nil,
 		nil,
 	}
