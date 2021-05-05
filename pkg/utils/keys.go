@@ -30,7 +30,7 @@ func GeneratePrivateKey() (*rsa.PrivateKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Println("private Key generated")
+	log.Println("private key generated")
 	return privateKey, nil
 }
 
@@ -59,7 +59,7 @@ func GeneratePublicKey(key *rsa.PublicKey) ([]byte, error) {
 
 	pubKeyBytes := ssh.MarshalAuthorizedKey(publicRsaKey)
 
-	log.Println("Public key generated")
+	log.Println("public key generated")
 	return pubKeyBytes, nil
 }
 

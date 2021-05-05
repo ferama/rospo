@@ -43,6 +43,13 @@ func NewSshServer(conf *conf.SshDConf) *sshServer {
 			panic(err)
 		}
 		hostPrivateKey = encoded
+
+		// this is the one to use in the known_hosts file
+		publicKey, err := utils.GeneratePublicKey(&key.PublicKey)
+		if err != nil {
+			panic(err)
+		}
+		utils.WriteKeyToFile(publicKey, keyPath+".pub")
 	}
 
 	hostPrivateKeySigner, err := ssh.ParsePrivateKey(hostPrivateKey)
