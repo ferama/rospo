@@ -1,0 +1,35 @@
+# This is a sample config file that can be used as a base
+# to configure a kubernetes pod
+#
+# It does the following things:
+#   1. create 2 pipes from the pod to some services into the k8s cluster
+#   2. create 2 tunnels from the pod local pipes to a remote rospo or standard sshd server
+#
+# From now on, you will have to socket listening on the remote server, one
+# on the port 8080 pointing to the k8s demo-app, and one on the port 9200
+# pointing to the k8s cluster elasticsearch deployment. Cool right? :)
+#
+# You need a couple of things to set it up:
+#   1. generate the key pair for the sshclient section using rospo identity-gen or standard ssh tools
+#   2. copy the contents of the id_rsa.pub into remote server authorized_keys file
+#   3. create the local known_hosts file and put the remote server pub key inside
+#   4. generete the kubernetes config map (look at the example script k8s-deploy.sh in this dir)
+#   5. create the kubernetes rospo deployment
+sshclient:
+  identity: "/etc/rospo/id_rsa"
+  server: my-rospo-or-standard-sshd-server:2222
+  known_hosts: "/etc/rospo/known_hosts"
+
+tunnel:
+  - remote: "0.0.0.0:9200"
+    local: ":9200"
+    forward: no
+  - remote: "0.0.0.0:8080"
+    local: ":8080"
+    forward: no
+
+pipe:
+  - remote: "elasticsearch-master.myns:9200"
+    local: ":9200"
+  - remote: "demo-app.myns:8080"
+    local: ":8080"
