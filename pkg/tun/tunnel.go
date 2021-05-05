@@ -29,7 +29,7 @@ type Tunnel struct {
 }
 
 // NewTunnel builds a Tunnel object
-func NewTunnel(sshConn *sshc.SshConnection, conf *conf.TunnnelConf) *Tunnel {
+func NewTunnel(sshConn *sshc.SshConnection, conf *conf.TunnelConf) *Tunnel {
 
 	tunnel := &Tunnel{
 		forward:        conf.Forward,

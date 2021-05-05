@@ -16,10 +16,9 @@ var rootCmd = &cobra.Command{
 	Long: "The tool to create relieable ssh tunnels.",
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		conf := conf.LoadConfig(args[0])
-
-		if conf.SshD == nil && conf.Tunnel == nil {
-			log.Fatalln("Invalid config: you need to fill at least one of the `sshd` or `tunnel` sections")
+		conf, err := conf.LoadConfig(args[0])
+		if err != nil {
+			log.Fatalln(err)
 		}
 
 		if conf.Pipe != nil {

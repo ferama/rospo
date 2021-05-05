@@ -20,7 +20,7 @@ type SshClientConf struct {
 	JumpHosts []*JumpHostConf `yaml:"jump_hosts"`
 }
 
-// Builds a server endpoint object from the Server string
+// GetServerEndpoint Builds a server endpoint object from the Server string
 func (c *SshClientConf) GetServerEndpoint() *utils.Endpoint {
 	return utils.NewEndpoint(c.ServerURI)
 }

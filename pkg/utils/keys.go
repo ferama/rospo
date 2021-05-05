@@ -34,7 +34,7 @@ func GeneratePrivateKey() (*rsa.PrivateKey, error) {
 	return privateKey, nil
 }
 
-// EncodePrivateKeyToPEM
+// EncodePrivateKeyToPEM converts a private key object to PEM
 func EncodePrivateKeyToPEM(privateKey *rsa.PrivateKey) []byte {
 	privDER := x509.MarshalPKCS1PrivateKey(privateKey)
 
@@ -116,7 +116,7 @@ func AddHostKeyToKnownHosts(host string, key ssh.PublicKey, knownHostsPath strin
 	return fileErr
 }
 
-// SerilizeKey converts an ssh.PublicKey to printable bas64 string
+// SerializePublicKey converts an ssh.PublicKey to printable bas64 string
 func SerializePublicKey(k ssh.PublicKey) string {
 	return k.Type() + " " + base64.StdEncoding.EncodeToString(k.Marshal())
 }
