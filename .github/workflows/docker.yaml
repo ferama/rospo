@@ -46,5 +46,4 @@ jobs:
           file: ./hack/docker/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/rospo:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/rospo:${{ steps.get_version.outputs.VERSION }}
