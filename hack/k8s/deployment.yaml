@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: rospo
-          image: localhost:32000/rospo
+          image: ferama/rospo:latest
           command: ["rospo", "/etc/rospo/rospo.yaml"]
           volumeMounts:
           - name: config-volume
