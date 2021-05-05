@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rospo
+  labels:
+    app: rospo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rospo
+  template:
+    metadata:
+      labels:
+        app: rospo
+    spec:
+      containers:
+        - name: rospo
+          image: localhost:32000/rospo
+          command: ["rospo", "/etc/rospo/rospo.yaml"]
+          volumeMounts:
+          - name: config-volume
+            mountPath: /etc/rospo
+      volumes:
+        - name: config-volume
+          configMap:
+            name: rospo-config
+      restartPolicy: Always

@@ -25,7 +25,6 @@ type sshServer struct {
 	forwardsMu sync.Mutex
 
 	forwardsKeepAliveInterval time.Duration
-	checkAliveStop            chan net.Listener
 }
 
 // NewSshServer builds an SshServer object
@@ -57,7 +56,6 @@ func NewSshServer(conf *conf.SshDConf) *sshServer {
 		tcpPort:                   &conf.Port,
 		forwards:                  make(map[string]net.Listener),
 		forwardsKeepAliveInterval: 5 * time.Second,
-		checkAliveStop:            make(chan net.Listener),
 	}
 
 	// run here, to make sure I have a valid authorized keys
@@ -147,7 +145,7 @@ func (s *sshServer) Start() {
 			// From a standard TCP connection to an encrypted SSH connection
 			sshConn, chans, reqs, err := ssh.NewServerConn(conn, &config)
 			if err != nil {
-				log.Printf("[SSHD] %s", err)
+				log.Printf("[SSHD] client connection error %s", err)
 				return
 			}
 			log.Printf("[SSHD] logged in with key %s", sshConn.Permissions.Extensions["pubkey-fp"])
@@ -177,15 +175,6 @@ func (s *sshServer) handleRequests(sshConn *ssh.ServerConn, reqs <-chan *ssh.Req
 			laddr := payload.Addr
 			lport := payload.Port
 			addr := fmt.Sprintf("[%s]:%d", laddr, lport)
-			s.forwardsMu.Lock()
-			ln, ok := s.forwards[addr]
-			s.forwardsMu.Unlock()
-			if ok {
-				log.Println("[SSHD] closing old socket")
-				// be sure to stop the running checkAlive and start a new one
-				// it needs to point to the new ln to be able to correctly close it
-				s.checkAliveStop <- ln
-			}
 
 			ln, err := net.Listen("tcp", addr)
 			if err != nil {
@@ -239,28 +228,15 @@ func (s *sshServer) checkAlive(sshConn *ssh.ServerConn, ln net.Listener, addr st
 
 	log.Println("[SSHD] starting check for forward availability")
 	for {
-		select {
-		case <-ticker.C:
-			_, _, err := sshConn.SendRequest("checkalive@rospo", true, nil)
-			if err != nil {
-				log.Printf("[SSHD] forward endpoint not available anymore. Closing socket %s", ln.Addr())
-				ln.Close()
-				s.forwardsMu.Lock()
-				delete(s.forwards, addr)
-				s.forwardsMu.Unlock()
-				return
-			}
-		case netLn := <-s.checkAliveStop:
-			if netLn.Addr() == ln.Addr() {
-				log.Println("[SSHD] stop keep alive and closing socket")
-				ln.Close()
-				s.forwardsMu.Lock()
-				delete(s.forwards, addr)
-				s.forwardsMu.Unlock()
-				return
-			}
-			// is not my socket, forward to the channel again
-			s.checkAliveStop <- netLn
+		<-ticker.C
+		_, _, err := sshConn.SendRequest("checkalive@rospo", true, nil)
+		if err != nil {
+			log.Printf("[SSHD] forward endpoint not available anymore. Closing socket %s", ln.Addr())
+			ln.Close()
+			s.forwardsMu.Lock()
+			delete(s.forwards, addr)
+			s.forwardsMu.Unlock()
+			return
 		}
 	}
 }

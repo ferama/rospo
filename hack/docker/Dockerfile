@@ -5,7 +5,4 @@ RUN go build -o /rospo .
 
 # Final docker image
 FROM ubuntu:20.04
-WORKDIR /app
-COPY --from=gobuilder /rospo .
-
-CMD ["/app/rospo", "/etc/rospo/rospo.yaml"]
+COPY --from=gobuilder /rospo /usr/local/bin/rospo
