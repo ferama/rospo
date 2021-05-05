@@ -37,7 +37,7 @@ var tunForwardCmd = &cobra.Command{
 				JumpHosts:  make([]*conf.JumpHostConf, 0),
 				Insecure:   insecure,
 			},
-			Tunnel: []*conf.TunnnelConf{
+			Tunnel: []*conf.TunnelConf{
 				{
 					Remote:  remote,
 					Local:   local,
