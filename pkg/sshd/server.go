@@ -17,16 +17,15 @@ import (
 
 // sshServer instance
 type sshServer struct {
-	client            *ssh.ServerConn
 	hostPrivateKey    ssh.Signer
 	authorizedKeyFile *string
 	tcpPort           *string
 
-	forwards  map[string]net.Listener
-	forwadsMu sync.Mutex
+	forwards   map[string]net.Listener
+	forwardsMu sync.Mutex
 
 	forwardsKeepAliveInterval time.Duration
-	checkAliveStop            chan bool
+	checkAliveStop            chan net.Listener
 }
 
 // NewSshServer builds an SshServer object
@@ -58,7 +57,7 @@ func NewSshServer(conf *conf.SshDConf) *sshServer {
 		tcpPort:                   &conf.Port,
 		forwards:                  make(map[string]net.Listener),
 		forwardsKeepAliveInterval: 5 * time.Second,
-		checkAliveStop:            make(chan bool),
+		checkAliveStop:            make(chan net.Listener),
 	}
 
 	// run here, to make sure I have a valid authorized keys
@@ -153,18 +152,16 @@ func (s *sshServer) Start() {
 			}
 			log.Printf("[SSHD] logged in with key %s", sshConn.Permissions.Extensions["pubkey-fp"])
 
-			s.client = sshConn
-
 			log.Println("[SSHD] connection from", sshConn.RemoteAddr())
 			// handle forwards and keepalive requests
-			go s.handleRequests(reqs)
+			go s.handleRequests(sshConn, reqs)
 			// Accept all channels
 			go s.handleChannels(chans)
 		}()
 	}
 }
 
-func (s *sshServer) handleRequests(reqs <-chan *ssh.Request) {
+func (s *sshServer) handleRequests(sshConn *ssh.ServerConn, reqs <-chan *ssh.Request) {
 	for req := range reqs {
 		switch req.Type {
 		case "tcpip-forward":
@@ -180,16 +177,15 @@ func (s *sshServer) handleRequests(reqs <-chan *ssh.Request) {
 			laddr := payload.Addr
 			lport := payload.Port
 			addr := fmt.Sprintf("[%s]:%d", laddr, lport)
-			s.forwadsMu.Lock()
+			s.forwardsMu.Lock()
 			ln, ok := s.forwards[addr]
+			s.forwardsMu.Unlock()
 			if ok {
 				log.Println("[SSHD] closing old socket")
-				ln.Close()
 				// be sure to stop the running checkAlive and start a new one
 				// it needs to point to the new ln to be able to correctly close it
-				s.checkAliveStop <- true
+				s.checkAliveStop <- ln
 			}
-			s.forwadsMu.Unlock()
 
 			ln, err := net.Listen("tcp", addr)
 			if err != nil {
@@ -201,13 +197,13 @@ func (s *sshServer) handleRequests(reqs <-chan *ssh.Request) {
 			var replyPayload = struct{ Port uint32 }{lport}
 			// Tell client everything is OK
 			req.Reply(true, ssh.Marshal(replyPayload))
-			go handleTcpIpForwardSession(s.client, ln, laddr, lport)
+			go handleTcpIpForwardSession(sshConn, ln, laddr, lport)
 
-			go s.checkAlive(ln, addr)
+			go s.checkAlive(sshConn, ln, addr)
 
-			s.forwadsMu.Lock()
+			s.forwardsMu.Lock()
 			s.forwards[addr] = ln
-			s.forwadsMu.Unlock()
+			s.forwardsMu.Unlock()
 
 		case "cancel-tcpip-forward":
 			var payload = struct {
@@ -222,7 +218,9 @@ func (s *sshServer) handleRequests(reqs <-chan *ssh.Request) {
 			laddr := payload.Addr
 			lport := payload.Port
 			addr := fmt.Sprintf("[%s]:%d", laddr, lport)
+			s.forwardsMu.Lock()
 			ln, ok := s.forwards[addr]
+			s.forwardsMu.Unlock()
 			if ok {
 				ln.Close()
 			}
@@ -236,25 +234,33 @@ func (s *sshServer) handleRequests(reqs <-chan *ssh.Request) {
 	}
 }
 
-func (s *sshServer) checkAlive(ln net.Listener, addr string) {
+func (s *sshServer) checkAlive(sshConn *ssh.ServerConn, ln net.Listener, addr string) {
 	ticker := time.NewTicker(s.forwardsKeepAliveInterval)
 
 	log.Println("[SSHD] starting check for forward availability")
 	for {
 		select {
 		case <-ticker.C:
-			_, _, err := s.client.SendRequest("checkalive@rospo", true, nil)
+			_, _, err := sshConn.SendRequest("checkalive@rospo", true, nil)
 			if err != nil {
-				log.Println("[SSHD] forward endpoint not available anymore. Closing socket")
+				log.Printf("[SSHD] forward endpoint not available anymore. Closing socket %s", ln.Addr())
 				ln.Close()
-				s.forwadsMu.Lock()
+				s.forwardsMu.Lock()
 				delete(s.forwards, addr)
-				s.forwadsMu.Unlock()
+				s.forwardsMu.Unlock()
 				return
 			}
-		case <-s.checkAliveStop:
-			log.Println("[SSHD] stop keep alive")
-			return
+		case netLn := <-s.checkAliveStop:
+			if netLn.Addr() == ln.Addr() {
+				log.Println("[SSHD] stop keep alive and closing socket")
+				ln.Close()
+				s.forwardsMu.Lock()
+				delete(s.forwards, addr)
+				s.forwardsMu.Unlock()
+				return
+			}
+			// is not my socket, forward to the channel again
+			s.checkAliveStop <- netLn
 		}
 	}
 }
