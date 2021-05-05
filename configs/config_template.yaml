@@ -9,7 +9,7 @@ sshclient:
   # REQUIRED: server url
   server: user@192.168.0.10:22
   # OPTIONAL: Known hosts file path. Ignored if insecure is set to true
-  know_hosts: "~/.ssh/known_hosts"
+  known_hosts: "~/.ssh/known_hosts"
   # OPTIONAL: if the check against know_hosts is enabled or not
   # default insecure false
   insecure: false
