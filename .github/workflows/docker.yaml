@@ -33,15 +33,14 @@ jobs:
         run: |
           if [ "$GITHUB_REF" = "refs/heads/main" ]
           then 
-              TAGS=${{ secrets.DOCKERHUB_USERNAME }}/rospo:dev
+              TAG=${{ secrets.DOCKERHUB_USERNAME }}/rospo:dev
+              echo ::set-output name=TAG1::$TAG
+              echo ::set-output name=TAG2::$TAG
           else
               TAG=${GITHUB_REF/refs\/tags\/v/}
-              TAGS="
-              ${{ secrets.DOCKERHUB_USERNAME }}/rospo:latest
-              ${{ secrets.DOCKERHUB_USERNAME }}/rospo:$TAG
-              "
+              echo ::set-output name=TAG1::${{ secrets.DOCKERHUB_USERNAME }}/rospo:latest
+              echo ::set-output name=TAG2::${{ secrets.DOCKERHUB_USERNAME }}/rospo:$TAG
           fi
-          echo ::set-output name=TAGS::$TAGS
 
       - name: Build and push
         uses: docker/build-push-action@v2
@@ -51,4 +50,5 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm
           push: true
           tags: |
-            ${{ steps.get_tags.outputs.TAGS }}
+            ${{ steps.get_tags.outputs.TAG1 }}
+            ${{ steps.get_tags.outputs.TAG2 }}
