@@ -30,7 +30,14 @@ jobs:
 
       - name: Get the version
         id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+        run: |
+          if [ "$GITHUB_REF" = "refs/heads/main" ]
+          then 
+              TAG="latest"
+          else
+              TAG=${GITHUB_REF/refs\/tags\/v/}
+          fi
+          echo ::set-output name=VERSION::$TAG
 
       - name: Build and push
         uses: docker/build-push-action@v2
