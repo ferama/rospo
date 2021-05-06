@@ -13,6 +13,7 @@ func init() {
 
 	keygenCmd.Flags().BoolP("store", "s", false, "optional store the keys to files")
 	keygenCmd.Flags().StringP("path", "p", ".", "key pair destination path")
+	keygenCmd.Flags().StringP("name", "n", "identity", "output file name")
 }
 
 var keygenCmd = &cobra.Command{
@@ -21,6 +22,7 @@ var keygenCmd = &cobra.Command{
 	Long:  `Generates private/public key pairs`,
 	Run: func(cmd *cobra.Command, args []string) {
 		path, _ := cmd.Flags().GetString("path")
+		name, _ := cmd.Flags().GetString("name")
 		storeKeys, _ := cmd.Flags().GetBool("store")
 
 		key, err := utils.GeneratePrivateKey()
@@ -33,8 +35,8 @@ var keygenCmd = &cobra.Command{
 		}
 		encodedKey := utils.EncodePrivateKeyToPEM(key)
 		if storeKeys {
-			utils.WriteKeyToFile(encodedKey, filepath.Join(path, "identity"))
-			utils.WriteKeyToFile(publicKey, filepath.Join(path, "identity.pub"))
+			utils.WriteKeyToFile(encodedKey, filepath.Join(path, name))
+			utils.WriteKeyToFile(publicKey, filepath.Join(path, name+".pub"))
 		} else {
 			fmt.Printf("%s", encodedKey)
 			fmt.Printf("%s", publicKey)
