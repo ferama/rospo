@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func handleChannelSession(c ssh.NewChannel) {
+func handleChannelSession(c ssh.NewChannel, disableShell bool) {
 	channel, requests, err := c.Accept()
 	if err != nil {
 		log.Printf("[SSHD] could not accept channel (%s)", err)
@@ -28,20 +28,14 @@ func handleChannelSession(c ssh.NewChannel) {
 	}
 	shell = utils.GetUserDefaultShell(usr.Username)
 
-	// allocate a terminal for this channel
-	log.Print("[SSHD] creating pty...")
-	// Create new pty
-	pty, err := rpty.New()
-
-	if err != nil {
-		log.Printf("[SSHD] could not start pty (%s)", err)
-		return
-	}
-
+	var pty rpty.Pty
 	env := map[string]string{}
-	ptyRequested := false
 
 	for req := range requests {
+		if disableShell {
+			req.Reply(false, nil)
+			continue
+		}
 		// log.Printf("### %v %s", req.Type, req.Payload)
 		ok := false
 		switch req.Type {
@@ -68,7 +62,7 @@ func handleChannelSession(c ssh.NewChannel) {
 			cmd.Env = envVal
 			log.Printf("[SSHD] env %s", envVal)
 
-			if ptyRequested {
+			if pty != nil {
 				log.Println("[SSHD] running within the pty")
 				if err := pty.Run(cmd); err != nil {
 					log.Printf("[SSHD] %s", err)
@@ -101,7 +95,14 @@ func handleChannelSession(c ssh.NewChannel) {
 			// Responding 'ok' here will let the client
 			// know we have a pty ready for input
 			ok = true
-			ptyRequested = true
+			// allocate a terminal for this channel
+			log.Print("[SSHD] creating pty...")
+			// Create new pty
+			pty, err = rpty.New()
+			if err != nil {
+				log.Printf("[SSHD] could not start pty (%s)", err)
+				return
+			}
 			// Parse body...
 			termLen := req.Payload[3]
 			termEnv := string(req.Payload[4 : termLen+4])

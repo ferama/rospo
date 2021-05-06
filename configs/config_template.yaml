@@ -44,6 +44,11 @@ sshd:
   server_key: "./server_key"
   authorized_keys: "./authorized_keys"
   port: "2222"
+  # OPTIONAL: default false
+  # If enabled the ssh shell,exec command will be disabled. So you can use
+  # the sshd for tunnels, forwards but not to gain a remote shell or to execute
+  # commands
+  disable_shell: false
 
 # starts a pipe from local port 5432 to my_remote_postgres:5432
 # This will copy packets from local to remote endpoint

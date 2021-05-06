@@ -87,7 +87,6 @@ func GetUserDefaultShell(username string) string {
 	for {
 		line, _, err := lines.ReadLine()
 		if err != nil {
-			log.Println(err)
 			break
 		}
 		fs := strings.Split(string(line), ":")
