@@ -21,6 +21,8 @@ type sshServer struct {
 	authorizedKeyFile *string
 	tcpPort           *string
 
+	disableShell bool
+
 	forwards   map[string]net.Listener
 	forwardsMu sync.Mutex
 
@@ -60,6 +62,7 @@ func NewSshServer(conf *conf.SshDConf) *sshServer {
 	ss := &sshServer{
 		authorizedKeyFile:         &conf.AuthorizedKeysFile,
 		hostPrivateKey:            hostPrivateKeySigner,
+		disableShell:              conf.DisableShell,
 		tcpPort:                   &conf.Port,
 		forwards:                  make(map[string]net.Listener),
 		forwardsKeepAliveInterval: 5 * time.Second,
@@ -254,7 +257,7 @@ func (s *sshServer) handleChannels(chans <-chan ssh.NewChannel) {
 		t := newChannel.ChannelType()
 		switch t {
 		case "session":
-			go handleChannelSession(newChannel)
+			go handleChannelSession(newChannel, s.disableShell)
 
 		case "direct-tcpip":
 			go handleChannelDirect(newChannel)
