@@ -1,5 +1,7 @@
 #! /bin/sh
 
+# take this script as a sample.
+
 kubectl create configmap rospo-config \
     --from-file=./authorized_keys \
     --from-file=./id_rsa \

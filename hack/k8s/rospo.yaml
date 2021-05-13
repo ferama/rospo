@@ -5,7 +5,7 @@
 #   1. create 2 pipes from the pod to some services into the k8s cluster
 #   2. create 2 tunnels from the pod local pipes to a remote rospo or standard sshd server
 #
-# From now on, you will have to socket listening on the remote server, one
+# From now on, you will have two sockets listening on the remote server, one
 # on the port 8080 pointing to the k8s demo-app, and one on the port 9200
 # pointing to the k8s cluster elasticsearch deployment. Cool right? :)
 #
