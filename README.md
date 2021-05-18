@@ -13,17 +13,44 @@ It's meant to make ssh tunnels fun, reliable and understendable again
 1. [Why Rospo?](#why-rospo)
     * [Example scenario: Windows WSL reverse shell](#example-scenario-windows-wsl-reverse-shell)
     * [Example scenario: multiple complex tunnels](#example-scenario-multiple-complex-tunnels)
-2. [How to Install](#how-to-install)
+2. [Quick command line usage](#quick-command-line-usage)
+3. [How to Install](#how-to-install)
     * [Linux (amd64)](#linux-amd64)
     * [Linux (arm64)](#linux-arm64)
     * [Linux (arm)](#linux-arm)
     * [Mac Os (Apple silicon)](#mac-os)
     * [Windows](#windows)
-3. [Usage](#usage)
 
 
 ## Why Rospo
 I wanted an easy to use and reliable ssh tunnel tool. The available alternatives don't fully satisfy me and don't support all the features I need (as the embedded sshd server for example, or an out of the box connection monitoring mechanism) so I wrote my own
+
+## Quick command line usage
+Usage example:
+
+Starts an embedded ssh server and reverse proxy the port to remote_server
+
+```
+$ rospo tun reverse -S -r :8888 user@server:port
+```
+
+Forwards the local 5000 port to the remote 6000 on the remote_server
+
+```
+$ rospo tun forward -l :5000 -r :6000 user@server:port
+```
+
+Get more detailed help on each command runnig
+```
+$ rospo tun forward --help
+$ rospo tun reverse --help
+$ rospo sshd --help
+```
+
+Use a config file
+```
+$ rospo config.yaml
+```
 
 ### Example scenario: Windows WSL reverse shell
 Why use an embedded sshd server you might ask me. 
@@ -116,29 +143,4 @@ You will require Windows 10
 ```
 
 
-## Usage
-Usage example:
 
-Starts an embedded ssh server and reverse proxy the port to remote_server
-
-```
-$ rospo tun reverse -S -r :8888 user@server:port
-```
-
-Forwards the local 5000 port to the remote 6000 on the remote_server
-
-```
-$ rospo tun forward -l :5000 -r :6000 user@server:port
-```
-
-Get more detailed help on each command runnig
-```
-$ rospo tun forward --help
-$ rospo tun reverse --help
-$ rospo sshd --help
-```
-
-Use a config file
-```
-$ rospo config.yaml
-```
