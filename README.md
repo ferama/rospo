@@ -11,10 +11,11 @@ It's meant to make ssh tunnels fun, reliable and understendable again
 
 ### Table of Contents  
 1. [Why Rospo?](#why-rospo)
+2. [Quick command line usage](#quick-command-line-usage)
+3. [Scenarios](#scenarios)
     * [Example scenario: Windows WSL reverse shell](#example-scenario-windows-wsl-reverse-shell)
     * [Example scenario: multiple complex tunnels](#example-scenario-multiple-complex-tunnels)
-2. [Quick command line usage](#quick-command-line-usage)
-3. [How to Install](#how-to-install)
+4. [How to Install](#how-to-install)
     * [Linux (amd64)](#linux-amd64)
     * [Linux (arm64)](#linux-arm64)
     * [Linux (arm)](#linux-arm)
@@ -51,6 +52,8 @@ Use a config file
 ```
 $ rospo config.yaml
 ```
+
+## Scenarios
 
 ### Example scenario: Windows WSL reverse shell
 Why use an embedded sshd server you might ask me. 
