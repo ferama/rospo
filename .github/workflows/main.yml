@@ -27,10 +27,21 @@ jobs:
         with:
           go-version: '^1.16.2'
       
+      - name: Get tag
+        id: get_tag
+        run: |
+          if [ "$GITHUB_REF" = "refs/heads/main" ]
+          then 
+              echo ::set-output name=TAG::development
+          else
+              TAG=${GITHUB_REF/refs\/tags\/v/}
+              echo ::set-output name=TAG::$TAG
+          fi
+      
       # Runs a set of commands using the runners shell
       - name: Build the binary
         run: |
-          ./build.sh
+          VERSION=${{ steps.get_tag.outputs.TAG }} ./build.sh
 
       - uses: ncipollo/release-action@v1
         with:

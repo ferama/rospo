@@ -1,10 +1,14 @@
 #! /bin/bash
 
+VERSION=${VERSION:=development}
+
 build() {
     EXT=""
     [[ $GOOS = "windows" ]] && EXT=".exe"
     echo "Building ${GOOS} ${GOARCH}"
-    go build -o ./bin/rospo-${GOOS}-${GOARCH}${EXT} .
+    go build \
+        -ldflags="-X 'github.com/ferama/rospo/cmd.Version=$VERSION'" \
+        -o ./bin/rospo-${GOOS}-${GOARCH}${EXT} .
 }
 
 go test ./... -v
