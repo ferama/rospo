@@ -3,7 +3,6 @@
 # take this script as a sample.
 
 kubectl create configmap rospo-config \
-    --from-file=./authorized_keys \
     --from-file=./id_rsa \
     --from-file=./known_hosts \
     --from-file=./rospo.yaml \
