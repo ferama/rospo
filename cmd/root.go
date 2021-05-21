@@ -11,10 +11,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var Version = "development"
+
 var rootCmd = &cobra.Command{
-	Use:  "rospo config_file_path.yaml",
-	Long: "The tool to create relieable ssh tunnels.",
-	Args: cobra.MinimumNArgs(1),
+	Use:     "rospo config_file_path.yaml",
+	Long:    "The tool to create relieable ssh tunnels.",
+	Version: Version,
+	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		conf, err := conf.LoadConfig(args[0])
 		if err != nil {
