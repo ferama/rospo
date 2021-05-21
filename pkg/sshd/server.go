@@ -150,7 +150,7 @@ func (s *sshServer) Start() {
 		if err != nil {
 			panic(err)
 		}
-
+		log.Printf("[SSHD] connection from %s", conn.RemoteAddr())
 		go func() {
 			// From a standard TCP connection to an encrypted SSH connection
 			sshConn, chans, reqs, err := ssh.NewServerConn(conn, &config)
@@ -160,7 +160,6 @@ func (s *sshServer) Start() {
 			}
 			log.Printf("[SSHD] logged in with key %s", sshConn.Permissions.Extensions["pubkey-fp"])
 
-			log.Println("[SSHD] connection from", sshConn.RemoteAddr())
 			// handle forwards and keepalive requests
 			go s.handleRequests(sshConn, reqs)
 			// Accept all channels
