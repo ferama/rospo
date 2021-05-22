@@ -17,7 +17,7 @@
 #   4. generete the kubernetes config map (look at the example script k8s-deploy.sh in this dir)
 #   5. create the kubernetes rospo deployment
 sshclient:
-  identity: "/etc/rospo/id_rsa"
+  identity: "/etc/rospo/secret/id_rsa"
   server: my-rospo-or-standard-sshd-server:2222
   known_hosts: "/etc/rospo/known_hosts"
 

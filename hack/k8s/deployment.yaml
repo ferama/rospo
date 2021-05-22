@@ -21,8 +21,13 @@ spec:
           volumeMounts:
           - name: config-volume
             mountPath: /etc/rospo
+          - name: secret-volume
+            mountPath: /etc/rospo/secret
       volumes:
         - name: config-volume
           configMap:
             name: rospo-config
+        - name: secret-volume
+          secret:
+            secretName: rospo-secret
       restartPolicy: Always
