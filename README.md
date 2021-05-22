@@ -117,7 +117,7 @@ Rospo tunnel are monitored and keeped up in the event of network issues.
 
 ### Example scenario: kubernetes service exporter
 
-Many times during k8s development you need to port-forward some on the pods services for local development and/or tests. You need the port forward maybe because that services are not meant to be exposed through the internet or for whatever reason.
+Many times during development on k8s you need to port-forward some of the pods services for local development and/or tests. You need the port forward maybe because that services are not meant to be exposed through the internet or for whatever reason.
 
 Rospo can come to the rescue here. You can create a `rospo.conf` like this:
 ```yaml
@@ -141,7 +141,7 @@ pipe:
     local: ":8080"
 ```
 
-You need to create the keys accordingly and put them correctly on the target server. After that you can run a kubernetes pod that keeps up the tunnels and le you securely access the services from a machine inside your local network.
+You need to create the keys accordingly and put them correctly on the target server. After that you can run a kubernetes pod that keeps up the tunnels and let you securely access the services from a machine inside your local network.
 Please refer to the example in [./hack/k8s](./hack/k8s) for more details.
 
 In this scenario the k8s pods act as a bridge between kubernetes services and the reverse tunnels. You are going to use `pipes` to copy the connections from the services to the rospo pod. The pipes in the example will open 2 sockets locally inside the pod:
