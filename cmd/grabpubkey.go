@@ -14,9 +14,7 @@ func init() {
 
 	usr, _ := user.Current()
 	knownHostFile := filepath.Join(usr.HomeDir, ".ssh", "known_hosts")
-	defaultIdentity := filepath.Join(usr.HomeDir, ".ssh", "id_rsa")
 	grabpubkeyCmd.PersistentFlags().StringP("known-hosts", "k", knownHostFile, "the known_hosts file absolute path")
-	grabpubkeyCmd.PersistentFlags().StringP("user-identity", "s", defaultIdentity, "the ssh identity (private) key absolute path")
 }
 
 var grabpubkeyCmd = &cobra.Command{
