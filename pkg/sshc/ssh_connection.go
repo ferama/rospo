@@ -87,6 +87,16 @@ func (s *SshConnection) Start() {
 	}
 }
 
+// GrapPubKeys is an helper function that gets server pubkey
+func (s *SshConnection) GrabPubKey() {
+	sshConfig := &ssh.ClientConfig{
+		HostKeyCallback: s.verifyHostCallback(false),
+	}
+	// ignore return values here. I'm using it just to trigger the
+	// verifyHostCallback
+	ssh.Dial("tcp", s.serverEndpoint.String(), sshConfig)
+}
+
 func (s *SshConnection) keepAlive() {
 	log.Println("[SSHC] starting client keep alive")
 	for {
@@ -107,7 +117,7 @@ func (s *SshConnection) connect() error {
 		Auth: []ssh.AuthMethod{
 			utils.LoadIdentityFile(s.identity),
 		},
-		HostKeyCallback: s.verifyHostCallback(),
+		HostKeyCallback: s.verifyHostCallback(true),
 	}
 	log.Println("[SSHC] trying to connect to remote server...")
 
@@ -129,7 +139,7 @@ func (s *SshConnection) connect() error {
 	return nil
 }
 
-func (s *SshConnection) verifyHostCallback() ssh.HostKeyCallback {
+func (s *SshConnection) verifyHostCallback(fail bool) ssh.HostKeyCallback {
 
 	if s.insecure {
 		return func(host string, remote net.Addr, key ssh.PublicKey) error {
@@ -160,6 +170,11 @@ func (s *SshConnection) verifyHostCallback() ssh.HostKeyCallback {
 			log.Printf("[SSHC] ERROR: %v is not a key of %s, either a man in the middle attack or %s host pub key was changed.", key, host, host)
 			return e
 		} else if errors.As(e, &keyErr) && len(keyErr.Want) == 0 {
+			if fail {
+				log.Fatalf(`[SSHC] ERROR: the host '%s' is not trusted. If it is trusted instead, 
+				  please grab its pub key using the 'rospo grabpubkey' command`, host)
+				return errors.New("")
+			}
 			log.Printf("[SSHC] WARNING: %s is not trusted, adding this key: \n\n%s\n\nto known_hosts file.", host, utils.SerializePublicKey(key))
 			return utils.AddHostKeyToKnownHosts(host, key, s.knownHosts)
 		}
@@ -190,7 +205,7 @@ func (s *SshConnection) jumpHostConnect(
 			Auth: []ssh.AuthMethod{
 				utils.LoadIdentityFile(jh.Identity),
 			},
-			HostKeyCallback: s.verifyHostCallback(),
+			HostKeyCallback: s.verifyHostCallback(true),
 		}
 		log.Printf("[SSHC] connecting to hop %s@%s", parsed.Username, hop.String())
 
