@@ -1,0 +1,15 @@
+sshclient:
+  identity: "/etc/rospo/secret/id_rsa"
+  server: my-rospo-or-standard-sshd-server:2222
+  known_hosts: "/etc/rospo/known_hosts"
+
+tunnel:
+  - remote: "0.0.0.0:9022"
+    local: ":2222"
+    forward: no
+
+sshd:
+  server_key: "/etc/rospo/secret/server_key"
+  authorized_keys: "/etc/rospo/authorized_keys"
+  port: "2222"
+  disable_shell: false

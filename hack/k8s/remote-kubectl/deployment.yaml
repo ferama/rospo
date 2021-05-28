@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rospo
+  labels:
+    app: rospo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rospo
+  template:
+    metadata:
+      labels:
+        app: rospo
+    spec:
+      containers:
+        - name: rospo
+          image: ferama/rospo:latest
+          command: ["rospo", "/etc/rospo/rospo.yaml"]
+          volumeMounts:
+          - name: config-volume
+            mountPath: /etc/rospo
+          - name: secret-volume
+            mountPath: /etc/rospo/secret
+      serviceAccountName: rospo
+      volumes:
+        - name: config-volume
+          configMap:
+            name: rospo-config
+        - name: secret-volume
+          secret:
+            secretName: rospo-secret
+      restartPolicy: Always
