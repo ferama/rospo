@@ -2,10 +2,8 @@ package tun
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"net"
-	"sync"
 	"time"
 
 	"github.com/ferama/rospo/pkg/conf"
@@ -81,7 +79,7 @@ func (t *Tunnel) listenLocal() {
 				log.Println("[TUN] disconnected")
 				break
 			}
-			t.serveClient(client, remote)
+			utils.CopyConn(client, remote)
 		}
 		listener.Close()
 	}
@@ -111,29 +109,8 @@ func (t *Tunnel) listenRemote() {
 				log.Println("[TUN] disconnected")
 				break
 			}
-			t.serveClient(client, local)
+			utils.CopyConn(client, local)
 		}
 		listener.Close()
 	}
-}
-
-func (t *Tunnel) serveClient(client net.Conn, remote net.Conn) {
-	var once sync.Once
-	close := func() {
-		client.Close()
-		remote.Close()
-	}
-
-	// Start remote -> local data transfer
-	go func() {
-		io.Copy(client, remote)
-		once.Do(close)
-
-	}()
-
-	// Start local -> remote data transfer
-	go func() {
-		io.Copy(remote, client)
-		once.Do(close)
-	}()
 }

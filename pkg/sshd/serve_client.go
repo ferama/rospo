@@ -1,7 +1,6 @@
 package sshd
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -18,17 +17,11 @@ func serveClient(cssh ssh.Channel, conn net.Conn) {
 		log.Printf("[SSHD] direct-tcpip session closed")
 	}
 	go func() {
-		_, err := io.Copy(cssh, conn)
-		if err != nil {
-			log.Println(fmt.Sprintf("[SSHD] direct - error while copy: %s", err))
-		}
+		io.Copy(cssh, conn)
 		once.Do(close)
 	}()
 	go func() {
-		_, err := io.Copy(conn, cssh)
-		if err != nil {
-			log.Println(fmt.Sprintf("[SSHD] direct - error while copy: %s", err))
-		}
+		io.Copy(conn, cssh)
 		once.Do(close)
 	}()
 }
