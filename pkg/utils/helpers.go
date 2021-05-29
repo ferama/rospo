@@ -2,13 +2,16 @@ package utils
 
 import (
 	"bufio"
+	"io"
 	"log"
+	"net"
 	"os"
 	"os/user"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type sshUrl struct {
@@ -101,4 +104,23 @@ func GetUserDefaultShell(username string) string {
 	}
 
 	return fallback
+}
+
+// CopyConn copy packets from c1 to c2 and viceversa
+func CopyConn(c1 net.Conn, c2 net.Conn) {
+	var once sync.Once
+	close := func() {
+		c1.Close()
+		c2.Close()
+	}
+	go func() {
+		io.Copy(c1, c2)
+		once.Do(close)
+
+	}()
+
+	go func() {
+		io.Copy(c2, c1)
+		once.Do(close)
+	}()
 }
