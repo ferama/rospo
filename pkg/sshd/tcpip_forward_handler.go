@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/ferama/rospo/pkg/utils"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -48,7 +49,7 @@ func handleTcpIpForwardSession(client *ssh.ServerConn, listener net.Listener, la
 				return
 			}
 			go ssh.DiscardRequests(requests)
-			serveClient(c, lconn)
+			utils.CopyConn(c, lconn)
 		}(lconn, laddr, lport)
 	}
 }
