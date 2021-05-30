@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/ferama/rospo/pkg/utils"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -37,5 +38,5 @@ func handleChannelDirect(c ssh.NewChannel) {
 		return
 	}
 
-	serveClient(connection, rconn)
+	utils.CopyConn(connection, rconn)
 }

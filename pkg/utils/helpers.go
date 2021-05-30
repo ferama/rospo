@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"io"
 	"log"
-	"net"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -107,7 +106,7 @@ func GetUserDefaultShell(username string) string {
 }
 
 // CopyConn copy packets from c1 to c2 and viceversa
-func CopyConn(c1 net.Conn, c2 net.Conn) {
+func CopyConn(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser) {
 	var once sync.Once
 	close := func() {
 		c1.Close()
