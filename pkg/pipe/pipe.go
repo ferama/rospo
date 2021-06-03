@@ -1,10 +1,8 @@
 package pipe
 
 import (
-	"io"
 	"log"
 	"net"
-	"sync"
 
 	"github.com/ferama/rospo/pkg/conf"
 	"github.com/ferama/rospo/pkg/utils"
@@ -46,27 +44,8 @@ func (r *Pipe) Start() {
 				client.Close()
 				return
 			}
-			r.serveClient(client, conn)
+			utils.CopyConn(client, conn)
 		}()
 	}
 	listener.Close()
-}
-
-func (r *Pipe) serveClient(local net.Conn, remote net.Conn) {
-	var once sync.Once
-	close := func() {
-		local.Close()
-		remote.Close()
-	}
-
-	go func() {
-		io.Copy(local, remote)
-		once.Do(close)
-
-	}()
-
-	go func() {
-		io.Copy(remote, local)
-		once.Do(close)
-	}()
 }
