@@ -26,7 +26,7 @@ func NewPipe(conf *conf.PipeConf) *Pipe {
 	}
 }
 
-// GetListenerAddr returns the pipe listener netowork address
+// GetListenerAddr returns the pipe listener network address
 func (p *Pipe) GetListenerAddr() (net.Addr, error) {
 	if p.listener != nil {
 		return p.listener.Addr(), nil
