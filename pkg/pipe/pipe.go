@@ -12,6 +12,9 @@ import (
 type Pipe struct {
 	local  *utils.Endpoint
 	remote *utils.Endpoint
+
+	// the pipe connection listener
+	listener net.Listener
 }
 
 // NewPipe creates a Pipe object
@@ -24,13 +27,14 @@ func NewPipe(conf *conf.PipeConf) *Pipe {
 
 // Start the pipe. It basically copy all the tcp packets incoming to the
 // local endpoint into the remote endpoint
-func (r *Pipe) Start() {
-	listener, err := net.Listen("tcp", r.local.String())
+func (p *Pipe) Start() {
+	listener, err := net.Listen("tcp", p.local.String())
+	p.listener = listener
 	if err != nil {
 		log.Printf("[PIPE] listening on %s error.\n", err)
 		return
 	}
-	log.Printf("[PIPE] listening on %s\n", r.local)
+	log.Printf("[PIPE] listening on %s\n", p.local)
 	for {
 		client, err := listener.Accept()
 		if err != nil {
@@ -38,7 +42,7 @@ func (r *Pipe) Start() {
 			break
 		}
 		go func() {
-			conn, err := net.Dial("tcp", r.remote.String())
+			conn, err := net.Dial("tcp", p.remote.String())
 			if err != nil {
 				log.Println("[PIPE] remote connection refused")
 				client.Close()
@@ -48,4 +52,11 @@ func (r *Pipe) Start() {
 		}()
 	}
 	listener.Close()
+}
+
+// Stop closes the pipe
+func (p *Pipe) Stop() {
+	if p.listener != nil {
+		p.listener.Close()
+	}
 }
