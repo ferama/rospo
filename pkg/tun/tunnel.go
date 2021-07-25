@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/ferama/rospo/pkg/conf"
@@ -24,6 +25,11 @@ type Tunnel struct {
 
 	// the tunnel connection listener
 	listener net.Listener
+
+	// indicate if the tunnel should be terminated
+	terminate chan bool
+
+	listenerWg sync.WaitGroup
 }
 
 // NewTunnel builds a Tunnel object
@@ -36,24 +42,63 @@ func NewTunnel(sshConn *sshc.SshConnection, conf *conf.TunnelConf) *Tunnel {
 
 		sshConn:              sshConn,
 		reconnectionInterval: 5 * time.Second,
+		terminate:            make(chan bool, 1),
 	}
 
 	return tunnel
 }
 
+func (t *Tunnel) waitForSshClient() bool {
+	c := make(chan bool)
+	go func() {
+		defer close(c)
+		// WARN: if I have issues with sshConn this will wait forever
+		t.sshConn.Connected.Wait()
+	}()
+	select {
+	case <-t.terminate:
+		return false
+	default:
+		select {
+		case <-c:
+			return true
+		case <-t.terminate:
+			return false
+		}
+	}
+}
+
 // Start activates the tunnel connections
 func (t *Tunnel) Start() {
 	for {
-		// waits for the ssh client to be connected to the server
-		t.sshConn.Connected.Wait()
+		t.listenerWg.Add(1)
+		// waits for the ssh client to be connected to the server or for
+		// a terminate request
+		for {
+			if t.waitForSshClient() {
+				break
+			} else {
+				return
+			}
+		}
 
 		if t.forward {
 			t.listenLocal()
 		} else {
 			t.listenRemote()
 		}
+
 		time.Sleep(t.reconnectionInterval)
 	}
+}
+
+// Stop ends the tunnel
+func (t *Tunnel) Stop() {
+	close(t.terminate)
+	go func() {
+		t.listenerWg.Wait()
+		t.listener.Close()
+	}()
 }
 
 func (t *Tunnel) listenLocal() {
@@ -64,6 +109,7 @@ func (t *Tunnel) listenLocal() {
 		return
 	}
 	t.listener = listener
+	t.listenerWg.Done()
 
 	log.Printf("[TUN] forward connected. Local: %s <- Remote: %s\n", t.localEndpoint.String(), t.remoteEndpoint.String())
 	if t.sshConn != nil && listener != nil {
@@ -93,6 +139,7 @@ func (t *Tunnel) listenRemote() {
 		return
 	}
 	t.listener = listener
+	t.listenerWg.Done()
 
 	log.Printf("[TUN] reverse connected. Local: %s -> Remote: %s\n", t.localEndpoint.String(), t.remoteEndpoint.String())
 	if t.sshConn != nil && listener != nil {
