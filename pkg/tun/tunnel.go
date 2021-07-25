@@ -132,7 +132,7 @@ func (t *Tunnel) listenLocal() {
 	}
 }
 
-// GetListenerAddr returns the tunnel listener netowork address
+// GetListenerAddr returns the tunnel listener network address
 func (t *Tunnel) GetListenerAddr() (net.Addr, error) {
 	if t.listener != nil {
 		return t.listener.Addr(), nil
