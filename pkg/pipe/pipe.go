@@ -1,6 +1,7 @@
 package pipe
 
 import (
+	"errors"
 	"log"
 	"net"
 
@@ -22,6 +23,15 @@ func NewPipe(conf *conf.PipeConf) *Pipe {
 	return &Pipe{
 		local:  utils.NewEndpoint(conf.Local),
 		remote: utils.NewEndpoint(conf.Remote),
+	}
+}
+
+// GetListenerAddr returns the pipe listener netowork address
+func (p *Pipe) GetListenerAddr() (net.Addr, error) {
+	if p.listener != nil {
+		return p.listener.Addr(), nil
+	} else {
+		return &net.TCPAddr{}, errors.New("listener not ready")
 	}
 }
 
