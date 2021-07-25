@@ -1,6 +1,7 @@
 package tun
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -111,7 +112,7 @@ func (t *Tunnel) listenLocal() {
 	t.listener = listener
 	t.listenerWg.Done()
 
-	log.Printf("[TUN] forward connected. Local: %s <- Remote: %s\n", t.localEndpoint.String(), t.remoteEndpoint.String())
+	log.Printf("[TUN] forward connected. Local: %s <- Remote: %s\n", t.listener.Addr(), t.remoteEndpoint.String())
 	if t.sshConn != nil && listener != nil {
 		for {
 			remote, err := t.sshConn.Client.Dial("tcp", t.remoteEndpoint.String())
@@ -131,17 +132,30 @@ func (t *Tunnel) listenLocal() {
 	}
 }
 
+// GetListenerAddr returns the tunnel listener netowork address
+func (t *Tunnel) GetListenerAddr() (net.Addr, error) {
+	if t.listener != nil {
+		return t.listener.Addr(), nil
+	} else {
+		return &net.TCPAddr{}, errors.New("listener not ready")
+	}
+}
+
 func (t *Tunnel) listenRemote() {
 	// Listen on remote server port
+	// you can use port :0 to get a radnom available tcp port
+	// Example:
+	//	listener, err := t.sshConn.Client.Listen("tcp", "127.0.0.1:0")
+
 	listener, err := t.sshConn.Client.Listen("tcp", t.remoteEndpoint.String())
+
 	if err != nil {
 		log.Printf("[TUN] listen open port ON remote server error. %s\n", err)
 		return
 	}
 	t.listener = listener
 	t.listenerWg.Done()
-
-	log.Printf("[TUN] reverse connected. Local: %s -> Remote: %s\n", t.localEndpoint.String(), t.remoteEndpoint.String())
+	log.Printf("[TUN] reverse connected. Local: %s -> Remote: %s\n", t.localEndpoint.String(), t.listener.Addr())
 	if t.sshConn != nil && listener != nil {
 		for {
 			// Open a (local) connection to localEndpoint whose content will be forwarded so serverEndpoint
