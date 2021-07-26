@@ -18,7 +18,7 @@ func StartServer(isDev bool, sshConn *sshc.SshConnection, conf *WebConf) {
 		})
 	})
 
-	pipeapi.Routes(sshConn, r.Group("/api/pipes"))
+	pipeapi.Routes(r.Group("/api/pipes"))
 	tunapi.Routes(sshConn, r.Group("/api/tuns"))
 
 	r.Run(conf.ListenAddress)
