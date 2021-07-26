@@ -24,12 +24,13 @@ type Tunnel struct {
 	reconnectionInterval time.Duration
 
 	// the tunnel connection listener
-	listener net.Listener
+	listener   net.Listener
+	listenerWg sync.WaitGroup
 
 	// indicate if the tunnel should be terminated
 	terminate chan bool
 
-	listenerWg sync.WaitGroup
+	registryID int
 }
 
 // NewTunnel builds a Tunnel object
@@ -70,6 +71,7 @@ func (t *Tunnel) waitForSshClient() bool {
 
 // Start activates the tunnel connections
 func (t *Tunnel) Start() {
+	t.registryID = TunRegistry().Add(t)
 	for {
 		t.listenerWg.Add(1)
 		// waits for the ssh client to be connected to the server or for
@@ -94,6 +96,7 @@ func (t *Tunnel) Start() {
 
 // Stop ends the tunnel
 func (t *Tunnel) Stop() {
+	TunRegistry().Delete(t.registryID)
 	close(t.terminate)
 	go func() {
 		t.listenerWg.Wait()
