@@ -1,7 +1,6 @@
 package conf
 
 import (
-	"errors"
 	"os"
 
 	"github.com/ferama/rospo/pkg/pipe"
@@ -45,10 +44,6 @@ func LoadConfig(filePath string) (*Config, error) {
 	err = decoder.Decode(&cfg)
 	if err != nil {
 		return nil, err
-	}
-
-	if cfg.SshD == nil && cfg.Tunnel == nil {
-		return nil, errors.New("invalid config file: you need to fill at least one of the `sshd` or `tunnel` sections")
 	}
 
 	return &cfg, nil
