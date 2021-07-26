@@ -1,9 +1,9 @@
 package pipe
 
 import (
-	"errors"
 	"log"
 	"net"
+	"sync"
 
 	"github.com/ferama/rospo/pkg/utils"
 )
@@ -14,26 +14,30 @@ type Pipe struct {
 	remote *utils.Endpoint
 
 	// the pipe connection listener
-	listener net.Listener
+	listener   net.Listener
+	listenerWg sync.WaitGroup
+
+	// indicate if the pipe should be terminated
+	terminate chan bool
 
 	registryID int
 }
 
 // NewPipe creates a Pipe object
 func NewPipe(conf *PipeConf) *Pipe {
-	return &Pipe{
-		local:  utils.NewEndpoint(conf.Local),
-		remote: utils.NewEndpoint(conf.Remote),
+	pipe := &Pipe{
+		local:     utils.NewEndpoint(conf.Local),
+		remote:    utils.NewEndpoint(conf.Remote),
+		terminate: make(chan bool),
 	}
+	pipe.listenerWg.Add(1)
+	return pipe
 }
 
 // GetListenerAddr returns the pipe listener network address
-func (p *Pipe) GetListenerAddr() (net.Addr, error) {
-	if p.listener != nil {
-		return p.listener.Addr(), nil
-	} else {
-		return &net.TCPAddr{}, errors.New("listener not ready")
-	}
+func (p *Pipe) GetListenerAddr() net.Addr {
+	p.listenerWg.Wait()
+	return p.listener.Addr()
 }
 
 // Start the pipe. It basically copy all the tcp packets incoming to the
@@ -43,34 +47,44 @@ func (p *Pipe) Start() {
 
 	listener, err := net.Listen("tcp", p.local.String())
 	p.listener = listener
+	p.listenerWg.Done()
+
 	if err != nil {
 		log.Printf("[PIPE] listening on %s error.\n", err)
 		return
 	}
 	log.Printf("[PIPE] listening on %s\n", p.local)
 	for {
-		client, err := listener.Accept()
-		if err != nil {
-			log.Println("[PIPE] disconnected")
-			break
-		}
-		go func() {
-			conn, err := net.Dial("tcp", p.remote.String())
+		select {
+		case <-p.terminate:
+			return
+		default:
+			client, err := listener.Accept()
 			if err != nil {
-				log.Println("[PIPE] remote connection refused")
-				client.Close()
-				return
+				log.Println("[PIPE] disconnected")
+				break
 			}
-			utils.CopyConn(client, conn)
-		}()
+			go func() {
+				conn, err := net.Dial("tcp", p.remote.String())
+				if err != nil {
+					log.Println("[PIPE] remote connection refused")
+					client.Close()
+					return
+				}
+				utils.CopyConn(client, conn)
+			}()
+		}
+
 	}
-	listener.Close()
+	// listener.Close()
 }
 
 // Stop closes the pipe
 func (p *Pipe) Stop() {
 	PipeRegistry().Delete(p.registryID)
-	if p.listener != nil {
+	close(p.terminate)
+	go func() {
+		p.listenerWg.Wait()
 		p.listener.Close()
-	}
+	}()
 }
