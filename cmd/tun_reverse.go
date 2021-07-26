@@ -41,14 +41,14 @@ var tunReverseCmd = &cobra.Command{
 		insecure, _ := cmd.Flags().GetBool("insecure")
 
 		config := &conf.Config{
-			SshClient: &conf.SshClientConf{
+			SshClient: &sshc.SshClientConf{
 				Identity:   identity,
 				KnownHosts: knownHosts,
 				ServerURI:  args[0],
-				JumpHosts:  make([]*conf.JumpHostConf, 0),
+				JumpHosts:  make([]*sshc.JumpHostConf, 0),
 				Insecure:   insecure,
 			},
-			Tunnel: []*conf.TunnelConf{
+			Tunnel: []*tun.TunnelConf{
 				{
 					Remote:  remote,
 					Local:   local,
@@ -58,7 +58,7 @@ var tunReverseCmd = &cobra.Command{
 		}
 
 		if jumpHost != "" {
-			config.SshClient.JumpHosts = append(config.SshClient.JumpHosts, &conf.JumpHostConf{
+			config.SshClient.JumpHosts = append(config.SshClient.JumpHosts, &sshc.JumpHostConf{
 				URI:      jumpHost,
 				Identity: identity,
 			})
@@ -69,7 +69,7 @@ var tunReverseCmd = &cobra.Command{
 			sshdAuthorizedKeys, _ := cmd.Flags().GetString("sshd-authorized-keys")
 			sshdPort, _ := cmd.Flags().GetString("sshd-port")
 
-			config.SshD = &conf.SshDConf{
+			config.SshD = &sshd.SshDConf{
 				Key:                sshdKey,
 				AuthorizedKeysFile: sshdAuthorizedKeys,
 				Port:               sshdPort,

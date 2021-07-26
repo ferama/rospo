@@ -1,4 +1,4 @@
-package conf
+package tun
 
 import "github.com/ferama/rospo/pkg/utils"
 

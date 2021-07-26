@@ -1,4 +1,4 @@
-package conf
+package sshd
 
 // SshDConf holds the sshd configuration
 type SshDConf struct {

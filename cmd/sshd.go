@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"github.com/ferama/rospo/pkg/conf"
 	"github.com/ferama/rospo/pkg/sshd"
 
 	"github.com/spf13/cobra"
@@ -26,7 +25,7 @@ var sshdCmd = &cobra.Command{
 		sshdPort, _ := cmd.Flags().GetString("sshd-port")
 		disableShell, _ := cmd.Flags().GetBool("disable-shell")
 
-		config := &conf.SshDConf{
+		config := &sshd.SshDConf{
 			Key:                sshdKey,
 			AuthorizedKeysFile: sshdAuthorizedKeys,
 			Port:               sshdPort,
