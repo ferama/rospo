@@ -15,6 +15,8 @@ type Pipe struct {
 
 	// the pipe connection listener
 	listener net.Listener
+
+	registryID int
 }
 
 // NewPipe creates a Pipe object
@@ -37,6 +39,8 @@ func (p *Pipe) GetListenerAddr() (net.Addr, error) {
 // Start the pipe. It basically copy all the tcp packets incoming to the
 // local endpoint into the remote endpoint
 func (p *Pipe) Start() {
+	p.registryID = PipeRegistry().Add(p)
+
 	listener, err := net.Listen("tcp", p.local.String())
 	p.listener = listener
 	if err != nil {
@@ -65,6 +69,7 @@ func (p *Pipe) Start() {
 
 // Stop closes the pipe
 func (p *Pipe) Stop() {
+	PipeRegistry().Delete(p.registryID)
 	if p.listener != nil {
 		p.listener.Close()
 	}
