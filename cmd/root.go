@@ -34,14 +34,6 @@ var rootCmd = &cobra.Command{
 			go sshConn.Start()
 		}
 
-		if conf.Web != nil {
-			dev := false
-			if Version == "development" {
-				dev = true
-			}
-			go web.StartServer(dev, sshConn, conf.Web)
-		}
-
 		if conf.Pipe != nil {
 			for _, f := range conf.Pipe {
 				go pipe.NewPipe(f).Start()
@@ -58,13 +50,22 @@ var rootCmd = &cobra.Command{
 
 		if conf.Tunnel != nil && len(conf.Tunnel) > 0 {
 			for idx, c := range conf.Tunnel {
-				if idx == len(conf.Tunnel)-1 {
+				if idx == len(conf.Tunnel)-1 && conf.Web == nil {
 					tun.NewTunnel(sshConn, c).Start()
 				} else {
 					go tun.NewTunnel(sshConn, c).Start()
 				}
 			}
 		}
+
+		if conf.Web != nil {
+			dev := false
+			if Version == "development" {
+				dev = true
+			}
+			web.StartServer(dev, sshConn, conf.Web)
+		}
+
 	},
 }
 
