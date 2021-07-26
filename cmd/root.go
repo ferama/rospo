@@ -8,6 +8,7 @@ import (
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/sshd"
 	"github.com/ferama/rospo/pkg/tun"
+	"github.com/ferama/rospo/pkg/web"
 	"github.com/spf13/cobra"
 )
 
@@ -23,6 +24,12 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalln(err)
 		}
+
+		dev := false
+		if Version == "development" {
+			dev = true
+		}
+		go web.StartServer(dev, &web.WebConf{})
 
 		if conf.Pipe != nil {
 			for _, f := range conf.Pipe {
