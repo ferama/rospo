@@ -8,6 +8,7 @@ import (
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/sshd"
 	"github.com/ferama/rospo/pkg/tun"
+	"github.com/ferama/rospo/pkg/web"
 	"github.com/spf13/cobra"
 )
 
@@ -22,6 +23,15 @@ var rootCmd = &cobra.Command{
 		conf, err := conf.LoadConfig(args[0])
 		if err != nil {
 			log.Fatalln(err)
+		}
+
+		var sshConn *sshc.SshConnection
+		if conf.Tunnel != nil || conf.Web != nil {
+			if conf.SshClient == nil {
+				log.Fatalln("You need to configure sshclient section to support tunnels")
+			}
+			sshConn = sshc.NewSshConnection(conf.SshClient)
+			go sshConn.Start()
 		}
 
 		if conf.Pipe != nil {
@@ -39,19 +49,23 @@ var rootCmd = &cobra.Command{
 		}
 
 		if conf.Tunnel != nil && len(conf.Tunnel) > 0 {
-			if conf.SshClient == nil {
-				log.Fatalln("You need to configure sshclient section to support tunnels")
-			}
-			client := sshc.NewSshConnection(conf.SshClient)
-			go client.Start()
 			for idx, c := range conf.Tunnel {
-				if idx == len(conf.Tunnel)-1 {
-					tun.NewTunnel(client, c).Start()
+				if idx == len(conf.Tunnel)-1 && conf.Web == nil {
+					tun.NewTunnel(sshConn, c).Start()
 				} else {
-					go tun.NewTunnel(client, c).Start()
+					go tun.NewTunnel(sshConn, c).Start()
 				}
 			}
 		}
+
+		if conf.Web != nil {
+			dev := false
+			if Version == "development" {
+				dev = true
+			}
+			web.StartServer(dev, sshConn, conf.Web)
+		}
+
 	},
 }
 

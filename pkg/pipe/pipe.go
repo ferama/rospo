@@ -1,9 +1,9 @@
 package pipe
 
 import (
-	"errors"
 	"log"
 	"net"
+	"sync"
 
 	"github.com/ferama/rospo/pkg/utils"
 )
@@ -14,58 +14,97 @@ type Pipe struct {
 	remote *utils.Endpoint
 
 	// the pipe connection listener
-	listener net.Listener
+	listener   net.Listener
+	listenerWg sync.WaitGroup
+
+	// indicate if the pipe should be terminated
+	terminate chan bool
+
+	registryID int
+
+	clientsMap   map[string]net.Conn
+	clientsMapMU sync.Mutex
 }
 
 // NewPipe creates a Pipe object
 func NewPipe(conf *PipeConf) *Pipe {
-	return &Pipe{
-		local:  utils.NewEndpoint(conf.Local),
-		remote: utils.NewEndpoint(conf.Remote),
+	pipe := &Pipe{
+		local:      utils.NewEndpoint(conf.Local),
+		remote:     utils.NewEndpoint(conf.Remote),
+		terminate:  make(chan bool),
+		clientsMap: make(map[string]net.Conn),
 	}
+	pipe.listenerWg.Add(1)
+	return pipe
 }
 
 // GetListenerAddr returns the pipe listener network address
-func (p *Pipe) GetListenerAddr() (net.Addr, error) {
-	if p.listener != nil {
-		return p.listener.Addr(), nil
-	} else {
-		return &net.TCPAddr{}, errors.New("listener not ready")
-	}
+func (p *Pipe) GetListenerAddr() net.Addr {
+	p.listenerWg.Wait()
+	return p.listener.Addr()
 }
 
 // Start the pipe. It basically copy all the tcp packets incoming to the
 // local endpoint into the remote endpoint
 func (p *Pipe) Start() {
+	p.registryID = PipeRegistry().Add(p)
+
 	listener, err := net.Listen("tcp", p.local.String())
 	p.listener = listener
+	p.listenerWg.Done()
+
 	if err != nil {
 		log.Printf("[PIPE] listening on %s error.\n", err)
 		return
 	}
 	log.Printf("[PIPE] listening on %s\n", p.local)
 	for {
-		client, err := listener.Accept()
-		if err != nil {
-			log.Println("[PIPE] disconnected")
-			break
-		}
-		go func() {
-			conn, err := net.Dial("tcp", p.remote.String())
+		select {
+		case <-p.terminate:
+			return
+		default:
+			client, err := listener.Accept()
 			if err != nil {
-				log.Println("[PIPE] remote connection refused")
-				client.Close()
-				return
+				log.Println("[PIPE] disconnected")
+				break
 			}
-			utils.CopyConn(client, conn)
-		}()
+			p.clientsMapMU.Lock()
+			p.clientsMap[client.RemoteAddr().String()] = client
+			p.clientsMapMU.Unlock()
+			go func() {
+				conn, err := net.Dial("tcp", p.remote.String())
+				if err != nil {
+					log.Println("[PIPE] remote connection refused")
+					client.Close()
+					return
+				}
+				utils.CopyConnWithOnClose(client, conn, func() {
+					p.clientsMapMU.Lock()
+					delete(p.clientsMap, client.RemoteAddr().String())
+					p.clientsMapMU.Unlock()
+				})
+			}()
+		}
+
 	}
-	listener.Close()
 }
 
 // Stop closes the pipe
+// Be WARNED: existing connections will not be dropped
+// but new ones cannot be created (the listner will be closed)
 func (p *Pipe) Stop() {
-	if p.listener != nil {
+	PipeRegistry().Delete(p.registryID)
+	close(p.terminate)
+	go func() {
+		p.listenerWg.Wait()
 		p.listener.Close()
-	}
+
+		// close all clients connections
+		p.clientsMapMU.Lock()
+		for k, v := range p.clientsMap {
+			v.Close()
+			delete(p.clientsMap, k)
+		}
+		p.clientsMapMU.Unlock()
+	}()
 }

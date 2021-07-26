@@ -1,7 +1,6 @@
 package tun
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -24,12 +23,16 @@ type Tunnel struct {
 	reconnectionInterval time.Duration
 
 	// the tunnel connection listener
-	listener net.Listener
+	listener   net.Listener
+	listenerWg sync.WaitGroup
 
 	// indicate if the tunnel should be terminated
 	terminate chan bool
 
-	listenerWg sync.WaitGroup
+	registryID int
+
+	clientsMap   map[string]net.Conn
+	clientsMapMU sync.Mutex
 }
 
 // NewTunnel builds a Tunnel object
@@ -43,8 +46,12 @@ func NewTunnel(sshConn *sshc.SshConnection, conf *TunnelConf) *Tunnel {
 		sshConn:              sshConn,
 		reconnectionInterval: 5 * time.Second,
 		terminate:            make(chan bool, 1),
+
+		clientsMap: make(map[string]net.Conn),
 	}
 
+	// the listener is not ready on startup
+	tunnel.listenerWg.Add(1)
 	return tunnel
 }
 
@@ -70,8 +77,8 @@ func (t *Tunnel) waitForSshClient() bool {
 
 // Start activates the tunnel connections
 func (t *Tunnel) Start() {
+	t.registryID = TunRegistry().Add(t)
 	for {
-		t.listenerWg.Add(1)
 		// waits for the ssh client to be connected to the server or for
 		// a terminate request
 		for {
@@ -88,16 +95,27 @@ func (t *Tunnel) Start() {
 			t.listenRemote()
 		}
 
+		// the listener has failed, so mark it as not ready
+		t.listenerWg.Add(1)
 		time.Sleep(t.reconnectionInterval)
 	}
 }
 
 // Stop ends the tunnel
 func (t *Tunnel) Stop() {
+	TunRegistry().Delete(t.registryID)
 	close(t.terminate)
 	go func() {
 		t.listenerWg.Wait()
 		t.listener.Close()
+
+		// close all clients connections
+		t.clientsMapMU.Lock()
+		for k, v := range t.clientsMap {
+			v.Close()
+			delete(t.clientsMap, k)
+		}
+		t.clientsMapMU.Unlock()
 	}()
 }
 
@@ -125,19 +143,25 @@ func (t *Tunnel) listenLocal() {
 				log.Println("[TUN] disconnected")
 				break
 			}
-			utils.CopyConn(client, remote)
+			t.clientsMapMU.Lock()
+			t.clientsMap[client.RemoteAddr().String()] = client
+			t.clientsMapMU.Unlock()
+
+			utils.CopyConnWithOnClose(client, remote, func() {
+				t.clientsMapMU.Lock()
+				delete(t.clientsMap, client.RemoteAddr().String())
+				t.clientsMapMU.Unlock()
+			})
 		}
 		listener.Close()
 	}
 }
 
 // GetListenerAddr returns the tunnel listener network address
-func (t *Tunnel) GetListenerAddr() (net.Addr, error) {
-	if t.listener != nil {
-		return t.listener.Addr(), nil
-	} else {
-		return &net.TCPAddr{}, errors.New("listener not ready")
-	}
+func (t *Tunnel) GetListenerAddr() net.Addr {
+	// waits for the listener to be ready
+	t.listenerWg.Wait()
+	return t.listener.Addr()
 }
 
 func (t *Tunnel) listenRemote() {
@@ -169,7 +193,16 @@ func (t *Tunnel) listenRemote() {
 				log.Println("[TUN] disconnected")
 				break
 			}
-			utils.CopyConn(client, local)
+
+			t.clientsMapMU.Lock()
+			t.clientsMap[client.RemoteAddr().String()] = client
+			t.clientsMapMU.Unlock()
+
+			utils.CopyConnWithOnClose(client, local, func() {
+				t.clientsMapMU.Lock()
+				delete(t.clientsMap, client.RemoteAddr().String())
+				t.clientsMapMU.Unlock()
+			})
 		}
 		listener.Close()
 	}
