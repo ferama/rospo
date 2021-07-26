@@ -90,7 +90,6 @@ func (r *tunRoutes) delete(c *gin.Context) {
 // Example curl:
 // curl -X POST -H "Content-Type: application/json" --data '{"remote": ":5005", "local": ":5000", "forward": false}' http://localhost:8090/api/tuns/
 func (r *tunRoutes) post(c *gin.Context) {
-	// TODO
 	var conf tun.TunnelConf
 	if err := c.BindJSON(&conf); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
