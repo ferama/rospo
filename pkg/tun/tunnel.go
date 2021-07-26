@@ -30,6 +30,9 @@ type Tunnel struct {
 	terminate chan bool
 
 	registryID int
+
+	clientsMap   map[string]net.Conn
+	clientsMapMU sync.Mutex
 }
 
 // NewTunnel builds a Tunnel object
@@ -43,6 +46,8 @@ func NewTunnel(sshConn *sshc.SshConnection, conf *TunnelConf) *Tunnel {
 		sshConn:              sshConn,
 		reconnectionInterval: 5 * time.Second,
 		terminate:            make(chan bool, 1),
+
+		clientsMap: make(map[string]net.Conn),
 	}
 
 	// the listener is not ready on startup
@@ -103,6 +108,14 @@ func (t *Tunnel) Stop() {
 	go func() {
 		t.listenerWg.Wait()
 		t.listener.Close()
+
+		// close all clients connections
+		t.clientsMapMU.Lock()
+		for k, v := range t.clientsMap {
+			v.Close()
+			delete(t.clientsMap, k)
+		}
+		t.clientsMapMU.Unlock()
 	}()
 }
 
@@ -130,7 +143,15 @@ func (t *Tunnel) listenLocal() {
 				log.Println("[TUN] disconnected")
 				break
 			}
-			utils.CopyConn(client, remote)
+			t.clientsMapMU.Lock()
+			t.clientsMap[client.RemoteAddr().String()] = client
+			t.clientsMapMU.Unlock()
+
+			utils.CopyConnWithOnClose(client, remote, func() {
+				t.clientsMapMU.Lock()
+				delete(t.clientsMap, client.RemoteAddr().String())
+				t.clientsMapMU.Unlock()
+			})
 		}
 		listener.Close()
 	}
@@ -172,7 +193,16 @@ func (t *Tunnel) listenRemote() {
 				log.Println("[TUN] disconnected")
 				break
 			}
-			utils.CopyConn(client, local)
+
+			t.clientsMapMU.Lock()
+			t.clientsMap[client.RemoteAddr().String()] = client
+			t.clientsMapMU.Unlock()
+
+			utils.CopyConnWithOnClose(client, local, func() {
+				t.clientsMapMU.Lock()
+				delete(t.clientsMap, client.RemoteAddr().String())
+				t.clientsMapMU.Unlock()
+			})
 		}
 		listener.Close()
 	}

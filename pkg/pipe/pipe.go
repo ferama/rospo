@@ -21,14 +21,18 @@ type Pipe struct {
 	terminate chan bool
 
 	registryID int
+
+	clientsMap   map[string]net.Conn
+	clientsMapMU sync.Mutex
 }
 
 // NewPipe creates a Pipe object
 func NewPipe(conf *PipeConf) *Pipe {
 	pipe := &Pipe{
-		local:     utils.NewEndpoint(conf.Local),
-		remote:    utils.NewEndpoint(conf.Remote),
-		terminate: make(chan bool),
+		local:      utils.NewEndpoint(conf.Local),
+		remote:     utils.NewEndpoint(conf.Remote),
+		terminate:  make(chan bool),
+		clientsMap: make(map[string]net.Conn),
 	}
 	pipe.listenerWg.Add(1)
 	return pipe
@@ -64,6 +68,9 @@ func (p *Pipe) Start() {
 				log.Println("[PIPE] disconnected")
 				break
 			}
+			p.clientsMapMU.Lock()
+			p.clientsMap[client.RemoteAddr().String()] = client
+			p.clientsMapMU.Unlock()
 			go func() {
 				conn, err := net.Dial("tcp", p.remote.String())
 				if err != nil {
@@ -71,20 +78,33 @@ func (p *Pipe) Start() {
 					client.Close()
 					return
 				}
-				utils.CopyConn(client, conn)
+				utils.CopyConnWithOnClose(client, conn, func() {
+					p.clientsMapMU.Lock()
+					delete(p.clientsMap, client.RemoteAddr().String())
+					p.clientsMapMU.Unlock()
+				})
 			}()
 		}
 
 	}
-	// listener.Close()
 }
 
 // Stop closes the pipe
+// Be WARNED: existing connections will not be dropped
+// but new ones cannot be created (the listner will be closed)
 func (p *Pipe) Stop() {
 	PipeRegistry().Delete(p.registryID)
 	close(p.terminate)
 	go func() {
 		p.listenerWg.Wait()
 		p.listener.Close()
+
+		// close all clients connections
+		p.clientsMapMU.Lock()
+		for k, v := range p.clientsMap {
+			v.Close()
+			delete(p.clientsMap, k)
+		}
+		p.clientsMapMU.Unlock()
 	}()
 }
