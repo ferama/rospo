@@ -1,6 +1,9 @@
 # github.com/creack/pty v1.1.13
 ## explicit
 github.com/creack/pty
+# github.com/gin-contrib/cors v1.3.1
+## explicit
+github.com/gin-contrib/cors
 # github.com/gin-contrib/sse v0.1.0
 github.com/gin-contrib/sse
 # github.com/gin-gonic/gin v1.7.2
