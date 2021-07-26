@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ferama/rospo/pkg/conf"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/utils"
 )
@@ -34,7 +33,7 @@ type Tunnel struct {
 }
 
 // NewTunnel builds a Tunnel object
-func NewTunnel(sshConn *sshc.SshConnection, conf *conf.TunnelConf) *Tunnel {
+func NewTunnel(sshConn *sshc.SshConnection, conf *TunnelConf) *Tunnel {
 
 	tunnel := &Tunnel{
 		forward:        conf.Forward,

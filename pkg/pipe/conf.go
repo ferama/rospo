@@ -1,4 +1,4 @@
-package conf
+package pipe
 
 // PipeConf holds the forward configuration
 type PipeConf struct {

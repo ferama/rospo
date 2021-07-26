@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ferama/rospo/pkg/conf"
 	"github.com/ferama/rospo/pkg/utils"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
@@ -25,7 +24,7 @@ type SshConnection struct {
 	serverEndpoint *utils.Endpoint
 
 	insecure  bool
-	jumpHosts []*conf.JumpHostConf
+	jumpHosts []*JumpHostConf
 
 	reconnectionInterval time.Duration
 	keepAliveInterval    time.Duration
@@ -38,7 +37,7 @@ type SshConnection struct {
 }
 
 // NewSshConnection creates a new SshConnection instance
-func NewSshConnection(conf *conf.SshClientConf) *SshConnection {
+func NewSshConnection(conf *SshClientConf) *SshConnection {
 	parsed := utils.ParseSSHUrl(conf.ServerURI)
 	var knownHostsPath string
 	if conf.KnownHosts == "" {

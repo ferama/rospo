@@ -4,15 +4,19 @@ import (
 	"errors"
 	"os"
 
+	"github.com/ferama/rospo/pkg/pipe"
+	"github.com/ferama/rospo/pkg/sshc"
+	"github.com/ferama/rospo/pkg/sshd"
+	"github.com/ferama/rospo/pkg/tun"
 	"gopkg.in/yaml.v2"
 )
 
 // Config holds all the config values
 type Config struct {
-	SshClient *SshClientConf `yaml:"sshclient"`
-	Tunnel    []*TunnelConf  `yaml:"tunnel"`
-	SshD      *SshDConf      `yaml:"sshd"`
-	Pipe      []*PipeConf    `yaml:"pipe"`
+	SshClient *sshc.SshClientConf `yaml:"sshclient"`
+	Tunnel    []*tun.TunnelConf   `yaml:"tunnel"`
+	SshD      *sshd.SshDConf      `yaml:"sshd"`
+	Pipe      []*pipe.PipeConf    `yaml:"pipe"`
 }
 
 // LoadConfig parses the [config].yaml file and loads its values
@@ -26,7 +30,7 @@ func LoadConfig(filePath string) (*Config, error) {
 
 	// set some reasonable defaults
 	cfg := Config{
-		&SshClientConf{
+		&sshc.SshClientConf{
 			Insecure: false,
 		},
 		nil,

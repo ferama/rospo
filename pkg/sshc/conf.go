@@ -1,4 +1,4 @@
-package conf
+package sshc
 
 import "github.com/ferama/rospo/pkg/utils"
 

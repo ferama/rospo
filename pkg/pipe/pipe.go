@@ -5,7 +5,6 @@ import (
 	"log"
 	"net"
 
-	"github.com/ferama/rospo/pkg/conf"
 	"github.com/ferama/rospo/pkg/utils"
 )
 
@@ -19,7 +18,7 @@ type Pipe struct {
 }
 
 // NewPipe creates a Pipe object
-func NewPipe(conf *conf.PipeConf) *Pipe {
+func NewPipe(conf *PipeConf) *Pipe {
 	return &Pipe{
 		local:  utils.NewEndpoint(conf.Local),
 		remote: utils.NewEndpoint(conf.Remote),

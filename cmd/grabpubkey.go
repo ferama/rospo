@@ -4,7 +4,6 @@ import (
 	"os/user"
 	"path/filepath"
 
-	"github.com/ferama/rospo/pkg/conf"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/spf13/cobra"
 )
@@ -24,7 +23,7 @@ var grabpubkeyCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		knownHosts, _ := cmd.Flags().GetString("known-hosts")
-		sshcConf := &conf.SshClientConf{
+		sshcConf := &sshc.SshClientConf{
 			KnownHosts: knownHosts,
 			ServerURI:  args[0],
 		}
