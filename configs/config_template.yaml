@@ -59,3 +59,8 @@ sshd:
 pipe:
   - remote: "my_remote_postgres:5432"
     local: ":5432"
+
+
+# enables and configures rest endpoints
+web:
+  listen_address: "127.0.0.1:8090"

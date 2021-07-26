@@ -105,21 +105,27 @@ func GetUserDefaultShell(username string) string {
 	return fallback
 }
 
-// CopyConn copy packets from c1 to c2 and viceversa
-func CopyConn(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser) {
+// CopyConnWithOnClose copy packets from c1 to c2 and viceversa. Calls the onClose function
+// when the connection is interrupted
+func CopyConnWithOnClose(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, onClose func()) {
 	var once sync.Once
 	close := func() {
 		c1.Close()
 		c2.Close()
+		onClose()
 	}
 	go func() {
 		io.Copy(c1, c2)
 		once.Do(close)
-
 	}()
 
 	go func() {
 		io.Copy(c2, c1)
 		once.Do(close)
 	}()
+}
+
+// CopyConn copy packets from c1 to c2 and viceversa
+func CopyConn(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser) {
+	CopyConnWithOnClose(c1, c2, func() {})
 }
