@@ -1,6 +1,7 @@
 package tunapi
 
 import (
+	"net/http"
 	"strconv"
 
 	"github.com/ferama/rospo/pkg/sshc"
@@ -13,6 +14,7 @@ func Routes(sshConn *sshc.SshConnection, router *gin.RouterGroup) {
 		sshConn: sshConn,
 	}
 	router.GET("/", r.get)
+	router.GET("/:tun-id", r.get)
 	router.DELETE("/:tun-id", r.delete)
 	router.POST("/", r.post)
 }
@@ -22,24 +24,48 @@ type tunRoutes struct {
 }
 
 func (r *tunRoutes) get(c *gin.Context) {
-	data := tun.TunRegistry().GetAll()
-	var res []item
-	for id, val := range data {
+	if c.Param("tun-id") == "" {
+		var res []responseItem
+		data := tun.TunRegistry().GetAll()
+		for id, val := range data {
+			tunnel := val.(*tun.Tunnel)
+			addr := tunnel.GetListenerAddr()
+			res = append(res, responseItem{
+				ID:   id,
+				Addr: addr,
+			})
+		}
+		c.JSON(http.StatusOK, res)
+
+	} else {
+		tunId, err := strconv.Atoi(c.Param("tun-id"))
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		val, err := tun.TunRegistry().GetByID(tunId)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
 		tunnel := val.(*tun.Tunnel)
-		addr, _ := tunnel.GetListenerAddr()
-		res = append(res, item{
-			ID:   id,
+		addr := tunnel.GetListenerAddr()
+		c.JSON(http.StatusOK, responseItem{
+			ID:   tunId,
 			Addr: addr,
 		})
 	}
-	c.JSON(200, res)
 }
 
 func (r *tunRoutes) delete(c *gin.Context) {
 	tunId, err := strconv.Atoi(c.Param("tun-id"))
 
 	if err != nil {
-		c.JSON(404, gin.H{
+		c.JSON(http.StatusNotFound, gin.H{
 			"error": err.Error(),
 		})
 		return
@@ -48,19 +74,34 @@ func (r *tunRoutes) delete(c *gin.Context) {
 	data, err := tun.TunRegistry().GetByID(tunId)
 
 	if err != nil {
-		c.JSON(404, gin.H{
+		c.JSON(http.StatusNotFound, gin.H{
 			"error": err.Error(),
 		})
 		return
 	}
 	tunnel := data.(*tun.Tunnel)
 	tunnel.Stop()
-	addr, _ := tunnel.GetListenerAddr()
-	c.JSON(200, gin.H{
+	addr := tunnel.GetListenerAddr()
+	c.JSON(http.StatusOK, gin.H{
 		"addr": addr,
 	})
 }
 
+// Example curl:
+// curl -X POST -H "Content-Type: application/json" --data '{"remote": ":5005", "local": ":5000", "forward": false}' http://localhost:8090/api/tuns/
 func (r *tunRoutes) post(c *gin.Context) {
 	// TODO
+	var conf tun.TunnelConf
+	if err := c.BindJSON(&conf); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	tunnel := tun.NewTunnel(r.sshConn, &conf)
+	go tunnel.Start()
+	addr := tunnel.GetListenerAddr()
+	c.JSON(http.StatusOK, gin.H{
+		"addr": addr,
+	})
 }

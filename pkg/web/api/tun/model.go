@@ -2,7 +2,7 @@ package tunapi
 
 import "net"
 
-type item struct {
+type responseItem struct {
 	ID   int      `json:"Id"`
 	Addr net.Addr `json:"Addr"`
 }

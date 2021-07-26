@@ -1,7 +1,6 @@
 package tun
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -46,6 +45,8 @@ func NewTunnel(sshConn *sshc.SshConnection, conf *TunnelConf) *Tunnel {
 		terminate:            make(chan bool, 1),
 	}
 
+	// the listener is not ready on startup
+	tunnel.listenerWg.Add(1)
 	return tunnel
 }
 
@@ -73,7 +74,6 @@ func (t *Tunnel) waitForSshClient() bool {
 func (t *Tunnel) Start() {
 	t.registryID = TunRegistry().Add(t)
 	for {
-		t.listenerWg.Add(1)
 		// waits for the ssh client to be connected to the server or for
 		// a terminate request
 		for {
@@ -90,6 +90,8 @@ func (t *Tunnel) Start() {
 			t.listenRemote()
 		}
 
+		// the listener has failed, so mark it as not ready
+		t.listenerWg.Add(1)
 		time.Sleep(t.reconnectionInterval)
 	}
 }
@@ -135,12 +137,10 @@ func (t *Tunnel) listenLocal() {
 }
 
 // GetListenerAddr returns the tunnel listener network address
-func (t *Tunnel) GetListenerAddr() (net.Addr, error) {
-	if t.listener != nil {
-		return t.listener.Addr(), nil
-	} else {
-		return &net.TCPAddr{}, errors.New("listener not ready")
-	}
+func (t *Tunnel) GetListenerAddr() net.Addr {
+	// waits for the listener to be ready
+	t.listenerWg.Wait()
+	return t.listener.Addr()
 }
 
 func (t *Tunnel) listenRemote() {
