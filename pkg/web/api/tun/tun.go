@@ -17,6 +17,7 @@ type tunRoutes struct {
 }
 
 func (r *tunRoutes) get(c *gin.Context) {
+	// TODO: get data from TunRegistry. Map the data to the tun conf and return it as json
 	c.JSON(200, gin.H{
 		"message": "the tuns",
 	})
