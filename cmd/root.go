@@ -25,11 +25,22 @@ var rootCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
-		dev := false
-		if Version == "development" {
-			dev = true
+		var sshConn *sshc.SshConnection
+		if conf.Tunnel != nil || conf.Web != nil {
+			if conf.SshClient == nil {
+				log.Fatalln("You need to configure sshclient section to support tunnels")
+			}
+			sshConn = sshc.NewSshConnection(conf.SshClient)
+			go sshConn.Start()
 		}
-		go web.StartServer(dev, &web.WebConf{})
+
+		if conf.Web != nil {
+			dev := false
+			if Version == "development" {
+				dev = true
+			}
+			go web.StartServer(dev, sshConn, conf.Web)
+		}
 
 		if conf.Pipe != nil {
 			for _, f := range conf.Pipe {
@@ -46,16 +57,11 @@ var rootCmd = &cobra.Command{
 		}
 
 		if conf.Tunnel != nil && len(conf.Tunnel) > 0 {
-			if conf.SshClient == nil {
-				log.Fatalln("You need to configure sshclient section to support tunnels")
-			}
-			client := sshc.NewSshConnection(conf.SshClient)
-			go client.Start()
 			for idx, c := range conf.Tunnel {
 				if idx == len(conf.Tunnel)-1 {
-					tun.NewTunnel(client, c).Start()
+					tun.NewTunnel(sshConn, c).Start()
 				} else {
-					go tun.NewTunnel(client, c).Start()
+					go tun.NewTunnel(sshConn, c).Start()
 				}
 			}
 		}

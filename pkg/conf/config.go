@@ -8,6 +8,7 @@ import (
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/sshd"
 	"github.com/ferama/rospo/pkg/tun"
+	"github.com/ferama/rospo/pkg/web"
 	"gopkg.in/yaml.v2"
 )
 
@@ -17,6 +18,7 @@ type Config struct {
 	Tunnel    []*tun.TunnelConf   `yaml:"tunnel"`
 	SshD      *sshd.SshDConf      `yaml:"sshd"`
 	Pipe      []*pipe.PipeConf    `yaml:"pipe"`
+	Web       *web.WebConf        `yaml:"web"`
 }
 
 // LoadConfig parses the [config].yaml file and loads its values
@@ -33,6 +35,7 @@ func LoadConfig(filePath string) (*Config, error) {
 		&sshc.SshClientConf{
 			Insecure: false,
 		},
+		nil,
 		nil,
 		nil,
 		nil,
