@@ -1,5 +1,5 @@
 # react frontend builder
-FROM node:14-alpine as uibuilder
+FROM node:16-alpine as uibuilder
 WORKDIR /src
 COPY pkg/web/ui .
 RUN npm install && npm run build
