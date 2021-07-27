@@ -126,7 +126,6 @@ func handleChannelSession(c ssh.NewChannel, disableShell bool) {
 		}
 
 		if !ok {
-			// log.Printf("declining %s request... %s", req.Type, req.Payload)
 			log.Printf("[SSHD] declining %s request... ", req.Type)
 		}
 
