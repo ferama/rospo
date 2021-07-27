@@ -62,5 +62,8 @@ pipe:
 
 
 # enables and configures rest endpoints
+# Be WARNED: the endpoint is not authenticated and through the apis
+# you can manage tunnels and pipes. It could be useful to bind it on 
+# localhost and tunnel it remotely adding an entry on the tunnel section
 web:
   listen_address: "127.0.0.1:8090"
