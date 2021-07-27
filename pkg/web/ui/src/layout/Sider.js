@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 import { Layout, Menu } from 'antd';
 import {
@@ -15,16 +16,21 @@ import { Routes } from '../component/Routes';
 const { Header, Content, Footer, Sider } = Layout;
 
 class SiderLayout extends React.Component {
+  static propTypes = {
+    location: PropTypes.object.isRequired
+  }
   state = {
     collapsed: false,
   };
 
   onCollapse = collapsed => {
-    this.setState({ collapsed });
+    this.setState({ collapsed })
   };
 
   render() {
     const { collapsed } = this.state
+    const { location } = this.props
+
     const logoStyle = {
       color: "white",
       fontSize: 20,
@@ -37,11 +43,14 @@ class SiderLayout extends React.Component {
           <Header className="site-layout-background" style={{ padding: 0 }}>
             <div style={logoStyle}>🐸 Rospo</div>
           </Header>
-          <Menu theme="dark" defaultSelectedKeys={['1']} mode="inline">
-            <Menu.Item key="1" icon={<FilterOutlined />}>
+          <Menu theme="dark" 
+                  defaultSelectedKeys={['/']}
+                  selectedKeys={[location.pathname]}
+                  mode="inline">
+            <Menu.Item key="/" icon={<FilterOutlined />}>
                 <Link to="/">Tunnels</Link>
             </Menu.Item>
-            <Menu.Item key="2" icon={<FunnelPlotOutlined />}>
+            <Menu.Item key="/pipes" icon={<FunnelPlotOutlined />}>
               <Link to="/pipes">Pipes</Link>
             </Menu.Item>
           </Menu>
