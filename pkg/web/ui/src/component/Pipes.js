@@ -8,13 +8,19 @@ export class Pipes extends React.Component {
         this.state = {
             pipes: []
         }
+        this.intervalHandler = null
     }
 
     async componentDidMount() {
         await this.getAll()
+        this.intervalHandler = setInterval(this.getAll, 3000)
     }
 
-    async getAll() {
+    componentWillUnmount() {
+        clearInterval(this.intervalHandler)
+    }
+
+    getAll = async () => {
         const data = await http.get("pipes/")
         if (data.data === null) return
         console.log(data.data)
