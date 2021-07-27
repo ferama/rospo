@@ -176,6 +176,18 @@ func (t *Tunnel) GetListenerAddr() net.Addr {
 	return t.listener.Addr()
 }
 
+func (t *Tunnel) GetIsListenerLocal() bool {
+	return t.forward
+}
+
+func (t *Tunnel) GetEndpoint() utils.Endpoint {
+	if t.forward {
+		return *t.remoteEndpoint
+	} else {
+		return *t.localEndpoint
+	}
+}
+
 func (t *Tunnel) listenRemote() error {
 	// Listen on remote server port
 	// you can use port :0 to get a radnom available tcp port
