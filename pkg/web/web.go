@@ -1,11 +1,14 @@
 package web
 
 import (
+	"io/fs"
+	"net/http"
 	"time"
 
 	"github.com/ferama/rospo/pkg/sshc"
 	pipeapi "github.com/ferama/rospo/pkg/web/api/pipe"
 	tunapi "github.com/ferama/rospo/pkg/web/api/tun"
+	"github.com/ferama/rospo/pkg/web/ui"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -32,6 +35,15 @@ func StartServer(isDev bool, sshConn *sshc.SshConnection, conf *WebConf) {
 
 	pipeapi.Routes(r.Group("/api/pipes"))
 	tunapi.Routes(sshConn, r.Group("/api/tuns"))
+
+	// static files custom middleware
+	// use the "build" dir (the webpack target) as static root
+	fsRoot, _ := fs.Sub(ui.StaticFiles, "build")
+	fileserver := http.FileServer(http.FS(fsRoot))
+	r.Use(func(c *gin.Context) {
+		fileserver.ServeHTTP(c.Writer, c.Request)
+		c.Abort()
+	})
 
 	r.Run(conf.ListenAddress)
 }
