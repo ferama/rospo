@@ -89,25 +89,22 @@ func (t *Tunnel) Start() {
 			}
 		}
 
-		go func() {
-			t.listenerWg.Wait()
-			t.registryID = TunRegistry().Add(t)
-		}()
-
 		var err error
 		if t.forward {
 			err = t.listenLocal()
 		} else {
 			err = t.listenRemote()
 		}
-		if err != nil {
-			break
+		if err == nil {
+			// if err is not nil, the listener has failed on startup
+			// so before setting the listenerWG to done
+			// If the err is nil instead it means that the listener has failed
+			// while running, so I need to mark it as not ready
+			t.listenerWg.Add(1)
 		}
 
 		TunRegistry().Delete(t.registryID)
 
-		// the listener has failed, so mark it as not ready
-		t.listenerWg.Add(1)
 		time.Sleep(t.reconnectionInterval)
 	}
 }
@@ -139,6 +136,8 @@ func (t *Tunnel) listenLocal() error {
 	}
 	t.listener = listener
 	t.listenerWg.Done()
+
+	t.registryID = TunRegistry().Add(t)
 
 	log.Printf("[TUN] forward connected. Local: %s <- Remote: %s\n", t.listener.Addr(), t.remoteEndpoint.String())
 	if t.sshConn != nil && listener != nil {
@@ -202,6 +201,8 @@ func (t *Tunnel) listenRemote() error {
 	}
 	t.listener = listener
 	t.listenerWg.Done()
+
+	t.registryID = TunRegistry().Add(t)
 
 	log.Printf("[TUN] reverse connected. Local: %s -> Remote: %s\n", t.localEndpoint.String(), t.listener.Addr())
 	if t.sshConn != nil && listener != nil {
