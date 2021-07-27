@@ -2,8 +2,8 @@ import React from 'react';
 
 import { Layout, Menu } from 'antd';
 import {
-  DesktopOutlined,
-  PieChartOutlined,
+  FunnelPlotOutlined,
+  FilterOutlined,
 } from '@ant-design/icons';
 
 import {
@@ -20,21 +20,28 @@ class SiderLayout extends React.Component {
   };
 
   onCollapse = collapsed => {
-    console.log(collapsed);
     this.setState({ collapsed });
   };
 
   render() {
-    const { collapsed } = this.state;
+    const { collapsed } = this.state
+    const logoStyle = {
+      color: "white",
+      fontSize: 20,
+      fontWeight: "bold",
+      paddingLeft: 20
+    }
     return (
       <Layout style={{ minHeight: '100vh' }}>
         <Sider collapsible collapsed={collapsed} onCollapse={this.onCollapse}>
-          <Header className="site-layout-background" style={{ padding: 0 }} />
+          <Header className="site-layout-background" style={{ padding: 0 }}>
+            <div style={logoStyle}>🐸 Rospo</div>
+          </Header>
           <Menu theme="dark" defaultSelectedKeys={['1']} mode="inline">
-            <Menu.Item key="1" icon={<PieChartOutlined />}>
+            <Menu.Item key="1" icon={<FilterOutlined />}>
                 <Link to="/">Tunnels</Link>
             </Menu.Item>
-            <Menu.Item key="2" icon={<DesktopOutlined />}>
+            <Menu.Item key="2" icon={<FunnelPlotOutlined />}>
               <Link to="/pipes">Pipes</Link>
             </Menu.Item>
           </Menu>
