@@ -49,9 +49,9 @@ export class Tunnels extends React.Component {
     render () {
         const columns = [
             {
-              title: 'Id',
-              dataIndex: 'Id',
-              key: '1',
+                title: 'Id',
+                dataIndex: 'Id',
+                key: '1',
             },
             {
                 title: 'Listener IP',
@@ -72,7 +72,7 @@ export class Tunnels extends React.Component {
                 render: item => item ? "true": "false"
             },
             {
-                title: 'Endpoint Host',
+                title: 'Endpoint Addr',
                 dataIndex: 'Endpoint',
                 key: '5',
                 render: item => item.Host
@@ -82,6 +82,11 @@ export class Tunnels extends React.Component {
                 dataIndex: 'Endpoint',
                 key: '6',
                 render: item => item.Port
+            },
+            {
+                title: 'Active Clients',
+                dataIndex: 'ClientsCount',
+                key: '7',
             },
         ]
         return (

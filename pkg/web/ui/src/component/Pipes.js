@@ -78,6 +78,11 @@ export class Pipes extends React.Component {
                 key: '5',
                 render: item => item.Port
             },
+            {
+                title: 'Active Clients',
+                dataIndex: 'ClientsCount',
+                key: '7',
+            },
         ]
         return (
             <React.Fragment>

@@ -7,13 +7,18 @@ import (
 
 	"github.com/ferama/rospo/pkg/sshc"
 	pipeapi "github.com/ferama/rospo/pkg/web/api/pipe"
+	rootapi "github.com/ferama/rospo/pkg/web/api/root"
 	tunapi "github.com/ferama/rospo/pkg/web/api/tun"
 	"github.com/ferama/rospo/pkg/web/ui"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
-func StartServer(isDev bool, sshConn *sshc.SshConnection, conf *WebConf) {
+func StartServer(isDev bool,
+	sshConn *sshc.SshConnection,
+	conf *WebConf,
+	info *rootapi.Info) {
+
 	if !isDev {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -28,6 +33,7 @@ func StartServer(isDev bool, sshConn *sshc.SshConnection, conf *WebConf) {
 		MaxAge:           12 * time.Hour,
 	}))
 
+	rootapi.Routes(info, r.Group("/api"))
 	pipeapi.Routes(r.Group("/api/pipes"))
 	tunapi.Routes(sshConn, r.Group("/api/tuns"))
 

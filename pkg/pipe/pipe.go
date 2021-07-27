@@ -48,6 +48,11 @@ func (p *Pipe) GetEndpoint() utils.Endpoint {
 	return *p.remote
 }
 
+// GetActiveClientsCount returns how many clients are actually using the pipe
+func (p *Pipe) GetActiveClientsCount() int {
+	return len(p.clientsMap)
+}
+
 // Start the pipe. It basically copy all the tcp packets incoming to the
 // local endpoint into the remote endpoint
 func (p *Pipe) Start() {

@@ -9,6 +9,7 @@ import (
 	"github.com/ferama/rospo/pkg/sshd"
 	"github.com/ferama/rospo/pkg/tun"
 	"github.com/ferama/rospo/pkg/web"
+	rootapi "github.com/ferama/rospo/pkg/web/api/root"
 	"github.com/spf13/cobra"
 )
 
@@ -63,7 +64,15 @@ var rootCmd = &cobra.Command{
 			if Version == "development" {
 				dev = true
 			}
-			web.StartServer(dev, sshConn, conf.Web)
+			jh := []string{}
+			for _, h := range conf.SshClient.JumpHosts {
+				jh = append(jh, h.URI)
+			}
+			info := &rootapi.Info{
+				SshClientURI: conf.SshClient.ServerURI,
+				JumpHosts:    jh,
+			}
+			web.StartServer(dev, sshConn, conf.Web, info)
 		}
 
 	},

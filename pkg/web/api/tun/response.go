@@ -11,4 +11,5 @@ type responseItem struct {
 	Listener        net.Addr       `json:"Listener"`
 	IsListenerLocal bool           `json:"IsListenerLocal"`
 	Endpoint        utils.Endpoint `json:"Endpoint"`
+	ClientsCount    int            `json:"ClientsCount"`
 }
