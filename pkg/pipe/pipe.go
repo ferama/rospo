@@ -94,8 +94,6 @@ func (p *Pipe) Start() {
 }
 
 // Stop closes the pipe
-// Be WARNED: existing connections will not be dropped
-// but new ones cannot be created (the listner will be closed)
 func (p *Pipe) Stop() {
 	PipeRegistry().Delete(p.registryID)
 	close(p.terminate)

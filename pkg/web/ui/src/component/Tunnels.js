@@ -8,14 +8,24 @@ export class Tunnels extends React.Component {
         this.state = {
             tuns: []
         }
+        this.intervalHandler = null
     }
 
     async componentDidMount() {
         await this.getAll()
+        this.intervalHandler = setInterval(this.getAll, 5000)
+    }
+    componentWillUnmount() {
+        clearInterval(this.intervalHandler)
     }
 
-    async getAll() {
-        const data = await http.get("tuns/")
+    getAll = async () => {
+        let data
+        try {
+            data = await http.get("tuns/")
+        } catch {
+            return
+        }
         if (data.data === null) return
         
         const tuns = []

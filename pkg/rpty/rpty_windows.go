@@ -50,7 +50,7 @@ func (c *rconPty) Close() error {
 
 func (c *rconPty) Run(cm *exec.Cmd) error {
 	// The Pty on windows is handled from
-	// the conpty library. The subprocess it not
+	// the conpty library. The subprocess is not
 	// created directly using the os/exec go library
 	// but using the windows.CreateProcess syscall instead
 	// So here I'm going to take the cm.Path and pass it to the
