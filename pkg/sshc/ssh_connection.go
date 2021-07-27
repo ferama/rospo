@@ -30,9 +30,9 @@ type SshConnection struct {
 	keepAliveInterval    time.Duration
 
 	Client *ssh.Client
-	// used to tell the tunnels if this sshClient
+	// used to inform the tunnels if this sshClient
 	// is Connected. Tunnels will wait on this waitGroup to
-	// know if the ssh client is Connected or no
+	// know if the ssh client is Connected or not
 	Connected sync.WaitGroup
 }
 
@@ -58,7 +58,7 @@ func NewSshConnection(conf *SshClientConf) *SshConnection {
 		keepAliveInterval:    5 * time.Second,
 		reconnectionInterval: 5 * time.Second,
 	}
-	// client not connected on startup, so add 1 here
+	// client is not connected on startup, so add 1 here
 	c.Connected.Add(1)
 	return c
 }
