@@ -5,15 +5,16 @@ import { Layout, Menu } from 'antd';
 import {
   FunnelPlotOutlined,
   FilterOutlined,
+  HomeOutlined
 } from '@ant-design/icons';
 
 import {
     withRouter,
     Link
   } from "react-router-dom";
-import { Routes } from '../component/Routes';
+import { Routes } from '../Routes';
 
-const { Header, Content, Footer, Sider } = Layout;
+const { Header, Content, Sider } = Layout;
 
 class SiderLayout extends React.Component {
   static propTypes = {
@@ -47,8 +48,11 @@ class SiderLayout extends React.Component {
                   defaultSelectedKeys={['/']}
                   selectedKeys={[location.pathname]}
                   mode="inline">
-            <Menu.Item key="/" icon={<FilterOutlined />}>
-                <Link to="/">Tunnels</Link>
+            <Menu.Item key="/" icon={<HomeOutlined />}>
+                <Link to="/">Home</Link>
+            </Menu.Item>
+            <Menu.Item key="/tunnels" icon={<FilterOutlined />}>
+                <Link to="/tunnels">Tunnels</Link>
             </Menu.Item>
             <Menu.Item key="/pipes" icon={<FunnelPlotOutlined />}>
               <Link to="/pipes">Pipes</Link>
@@ -65,7 +69,7 @@ class SiderLayout extends React.Component {
               <Routes />
             </div>
           </Content>
-          <Footer style={{ textAlign: 'center' }}>Rospo</Footer>
+          {/* <Footer style={{ textAlign: 'center' }}>Rospo</Footer> */}
         </Layout>
       </Layout>
     );

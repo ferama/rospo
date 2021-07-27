@@ -35,6 +35,7 @@ func (r *tunRoutes) get(c *gin.Context) {
 				Listener:        addr,
 				IsListenerLocal: tunnel.GetIsListenerLocal(),
 				Endpoint:        tunnel.GetEndpoint(),
+				ClientsCount:    tunnel.GetActiveClientsCount(),
 			})
 		}
 		c.JSON(http.StatusOK, res)
@@ -61,6 +62,7 @@ func (r *tunRoutes) get(c *gin.Context) {
 			Listener:        addr,
 			IsListenerLocal: tunnel.GetIsListenerLocal(),
 			Endpoint:        tunnel.GetEndpoint(),
+			ClientsCount:    tunnel.GetActiveClientsCount(),
 		})
 	}
 }

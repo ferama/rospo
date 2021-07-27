@@ -175,6 +175,11 @@ func (t *Tunnel) GetListenerAddr() net.Addr {
 	return t.listener.Addr()
 }
 
+// GetActiveClientsCount returns how many clients are actually using the tunnel
+func (t *Tunnel) GetActiveClientsCount() int {
+	return len(t.clientsMap)
+}
+
 func (t *Tunnel) GetIsListenerLocal() bool {
 	return t.forward
 }
