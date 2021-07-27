@@ -13,7 +13,7 @@ export class Tunnels extends React.Component {
 
     async componentDidMount() {
         await this.getAll()
-        this.intervalHandler = setInterval(this.getAll, 3000)
+        this.intervalHandler = setInterval(this.getAll, 5000)
     }
     componentWillUnmount() {
         clearInterval(this.intervalHandler)
