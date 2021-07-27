@@ -44,6 +44,10 @@ func (p *Pipe) GetListenerAddr() net.Addr {
 	return p.listener.Addr()
 }
 
+func (p *Pipe) GetEndpoint() utils.Endpoint {
+	return *p.remote
+}
+
 // Start the pipe. It basically copy all the tcp packets incoming to the
 // local endpoint into the remote endpoint
 func (p *Pipe) Start() {
