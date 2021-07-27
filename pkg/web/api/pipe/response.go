@@ -1,8 +1,13 @@
 package pipeapi
 
-import "net"
+import (
+	"net"
+
+	"github.com/ferama/rospo/pkg/utils"
+)
 
 type responseItem struct {
-	ID   int      `json:"Id"`
-	Addr net.Addr `json:"Addr"`
+	ID       int            `json:"Id"`
+	Listener net.Addr       `json:"Listener"`
+	Endpoint utils.Endpoint `json:"Endpoint"`
 }

@@ -77,7 +77,7 @@ func (t *Tunnel) waitForSshClient() bool {
 
 // Start activates the tunnel connections
 func (t *Tunnel) Start() {
-	t.registryID = TunRegistry().Add(t)
+
 	for {
 		// waits for the ssh client to be connected to the server or for
 		// a terminate request
@@ -89,11 +89,22 @@ func (t *Tunnel) Start() {
 			}
 		}
 
+		go func() {
+			t.listenerWg.Wait()
+			t.registryID = TunRegistry().Add(t)
+		}()
+
+		var err error
 		if t.forward {
-			t.listenLocal()
+			err = t.listenLocal()
 		} else {
-			t.listenRemote()
+			err = t.listenRemote()
 		}
+		if err != nil {
+			break
+		}
+
+		TunRegistry().Delete(t.registryID)
 
 		// the listener has failed, so mark it as not ready
 		t.listenerWg.Add(1)
@@ -119,12 +130,12 @@ func (t *Tunnel) Stop() {
 	}()
 }
 
-func (t *Tunnel) listenLocal() {
+func (t *Tunnel) listenLocal() error {
 	// Listen on remote server port
 	listener, err := net.Listen("tcp", t.localEndpoint.String())
 	if err != nil {
 		log.Printf("[TUN] dial INTO remote service error. %s\n", err)
-		return
+		return err
 	}
 	t.listener = listener
 	t.listenerWg.Done()
@@ -155,6 +166,7 @@ func (t *Tunnel) listenLocal() {
 		}
 		listener.Close()
 	}
+	return nil
 }
 
 // GetListenerAddr returns the tunnel listener network address
@@ -164,7 +176,19 @@ func (t *Tunnel) GetListenerAddr() net.Addr {
 	return t.listener.Addr()
 }
 
-func (t *Tunnel) listenRemote() {
+func (t *Tunnel) GetIsListenerLocal() bool {
+	return t.forward
+}
+
+func (t *Tunnel) GetEndpoint() utils.Endpoint {
+	if t.forward {
+		return *t.remoteEndpoint
+	} else {
+		return *t.localEndpoint
+	}
+}
+
+func (t *Tunnel) listenRemote() error {
 	// Listen on remote server port
 	// you can use port :0 to get a radnom available tcp port
 	// Example:
@@ -174,10 +198,11 @@ func (t *Tunnel) listenRemote() {
 
 	if err != nil {
 		log.Printf("[TUN] listen open port ON remote server error. %s\n", err)
-		return
+		return err
 	}
 	t.listener = listener
 	t.listenerWg.Done()
+
 	log.Printf("[TUN] reverse connected. Local: %s -> Remote: %s\n", t.localEndpoint.String(), t.listener.Addr())
 	if t.sshConn != nil && listener != nil {
 		for {
@@ -206,4 +231,5 @@ func (t *Tunnel) listenRemote() {
 		}
 		listener.Close()
 	}
+	return nil
 }
