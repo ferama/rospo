@@ -7,7 +7,7 @@ Rospo is a tool meant to create reliable ssh tunnels.
 It embeds an ssh server too if you want to reverse proxy a secured
 shell
 
-It's meant to make ssh tunnels fun, reliable and understendable again
+It's meant to make ssh tunnels fun and understendable again
 
 ### Table of Contents  
 1. [Why Rospo?](#why-rospo)
