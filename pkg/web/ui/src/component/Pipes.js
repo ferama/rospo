@@ -21,9 +21,13 @@ export class Pipes extends React.Component {
     }
 
     getAll = async () => {
-        const data = await http.get("pipes/")
+        let data
+        try {
+            data = await http.get("pipes/")
+        } catch {
+            return
+        }
         if (data.data === null) return
-        console.log(data.data)
 
         const pipes = []
 
