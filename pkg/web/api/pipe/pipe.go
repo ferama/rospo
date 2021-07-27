@@ -28,8 +28,9 @@ func (r *pipeRoutes) get(c *gin.Context) {
 			pipeItem := val.(*pipe.Pipe)
 			addr := pipeItem.GetListenerAddr()
 			res = append(res, responseItem{
-				ID:   id,
-				Addr: addr,
+				ID:       id,
+				Listener: addr,
+				Endpoint: pipeItem.GetEndpoint(),
 			})
 		}
 		c.JSON(http.StatusOK, res)
@@ -52,8 +53,9 @@ func (r *pipeRoutes) get(c *gin.Context) {
 		pipeItem := val.(*pipe.Pipe)
 		addr := pipeItem.GetListenerAddr()
 		c.JSON(http.StatusOK, responseItem{
-			ID:   tunId,
-			Addr: addr,
+			ID:       tunId,
+			Listener: addr,
+			Endpoint: pipeItem.GetEndpoint(),
 		})
 	}
 }

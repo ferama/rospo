@@ -31,8 +31,10 @@ func (r *tunRoutes) get(c *gin.Context) {
 			tunnel := val.(*tun.Tunnel)
 			addr := tunnel.GetListenerAddr()
 			res = append(res, responseItem{
-				ID:   id,
-				Addr: addr,
+				ID:              id,
+				Listener:        addr,
+				IsListenerLocal: tunnel.GetIsListenerLocal(),
+				Endpoint:        tunnel.GetEndpoint(),
 			})
 		}
 		c.JSON(http.StatusOK, res)
@@ -55,8 +57,10 @@ func (r *tunRoutes) get(c *gin.Context) {
 		tunnel := val.(*tun.Tunnel)
 		addr := tunnel.GetListenerAddr()
 		c.JSON(http.StatusOK, responseItem{
-			ID:   tunId,
-			Addr: addr,
+			ID:              tunId,
+			Listener:        addr,
+			IsListenerLocal: tunnel.GetIsListenerLocal(),
+			Endpoint:        tunnel.GetEndpoint(),
 		})
 	}
 }
@@ -83,7 +87,7 @@ func (r *tunRoutes) delete(c *gin.Context) {
 	tunnel.Stop()
 	addr := tunnel.GetListenerAddr()
 	c.JSON(http.StatusOK, gin.H{
-		"addr": addr,
+		"Listener": addr,
 	})
 }
 
@@ -101,6 +105,6 @@ func (r *tunRoutes) post(c *gin.Context) {
 	go tunnel.Start()
 	addr := tunnel.GetListenerAddr()
 	c.JSON(http.StatusOK, gin.H{
-		"addr": addr,
+		"Listener": addr,
 	})
 }
