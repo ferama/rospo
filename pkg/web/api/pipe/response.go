@@ -11,4 +11,5 @@ type responseItem struct {
 	Listener     net.Addr       `json:"Listener"`
 	Endpoint     utils.Endpoint `json:"Endpoint"`
 	ClientsCount int            `json:"ClientsCount"`
+	IsStoppable  bool           `json:"IsStoppable"`
 }

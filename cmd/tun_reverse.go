@@ -82,6 +82,6 @@ var tunReverseCmd = &cobra.Command{
 		go client.Start()
 		// I can easily run multiple tunnels in their respective
 		// go routine here using the same client
-		tun.NewTunnel(client, config.Tunnel[0]).Start()
+		tun.NewTunnel(client, config.Tunnel[0], false).Start()
 	},
 }

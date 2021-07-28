@@ -118,9 +118,11 @@ export class Pipes extends React.Component {
                 key: '8',
                 render: (_, record) =>  (
                     <React.Fragment>
+                        {record.IsStoppable?(
                         <Button onClick={ (e) => this.onDelete(record.Id)} >
                             <DeleteOutlined /> 
                         </Button>
+                        ):""}
                     </React.Fragment>
                 ),
             }

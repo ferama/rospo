@@ -123,9 +123,11 @@ export class Tunnels extends React.Component {
                 key: '8',
                 render: (_, record) =>  (
                     <React.Fragment>
-                        <Button onClick={ (e) => this.onDelete(record.Id)} >
+                        {record.IsStoppable?(
+                            <Button onClick={ (e) => this.onDelete(record.Id)} >
                             <DeleteOutlined /> 
-                        </Button>
+                            </Button>
+                        ):""}
                     </React.Fragment>
                 ),
             }

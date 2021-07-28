@@ -37,7 +37,7 @@ var rootCmd = &cobra.Command{
 
 		if conf.Pipe != nil {
 			for _, f := range conf.Pipe {
-				go pipe.NewPipe(f).Start()
+				go pipe.NewPipe(f, false).Start()
 			}
 		}
 
@@ -52,9 +52,9 @@ var rootCmd = &cobra.Command{
 		if conf.Tunnel != nil && len(conf.Tunnel) > 0 {
 			for idx, c := range conf.Tunnel {
 				if idx == len(conf.Tunnel)-1 && conf.Web == nil {
-					tun.NewTunnel(sshConn, c).Start()
+					tun.NewTunnel(sshConn, c, false).Start()
 				} else {
-					go tun.NewTunnel(sshConn, c).Start()
+					go tun.NewTunnel(sshConn, c, false).Start()
 				}
 			}
 		}
