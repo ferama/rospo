@@ -81,7 +81,6 @@ func (t *Tunnel) Start() {
 	for {
 		// waits for the ssh client to be connected to the server or for
 		// a terminate request
-		log.Println("[TUN] wait for ssh client to be ready")
 		for {
 			if t.waitForSshClient() {
 				break
@@ -90,7 +89,6 @@ func (t *Tunnel) Start() {
 				return
 			}
 		}
-		log.Println("[TUN] ssh client ready")
 
 		if t.forward {
 			t.listenLocal()
@@ -114,17 +112,19 @@ func (t *Tunnel) Stop() {
 
 	TunRegistry().Delete(t.registryID)
 	close(t.terminate)
-	if t.listener != nil {
-		t.listener.Close()
-	}
+	go func() {
+		if t.listener != nil {
+			t.listener.Close()
+		}
 
-	// close all clients connections
-	t.clientsMapMU.Lock()
-	for k, v := range t.clientsMap {
-		v.Close()
-		delete(t.clientsMap, k)
-	}
-	t.clientsMapMU.Unlock()
+		// close all clients connections
+		t.clientsMapMU.Lock()
+		for k, v := range t.clientsMap {
+			v.Close()
+			delete(t.clientsMap, k)
+		}
+		t.clientsMapMU.Unlock()
+	}()
 }
 
 func (t *Tunnel) listenLocal() error {

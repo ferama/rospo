@@ -110,15 +110,17 @@ func (p *Pipe) Stop() {
 	}
 	PipeRegistry().Delete(p.registryID)
 	close(p.terminate)
-	if p.listener != nil {
-		p.listener.Close()
-	}
+	go func() {
+		if p.listener != nil {
+			p.listener.Close()
+		}
 
-	// close all clients connections
-	p.clientsMapMU.Lock()
-	for k, v := range p.clientsMap {
-		v.Close()
-		delete(p.clientsMap, k)
-	}
-	p.clientsMapMU.Unlock()
+		// close all clients connections
+		p.clientsMapMU.Lock()
+		for k, v := range p.clientsMap {
+			v.Close()
+			delete(p.clientsMap, k)
+		}
+		p.clientsMapMU.Unlock()
+	}()
 }
