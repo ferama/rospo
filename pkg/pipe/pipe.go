@@ -19,6 +19,7 @@ type Pipe struct {
 
 	// indicate if the pipe should be terminated
 	terminate chan bool
+	stoppable bool
 
 	registryID int
 
@@ -27,11 +28,12 @@ type Pipe struct {
 }
 
 // NewPipe creates a Pipe object
-func NewPipe(conf *PipeConf) *Pipe {
+func NewPipe(conf *PipeConf, stoppable bool) *Pipe {
 	pipe := &Pipe{
 		local:      utils.NewEndpoint(conf.Local),
 		remote:     utils.NewEndpoint(conf.Remote),
 		terminate:  make(chan bool),
+		stoppable:  stoppable,
 		clientsMap: make(map[string]net.Conn),
 	}
 	pipe.listenerWg.Add(1)
@@ -98,8 +100,15 @@ func (p *Pipe) Start() {
 	}
 }
 
+func (p *Pipe) IsStoppable() bool {
+	return p.stoppable
+}
+
 // Stop closes the pipe
 func (p *Pipe) Stop() {
+	if !p.stoppable {
+		return
+	}
 	PipeRegistry().Delete(p.registryID)
 	close(p.terminate)
 	go func() {

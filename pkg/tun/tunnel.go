@@ -28,6 +28,7 @@ type Tunnel struct {
 
 	// indicate if the tunnel should be terminated
 	terminate chan bool
+	stoppable bool
 
 	registryID int
 
@@ -36,7 +37,7 @@ type Tunnel struct {
 }
 
 // NewTunnel builds a Tunnel object
-func NewTunnel(sshConn *sshc.SshConnection, conf *TunnelConf) *Tunnel {
+func NewTunnel(sshConn *sshc.SshConnection, conf *TunnelConf, stoppable bool) *Tunnel {
 
 	tunnel := &Tunnel{
 		forward:        conf.Forward,
@@ -46,6 +47,7 @@ func NewTunnel(sshConn *sshc.SshConnection, conf *TunnelConf) *Tunnel {
 		sshConn:              sshConn,
 		reconnectionInterval: 5 * time.Second,
 		terminate:            make(chan bool, 1),
+		stoppable:            stoppable,
 
 		clientsMap: make(map[string]net.Conn),
 	}
@@ -109,8 +111,16 @@ func (t *Tunnel) Start() {
 	}
 }
 
+func (t *Tunnel) IsStoppable() bool {
+	return t.stoppable
+}
+
 // Stop ends the tunnel
 func (t *Tunnel) Stop() {
+	if !t.stoppable {
+		return
+	}
+
 	TunRegistry().Delete(t.registryID)
 	close(t.terminate)
 	go func() {

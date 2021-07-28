@@ -30,6 +30,7 @@ func (r *pipeRoutes) get(c *gin.Context) {
 			res = append(res, responseItem{
 				ID:           id,
 				Listener:     addr,
+				IsStoppable:  pipeItem.IsStoppable(),
 				Endpoint:     pipeItem.GetEndpoint(),
 				ClientsCount: pipeItem.GetActiveClientsCount(),
 			})
@@ -56,6 +57,7 @@ func (r *pipeRoutes) get(c *gin.Context) {
 		c.JSON(http.StatusOK, responseItem{
 			ID:           tunId,
 			Listener:     addr,
+			IsStoppable:  pipeItem.IsStoppable(),
 			Endpoint:     pipeItem.GetEndpoint(),
 			ClientsCount: pipeItem.GetActiveClientsCount(),
 		})
@@ -98,7 +100,7 @@ func (r *pipeRoutes) post(c *gin.Context) {
 		})
 		return
 	}
-	pipeItem := pipe.NewPipe(&conf)
+	pipeItem := pipe.NewPipe(&conf, true)
 	go pipeItem.Start()
 	addr := pipeItem.GetListenerAddr()
 	c.JSON(http.StatusOK, gin.H{

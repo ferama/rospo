@@ -12,4 +12,5 @@ type responseItem struct {
 	IsListenerLocal bool           `json:"IsListenerLocal"`
 	Endpoint        utils.Endpoint `json:"Endpoint"`
 	ClientsCount    int            `json:"ClientsCount"`
+	IsStoppable     bool           `json:"IsStoppable"`
 }

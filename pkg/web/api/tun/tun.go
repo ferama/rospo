@@ -34,6 +34,7 @@ func (r *tunRoutes) get(c *gin.Context) {
 				ID:              id,
 				Listener:        addr,
 				IsListenerLocal: tunnel.GetIsListenerLocal(),
+				IsStoppable:     tunnel.IsStoppable(),
 				Endpoint:        tunnel.GetEndpoint(),
 				ClientsCount:    tunnel.GetActiveClientsCount(),
 			})
@@ -61,6 +62,7 @@ func (r *tunRoutes) get(c *gin.Context) {
 			ID:              tunId,
 			Listener:        addr,
 			IsListenerLocal: tunnel.GetIsListenerLocal(),
+			IsStoppable:     tunnel.IsStoppable(),
 			Endpoint:        tunnel.GetEndpoint(),
 			ClientsCount:    tunnel.GetActiveClientsCount(),
 		})
@@ -103,7 +105,7 @@ func (r *tunRoutes) post(c *gin.Context) {
 		})
 		return
 	}
-	tunnel := tun.NewTunnel(r.sshConn, &conf)
+	tunnel := tun.NewTunnel(r.sshConn, &conf, true)
 	go tunnel.Start()
 	addr := tunnel.GetListenerAddr()
 	c.JSON(http.StatusOK, gin.H{
