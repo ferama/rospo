@@ -135,6 +135,8 @@ func (t *Tunnel) listenLocal() error {
 		log.Printf("[TUN] dial INTO remote service error. %s\n", err)
 		return err
 	}
+	defer listener.Close()
+
 	t.listener = listener
 	log.Printf("[TUN] forward connected. Local: %s <- Remote: %s\n", t.listener.Addr(), t.remoteEndpoint.String())
 	if t.sshConn != nil && listener != nil {
@@ -160,7 +162,6 @@ func (t *Tunnel) listenLocal() error {
 				t.clientsMapMU.Unlock()
 			})
 		}
-		listener.Close()
 	}
 	return nil
 }
@@ -197,11 +198,12 @@ func (t *Tunnel) listenRemote() error {
 	//	listener, err := t.sshConn.Client.Listen("tcp", "127.0.0.1:0")
 	log.Println("[TUN] starting listen remote")
 	listener, err := t.sshConn.Client.Listen("tcp", t.remoteEndpoint.String())
-
 	if err != nil {
 		log.Printf("[TUN] listen open port ON remote server error. %s\n", err)
 		return err
 	}
+	defer listener.Close()
+
 	t.listener = listener
 
 	log.Printf("[TUN] reverse connected. Local: %s -> Remote: %s\n", t.localEndpoint.String(), t.listener.Addr())
@@ -230,7 +232,6 @@ func (t *Tunnel) listenRemote() error {
 				t.clientsMapMU.Unlock()
 			})
 		}
-		listener.Close()
 	}
 	return nil
 }

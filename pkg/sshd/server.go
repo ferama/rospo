@@ -221,6 +221,7 @@ func (s *sshServer) handleRequests(sshConn *ssh.ServerConn, reqs <-chan *ssh.Req
 			if ok {
 				ln.Close()
 			}
+			req.Reply(true, nil)
 		default:
 			if strings.Contains(req.Type, "keepalive") {
 				req.Reply(true, nil)
