@@ -23,8 +23,7 @@ type Tunnel struct {
 	reconnectionInterval time.Duration
 
 	// the tunnel connection listener
-	listener   net.Listener
-	listenerWg sync.WaitGroup
+	listener net.Listener
 
 	// indicate if the tunnel should be terminated
 	terminate chan bool
@@ -52,8 +51,6 @@ func NewTunnel(sshConn *sshc.SshConnection, conf *TunnelConf, stoppable bool) *T
 		clientsMap: make(map[string]net.Conn),
 	}
 
-	// the listener is not ready on startup
-	tunnel.listenerWg.Add(1)
 	return tunnel
 }
 
@@ -79,6 +76,7 @@ func (t *Tunnel) waitForSshClient() bool {
 
 // Start activates the tunnel connections
 func (t *Tunnel) Start() {
+	t.registryID = TunRegistry().Add(t)
 
 	for {
 		// waits for the ssh client to be connected to the server or for
@@ -91,21 +89,11 @@ func (t *Tunnel) Start() {
 			}
 		}
 
-		var err error
 		if t.forward {
-			err = t.listenLocal()
+			t.listenLocal()
 		} else {
-			err = t.listenRemote()
+			t.listenRemote()
 		}
-		if err == nil {
-			// if err is not nil, the listener has failed on startup
-			// so before setting the listenerWG to done
-			// If the err is nil instead it means that the listener has failed
-			// while running, so I need to mark it as not ready
-			t.listenerWg.Add(1)
-		}
-
-		TunRegistry().Delete(t.registryID)
 
 		time.Sleep(t.reconnectionInterval)
 	}
@@ -124,8 +112,9 @@ func (t *Tunnel) Stop() {
 	TunRegistry().Delete(t.registryID)
 	close(t.terminate)
 	go func() {
-		t.listenerWg.Wait()
-		t.listener.Close()
+		if t.listener != nil {
+			t.listener.Close()
+		}
 
 		// close all clients connections
 		t.clientsMapMU.Lock()
@@ -145,10 +134,6 @@ func (t *Tunnel) listenLocal() error {
 		return err
 	}
 	t.listener = listener
-	t.listenerWg.Done()
-
-	t.registryID = TunRegistry().Add(t)
-
 	log.Printf("[TUN] forward connected. Local: %s <- Remote: %s\n", t.listener.Addr(), t.remoteEndpoint.String())
 	if t.sshConn != nil && listener != nil {
 		for {
@@ -180,9 +165,10 @@ func (t *Tunnel) listenLocal() error {
 
 // GetListenerAddr returns the tunnel listener network address
 func (t *Tunnel) GetListenerAddr() net.Addr {
-	// waits for the listener to be ready
-	t.listenerWg.Wait()
-	return t.listener.Addr()
+	if t.listener != nil {
+		return t.listener.Addr()
+	}
+	return nil
 }
 
 // GetActiveClientsCount returns how many clients are actually using the tunnel
@@ -215,9 +201,6 @@ func (t *Tunnel) listenRemote() error {
 		return err
 	}
 	t.listener = listener
-	t.listenerWg.Done()
-
-	t.registryID = TunRegistry().Add(t)
 
 	log.Printf("[TUN] reverse connected. Local: %s -> Remote: %s\n", t.localEndpoint.String(), t.listener.Addr())
 	if t.sshConn != nil && listener != nil {

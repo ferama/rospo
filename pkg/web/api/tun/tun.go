@@ -89,10 +89,7 @@ func (r *tunRoutes) delete(c *gin.Context) {
 	}
 	tunnel := data.(*tun.Tunnel)
 	tunnel.Stop()
-	addr := tunnel.GetListenerAddr()
-	c.JSON(http.StatusOK, gin.H{
-		"Listener": addr,
-	})
+	c.JSON(http.StatusOK, gin.H{})
 }
 
 // Example curl:
@@ -107,8 +104,5 @@ func (r *tunRoutes) post(c *gin.Context) {
 	}
 	tunnel := tun.NewTunnel(r.sshConn, &conf, true)
 	go tunnel.Start()
-	addr := tunnel.GetListenerAddr()
-	c.JSON(http.StatusOK, gin.H{
-		"Listener": addr,
-	})
+	c.JSON(http.StatusOK, gin.H{})
 }

@@ -14,8 +14,7 @@ type Pipe struct {
 	remote *utils.Endpoint
 
 	// the pipe connection listener
-	listener   net.Listener
-	listenerWg sync.WaitGroup
+	listener net.Listener
 
 	// indicate if the pipe should be terminated
 	terminate chan bool
@@ -36,14 +35,15 @@ func NewPipe(conf *PipeConf, stoppable bool) *Pipe {
 		stoppable:  stoppable,
 		clientsMap: make(map[string]net.Conn),
 	}
-	pipe.listenerWg.Add(1)
 	return pipe
 }
 
 // GetListenerAddr returns the pipe listener network address
 func (p *Pipe) GetListenerAddr() net.Addr {
-	p.listenerWg.Wait()
-	return p.listener.Addr()
+	if p.listener != nil {
+		return p.listener.Addr()
+	}
+	return nil
 }
 
 func (p *Pipe) GetEndpoint() utils.Endpoint {
@@ -60,7 +60,6 @@ func (p *Pipe) GetActiveClientsCount() int {
 func (p *Pipe) Start() {
 	listener, err := net.Listen("tcp", p.local.String())
 	p.listener = listener
-	p.listenerWg.Done()
 
 	if err != nil {
 		log.Printf("[PIPE] listening on %s error.\n", err)
@@ -112,8 +111,9 @@ func (p *Pipe) Stop() {
 	PipeRegistry().Delete(p.registryID)
 	close(p.terminate)
 	go func() {
-		p.listenerWg.Wait()
-		p.listener.Close()
+		if p.listener != nil {
+			p.listener.Close()
+		}
 
 		// close all clients connections
 		p.clientsMapMU.Lock()

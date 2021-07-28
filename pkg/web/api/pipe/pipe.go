@@ -84,10 +84,7 @@ func (r *pipeRoutes) delete(c *gin.Context) {
 	}
 	pipeItem := data.(*pipe.Pipe)
 	pipeItem.Stop()
-	addr := pipeItem.GetListenerAddr()
-	c.JSON(http.StatusOK, gin.H{
-		"addr": addr,
-	})
+	c.JSON(http.StatusOK, gin.H{})
 }
 
 // Example curl:
@@ -102,8 +99,5 @@ func (r *pipeRoutes) post(c *gin.Context) {
 	}
 	pipeItem := pipe.NewPipe(&conf, true)
 	go pipeItem.Start()
-	addr := pipeItem.GetListenerAddr()
-	c.JSON(http.StatusOK, gin.H{
-		"addr": addr,
-	})
+	c.JSON(http.StatusOK, gin.H{})
 }

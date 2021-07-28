@@ -88,13 +88,13 @@ export class Pipes extends React.Component {
                 title: 'Listener IP',
                 dataIndex: 'Listener',
                 key: '2',
-                render: item => item.IP
+                render: item => { return item ? item.IP: "" }
             },
             {
                 title: 'Listener Port',
                 dataIndex: 'Listener',
                 key: '3',
-                render: item => item.Port
+                render: item => { return item ? item.Port: "" }
             },
             {
                 title: 'Endpoint Host',
