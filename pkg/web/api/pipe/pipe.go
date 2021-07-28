@@ -89,7 +89,7 @@ func (r *pipeRoutes) delete(c *gin.Context) {
 }
 
 // Example curl:
-// curl -X POST -H "Content-Type: application/json" --data '{"remote": "rpi:22", "local": ":3322", "forward": false}' http://localhost:8090/api/pipes/
+// curl -X POST -H "Content-Type: application/json" --data '{"remote": "rpi:22", "local": ":3322"}' http://localhost:8090/api/pipes/
 func (r *pipeRoutes) post(c *gin.Context) {
 	var conf pipe.PipeConf
 	if err := c.BindJSON(&conf); err != nil {
