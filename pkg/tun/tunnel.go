@@ -148,7 +148,7 @@ func (t *Tunnel) listenLocal() error {
 			client, err := listener.Accept()
 			if err != nil {
 				log.Println("[TUN] disconnected")
-				break
+				return err
 			}
 			t.clientsMapMU.Lock()
 			t.clientsMap[client.RemoteAddr().String()] = client
@@ -217,7 +217,7 @@ func (t *Tunnel) listenRemote() error {
 			client, err := listener.Accept()
 			if err != nil {
 				log.Println("[TUN] disconnected")
-				break
+				return err
 			}
 
 			t.clientsMapMU.Lock()
