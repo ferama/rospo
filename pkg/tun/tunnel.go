@@ -81,6 +81,7 @@ func (t *Tunnel) Start() {
 	for {
 		// waits for the ssh client to be connected to the server or for
 		// a terminate request
+		log.Println("[TUN] wait for ssh client to be ready")
 		for {
 			if t.waitForSshClient() {
 				break
@@ -88,6 +89,7 @@ func (t *Tunnel) Start() {
 				return
 			}
 		}
+		log.Println("[TUN] ssh client ready")
 
 		if t.forward {
 			t.listenLocal()
