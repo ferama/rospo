@@ -86,6 +86,7 @@ func (t *Tunnel) Start() {
 			if t.waitForSshClient() {
 				break
 			} else {
+				log.Println("[TUN] terminated")
 				return
 			}
 		}
