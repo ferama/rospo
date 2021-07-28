@@ -114,7 +114,6 @@ func (t *Tunnel) Stop() {
 
 	TunRegistry().Delete(t.registryID)
 	close(t.terminate)
-	// go func() {
 	if t.listener != nil {
 		t.listener.Close()
 	}
@@ -126,11 +125,11 @@ func (t *Tunnel) Stop() {
 		delete(t.clientsMap, k)
 	}
 	t.clientsMapMU.Unlock()
-	// }()
 }
 
 func (t *Tunnel) listenLocal() error {
 	// Listen on remote server port
+	log.Println("[TUN] starting listen local")
 	listener, err := net.Listen("tcp", t.localEndpoint.String())
 	if err != nil {
 		log.Printf("[TUN] dial INTO remote service error. %s\n", err)
@@ -196,7 +195,7 @@ func (t *Tunnel) listenRemote() error {
 	// you can use port :0 to get a radnom available tcp port
 	// Example:
 	//	listener, err := t.sshConn.Client.Listen("tcp", "127.0.0.1:0")
-
+	log.Println("[TUN] starting listen remote")
 	listener, err := t.sshConn.Client.Listen("tcp", t.remoteEndpoint.String())
 
 	if err != nil {
