@@ -3,9 +3,9 @@ import {
     Switch,
     Route,
   } from "react-router-dom";
-import { Home } from './component/Home';
-import { Pipes } from './component/Pipes';
-import { Tunnels } from './component/Tunnels';
+import { Home } from './view/Home';
+import { Pipes } from './view/Pipes';
+import { Tunnels } from './view/Tunnels';
 
 export const Routes = () => (
     <Switch>

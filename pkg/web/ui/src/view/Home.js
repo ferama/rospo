@@ -49,7 +49,6 @@ export class Home extends React.Component {
     }
 
     render () {
-        console.log(this.state.stats)
         const haveJH = ( (this.state.info.JumpHosts !== undefined) && (this.state.info.JumpHosts.length !== 0) )
         return (
             <Fragment>
@@ -71,9 +70,7 @@ export class Home extends React.Component {
                                         <List.Item>{item}</List.Item>
                                     )}
                                     />
-                            ): (
-                                <Fragment></Fragment>
-                            )}
+                            ): ""}
                         </Card>
                     </Col>
                     <Col span={8}>

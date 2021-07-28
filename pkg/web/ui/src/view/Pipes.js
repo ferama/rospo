@@ -1,12 +1,18 @@
 import React from 'react';
 import { http } from '../lib/Axios'
 import { Table, PageHeader } from 'antd';
+import { CreateForm } from '../components/CreateForm';
+import { Row, Col, Button, Divider } from 'antd';
+import {
+    DeleteOutlined,
+  } from '@ant-design/icons';
 
 export class Pipes extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
-            pipes: []
+            pipes: [],
+            showForm: false
         }
         this.intervalHandler = null
     }
@@ -27,7 +33,12 @@ export class Pipes extends React.Component {
         } catch {
             return
         }
-        if (data.data === null) return
+        if (data.data === null) {
+            this.setState({
+                pipes: []
+            })
+            return
+        }
 
         const pipes = []
 
@@ -45,6 +56,25 @@ export class Pipes extends React.Component {
         this.setState({
             pipes: pipes
         })
+    }
+
+    onNewClick = () => {
+        const showForm = !this.state.showForm
+        this.setState({
+            showForm: showForm
+        })
+    }
+    
+    onFormFinish = async (values) => {
+        await http.post('pipes/', values)
+        this.setState({
+            showForm: false
+        })
+    }
+
+    onDelete = async (id) => {
+        await http.delete(`/pipes/${id}`)
+        await this.getAll()
     }
     
     render () {
@@ -83,12 +113,34 @@ export class Pipes extends React.Component {
                 dataIndex: 'ClientsCount',
                 key: '7',
             },
+            {
+                title: 'Action',
+                key: '8',
+                render: (_, record) =>  (
+                    <React.Fragment>
+                        <Button onClick={ (e) => this.onDelete(record.Id)} >
+                            <DeleteOutlined /> 
+                        </Button>
+                    </React.Fragment>
+                ),
+            }
         ]
         return (
             <React.Fragment>
-                <PageHeader
-                    title="Pipes"
-                />
+                <Row>
+                    <Col flex="auto">
+                        <PageHeader title="Pipes" />
+                    </Col>    
+                    <Col flex="100px">
+                        <Button type="primary" onClick={this.onNewClick}>New Pipe</Button>
+                    </Col>    
+                </Row>
+                {this.state.showForm?(
+                    <React.Fragment>
+                        <CreateForm showForward={false} onFinish={this.onFormFinish}/>
+                        <Divider />
+                    </React.Fragment>
+                ): ""}
                 <Table columns={columns} dataSource={this.state.pipes} />
             </React.Fragment>
         )
