@@ -59,7 +59,8 @@ export class Home extends React.Component {
                     <Col span={8}>
                         <Card title="Ssh Client">
                             <p>
-                                <b>Connected to:</b> {this.state.info.SshClientURI}
+                                <b>Server:</b> {this.state.info.SshClientURI}<br/>
+                                <b>Status:</b> {this.state.info.SshClientConnectionStatus}
                             </p>
                             {haveJH ? (
                                 <List
