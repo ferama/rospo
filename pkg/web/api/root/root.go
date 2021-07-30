@@ -4,17 +4,20 @@ import (
 	"net/http"
 
 	"github.com/ferama/rospo/pkg/pipe"
+	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/tun"
 	"github.com/gin-gonic/gin"
 )
 
 type rootRoutes struct {
-	info *Info
+	info    *Info
+	sshConn *sshc.SshConnection
 }
 
-func Routes(info *Info, router *gin.RouterGroup) {
+func Routes(info *Info, sshConn *sshc.SshConnection, router *gin.RouterGroup) {
 	r := &rootRoutes{
-		info: info,
+		info:    info,
+		sshConn: sshConn,
 	}
 
 	router.GET("/info", r.getInfo)
@@ -22,6 +25,7 @@ func Routes(info *Info, router *gin.RouterGroup) {
 }
 
 func (r *rootRoutes) getInfo(c *gin.Context) {
+	r.info.SshClientConnectionStatus = r.sshConn.ConnectionStatus
 	c.JSON(http.StatusOK, r.info)
 }
 

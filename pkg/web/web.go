@@ -33,7 +33,7 @@ func StartServer(isDev bool,
 		MaxAge:           12 * time.Hour,
 	}))
 
-	rootapi.Routes(info, r.Group("/api"))
+	rootapi.Routes(info, sshConn, r.Group("/api"))
 	pipeapi.Routes(r.Group("/api/pipes"))
 	tunapi.Routes(sshConn, r.Group("/api/tuns"))
 

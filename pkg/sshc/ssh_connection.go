@@ -15,6 +15,12 @@ import (
 	"golang.org/x/crypto/ssh/knownhosts"
 )
 
+const (
+	STATUS_CONNECTING = "Connecting..."
+	STATUS_CONNECTED  = "Connected"
+	STATUS_CLOSED     = "Closed"
+)
+
 // SshConnection implements an ssh client
 type SshConnection struct {
 	username   string
@@ -34,6 +40,8 @@ type SshConnection struct {
 	// is Connected. Tunnels will wait on this waitGroup to
 	// know if the ssh client is Connected or not
 	Connected sync.WaitGroup
+
+	ConnectionStatus string
 }
 
 // NewSshConnection creates a new SshConnection instance
@@ -57,6 +65,7 @@ func NewSshConnection(conf *SshClientConf) *SshConnection {
 
 		keepAliveInterval:    5 * time.Second,
 		reconnectionInterval: 5 * time.Second,
+		ConnectionStatus:     STATUS_CONNECTING,
 	}
 	// client is not connected on startup, so add 1 here
 	c.Connected.Add(1)
@@ -66,6 +75,7 @@ func NewSshConnection(conf *SshClientConf) *SshConnection {
 // Close closes the ssh conn instance client connection
 func (s *SshConnection) Close() {
 	s.Client.Close()
+	s.ConnectionStatus = STATUS_CLOSED
 }
 
 // Start connects the ssh client to the remote server
@@ -73,6 +83,7 @@ func (s *SshConnection) Close() {
 // and reconnecting in the event of network failures
 func (s *SshConnection) Start() {
 	for {
+		s.ConnectionStatus = STATUS_CONNECTING
 		if err := s.connect(); err != nil {
 			log.Printf("[SSHC] error while connecting %s", err)
 			time.Sleep(s.reconnectionInterval)
@@ -80,6 +91,7 @@ func (s *SshConnection) Start() {
 		}
 		// client connected. Free the wait group
 		s.Connected.Done()
+		s.ConnectionStatus = STATUS_CONNECTED
 		s.keepAlive()
 		s.Close()
 		s.Connected.Add(1)
