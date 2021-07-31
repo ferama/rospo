@@ -39,3 +39,10 @@ func TestSSHUrlParser(t *testing.T) {
 		}
 	}
 }
+
+func TestExpandHome(t *testing.T) {
+	_, err := ExpandUserHome("~/.ssh")
+	if err != nil {
+		t.Fail()
+	}
+}

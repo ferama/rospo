@@ -16,7 +16,7 @@ build() {
         -o ./bin/rospo-${GOOS}-${GOARCH}${EXT} .
 }
 
-go test ./... -v
+go test ./... -v -cover
 
 GOOS=linux GOARCH=arm build
 GOOS=linux GOARCH=arm64 build
