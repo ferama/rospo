@@ -15,6 +15,7 @@ import (
 	"golang.org/x/crypto/ssh/knownhosts"
 )
 
+// The ssh connection available statuses
 const (
 	STATUS_CONNECTING = "Connecting..."
 	STATUS_CONNECTED  = "Connected"

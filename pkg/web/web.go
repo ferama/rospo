@@ -14,6 +14,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// StartServer start the rospo web server. The webserver
+// exposes rospo apis and a nice ui at the /
 func StartServer(isDev bool,
 	sshConn *sshc.SshConnection,
 	conf *WebConf,

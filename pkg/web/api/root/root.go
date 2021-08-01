@@ -14,6 +14,7 @@ type rootRoutes struct {
 	sshConn *sshc.SshConnection
 }
 
+// Routes setup the root api routes
 func Routes(info *Info, sshConn *sshc.SshConnection, router *gin.RouterGroup) {
 	r := &rootRoutes{
 		info:    info,

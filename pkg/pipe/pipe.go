@@ -46,6 +46,8 @@ func (p *Pipe) GetListenerAddr() net.Addr {
 	return nil
 }
 
+// GetEndpoint returns the pipe remote endpoint
+// This is actually used from pipe api routes
 func (p *Pipe) GetEndpoint() utils.Endpoint {
 	return *p.remote
 }
@@ -99,6 +101,8 @@ func (p *Pipe) Start() {
 	}
 }
 
+// IsStoppable return true if the pipe can be stopped calling the Stop
+// method. False if not
 func (p *Pipe) IsStoppable() bool {
 	return p.stoppable
 }
@@ -111,9 +115,9 @@ func (p *Pipe) Stop() {
 	PipeRegistry().Delete(p.registryID)
 	close(p.terminate)
 	go func() {
-		if p.listener != nil {
-			p.listener.Close()
-		}
+		// if p.listener != nil {
+		// 	p.listener.Close()
+		// }
 
 		// close all clients connections
 		p.clientsMapMU.Lock()

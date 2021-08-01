@@ -100,6 +100,8 @@ func (t *Tunnel) Start() {
 	}
 }
 
+// IsStoppable return true if the tunnel can be stopped calling the Stop
+// method. False if not
 func (t *Tunnel) IsStoppable() bool {
 	return t.stoppable
 }
@@ -179,10 +181,16 @@ func (t *Tunnel) GetActiveClientsCount() int {
 	return len(t.clientsMap)
 }
 
+// GetIsListenerLocal return true if it is a forward tunnel. In a forward tunnel
+// a socket listener is started on the local (rospo) machine and all the connections are forwarded
+// to the remote endpoint. In a NON forward tunnel, the listener is started on the remote
+// machine instead. When a client connects to the remote listener the connection is forwarded
+// on the local endpoint
 func (t *Tunnel) GetIsListenerLocal() bool {
 	return t.forward
 }
 
+// GetEndpoint returns the tunnel endpoint
 func (t *Tunnel) GetEndpoint() utils.Endpoint {
 	if t.forward {
 		return *t.remoteEndpoint
