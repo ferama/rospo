@@ -14,7 +14,7 @@ build() {
 }
 
 # test units
-go test ./... -v -cover || exit 1
+go test ./... -v -cover -race || exit 1
 
 # build ui
 cd $DIR/pkg/web/ui && npm install && npm run build && cd $DIR

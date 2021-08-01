@@ -24,6 +24,8 @@ type Pipe struct {
 
 	clientsMap   map[string]net.Conn
 	clientsMapMU sync.Mutex
+
+	listenerMU sync.RWMutex
 }
 
 // NewPipe creates a Pipe object
@@ -40,6 +42,9 @@ func NewPipe(conf *PipeConf, stoppable bool) *Pipe {
 
 // GetListenerAddr returns the pipe listener network address
 func (p *Pipe) GetListenerAddr() net.Addr {
+	p.listenerMU.RLock()
+	defer p.listenerMU.RUnlock()
+
 	if p.listener != nil {
 		return p.listener.Addr()
 	}
@@ -61,7 +66,10 @@ func (p *Pipe) GetActiveClientsCount() int {
 // local endpoint into the remote endpoint
 func (p *Pipe) Start() {
 	listener, err := net.Listen("tcp", p.local.String())
+
+	p.listenerMU.Lock()
 	p.listener = listener
+	p.listenerMU.Unlock()
 
 	if err != nil {
 		log.Printf("[PIPE] listening on %s error.\n", err)
@@ -115,9 +123,11 @@ func (p *Pipe) Stop() {
 	PipeRegistry().Delete(p.registryID)
 	close(p.terminate)
 	go func() {
-		// if p.listener != nil {
-		// 	p.listener.Close()
-		// }
+		p.listenerMU.RLock()
+		if p.listener != nil {
+			p.listener.Close()
+		}
+		p.listenerMU.RUnlock()
 
 		// close all clients connections
 		p.clientsMapMU.Lock()
