@@ -33,6 +33,8 @@ type Tunnel struct {
 
 	clientsMap   map[string]net.Conn
 	clientsMapMU sync.Mutex
+
+	listenerMU sync.RWMutex
 }
 
 // NewTunnel builds a Tunnel object
@@ -115,9 +117,11 @@ func (t *Tunnel) Stop() {
 	TunRegistry().Delete(t.registryID)
 	close(t.terminate)
 	go func() {
+		t.listenerMU.RLock()
 		if t.listener != nil {
 			t.listener.Close()
 		}
+		t.listenerMU.RUnlock()
 
 		// close all clients connections
 		t.clientsMapMU.Lock()
@@ -139,7 +143,10 @@ func (t *Tunnel) listenLocal() error {
 	}
 	defer listener.Close()
 
+	t.listenerMU.Lock()
 	t.listener = listener
+	t.listenerMU.Unlock()
+
 	log.Printf("[TUN] forward connected. Local: %s <- Remote: %s\n", t.listener.Addr(), t.remoteEndpoint.String())
 	if t.sshConn != nil && listener != nil {
 		for {
@@ -170,6 +177,9 @@ func (t *Tunnel) listenLocal() error {
 
 // GetListenerAddr returns the tunnel listener network address
 func (t *Tunnel) GetListenerAddr() net.Addr {
+	t.listenerMU.RLock()
+	defer t.listenerMU.RUnlock()
+
 	if t.listener != nil {
 		return t.listener.Addr()
 	}
@@ -212,7 +222,9 @@ func (t *Tunnel) listenRemote() error {
 	}
 	defer listener.Close()
 
+	t.listenerMU.Lock()
 	t.listener = listener
+	t.listenerMU.Unlock()
 
 	log.Printf("[TUN] reverse connected. Local: %s -> Remote: %s\n", t.localEndpoint.String(), t.listener.Addr())
 	if t.sshConn != nil && listener != nil {
