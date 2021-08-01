@@ -99,7 +99,7 @@ func (s *SshConnection) Start() {
 	}
 }
 
-// GrapPubKeys is an helper function that gets server pubkey
+// GrapPubKey is an helper function that gets server pubkey
 func (s *SshConnection) GrabPubKey() {
 	sshConfig := &ssh.ClientConfig{
 		HostKeyCallback: s.verifyHostCallback(false),

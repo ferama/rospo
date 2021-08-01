@@ -207,9 +207,8 @@ func (t *Tunnel) GetIsListenerLocal() bool {
 func (t *Tunnel) GetEndpoint() utils.Endpoint {
 	if t.forward {
 		return *t.remoteEndpoint
-	} else {
-		return *t.localEndpoint
 	}
+	return *t.localEndpoint
 }
 
 func (t *Tunnel) listenRemote() error {
