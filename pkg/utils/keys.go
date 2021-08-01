@@ -59,7 +59,6 @@ func GeneratePublicKey(key *rsa.PublicKey) ([]byte, error) {
 
 	pubKeyBytes := ssh.MarshalAuthorizedKey(publicRsaKey)
 
-	// log.Println("public key generated")
 	return pubKeyBytes, nil
 }
 
