@@ -59,6 +59,9 @@ func (p *Pipe) GetEndpoint() utils.Endpoint {
 
 // GetActiveClientsCount returns how many clients are actually using the pipe
 func (p *Pipe) GetActiveClientsCount() int {
+	p.clientsMapMU.Lock()
+	defer p.clientsMapMU.Unlock()
+
 	return len(p.clientsMap)
 }
 
