@@ -188,6 +188,9 @@ func (t *Tunnel) GetListenerAddr() net.Addr {
 
 // GetActiveClientsCount returns how many clients are actually using the tunnel
 func (t *Tunnel) GetActiveClientsCount() int {
+	t.clientsMapMU.Lock()
+	defer t.clientsMapMU.Unlock()
+
 	return len(t.clientsMap)
 }
 
