@@ -4,9 +4,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 VERSION=${VERSION:=development}
 
-cd $DIR/pkg/web/ui && npm install && npm run build && cd $DIR
-
-
 build() {
     EXT=""
     [[ $GOOS = "windows" ]] && EXT=".exe"
@@ -16,8 +13,13 @@ build() {
         -o ./bin/rospo-${GOOS}-${GOARCH}${EXT} .
 }
 
-go test ./... -v -cover
+# test units
+go test ./... -v -cover || exit 1
 
+# build ui
+cd $DIR/pkg/web/ui && npm install && npm run build && cd $DIR
+
+# multi arch binary build
 GOOS=linux GOARCH=arm build
 GOOS=linux GOARCH=arm64 build
 GOOS=linux GOARCH=amd64 build
