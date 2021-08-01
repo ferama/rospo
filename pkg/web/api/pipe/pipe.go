@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Routes setup pipe related api routes
 func Routes(router *gin.RouterGroup) {
 	r := &pipeRoutes{}
 

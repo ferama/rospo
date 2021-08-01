@@ -13,6 +13,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Version is the actual rospo version. This value
+// is set during the build process using -ldflags="-X 'github.com/ferama/rospo/cmd.Version=
 var Version = "development"
 
 var rootCmd = &cobra.Command{

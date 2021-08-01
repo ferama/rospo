@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Routes setup tun related api routes
 func Routes(sshConn *sshc.SshConnection, router *gin.RouterGroup) {
 	r := &tunRoutes{
 		sshConn: sshConn,
