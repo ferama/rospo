@@ -43,7 +43,7 @@ tunnel:
 sshd:
   server_key: "./server_key"
   authorized_keys: "./authorized_keys"
-  port: "2222"
+  listen_address: ":2222"
   # OPTIONAL: default false
   # If enabled the ssh shell,exec command will be disabled. So you can use
   # the sshd for tunnels, forwards but not to gain a remote shell or to execute

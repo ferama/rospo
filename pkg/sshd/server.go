@@ -18,7 +18,7 @@ import (
 type sshServer struct {
 	hostPrivateKey    ssh.Signer
 	authorizedKeyFile *string
-	tcpPort           *string
+	listenAddress     *string
 
 	disableShell bool
 
@@ -26,6 +26,9 @@ type sshServer struct {
 	forwardsMu sync.Mutex
 
 	forwardsKeepAliveInterval time.Duration
+
+	listener   net.Listener
+	listenerMU sync.RWMutex
 }
 
 // NewSshServer builds an SshServer object
@@ -62,7 +65,7 @@ func NewSshServer(conf *SshDConf) *sshServer {
 		authorizedKeyFile:         &conf.AuthorizedKeysFile,
 		hostPrivateKey:            hostPrivateKeySigner,
 		disableShell:              conf.DisableShell,
-		tcpPort:                   &conf.Port,
+		listenAddress:             &conf.ListenAddress,
 		forwards:                  make(map[string]net.Listener),
 		forwardsKeepAliveInterval: 5 * time.Second,
 	}
@@ -135,17 +138,22 @@ func (s *sshServer) Start() {
 		},
 	}
 	config.AddHostKey(s.hostPrivateKey)
-	if *s.tcpPort == "" {
+	if *s.listenAddress == "" {
 		log.Fatalf("[SSHD] listen port can't be empty")
 	}
 
-	socket, err := net.Listen("tcp", ":"+*s.tcpPort)
+	listener, err := net.Listen("tcp", *s.listenAddress)
+
+	s.listenerMU.Lock()
+	s.listener = listener
+	s.listenerMU.Unlock()
+
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("[SSHD] listening on port %s\n", *s.tcpPort)
+	log.Printf("[SSHD] listening on %s\n", listener.Addr())
 	for {
-		conn, err := socket.Accept()
+		conn, err := listener.Accept()
 		if err != nil {
 			panic(err)
 		}
@@ -165,6 +173,17 @@ func (s *sshServer) Start() {
 			go s.handleChannels(chans)
 		}()
 	}
+}
+
+// GetListenerAddr returns the server listener network address
+func (s *sshServer) GetListenerAddr() net.Addr {
+	s.listenerMU.RLock()
+	defer s.listenerMU.RUnlock()
+
+	if s.listener != nil {
+		return s.listener.Addr()
+	}
+	return nil
 }
 
 func (s *sshServer) handleRequests(sshConn *ssh.ServerConn, reqs <-chan *ssh.Request) {
