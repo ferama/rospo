@@ -14,6 +14,7 @@ build() {
 }
 
 # test units
+go clean -testcache
 go test ./... -v -cover -race || exit 1
 
 # build ui
