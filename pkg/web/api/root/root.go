@@ -26,7 +26,7 @@ func Routes(info *Info, sshConn *sshc.SshConnection, router *gin.RouterGroup) {
 }
 
 func (r *rootRoutes) getInfo(c *gin.Context) {
-	r.info.SshClientConnectionStatus = r.sshConn.ConnectionStatus
+	r.info.SshClientConnectionStatus = r.sshConn.GetConnectionStatus()
 	c.JSON(http.StatusOK, r.info)
 }
 
