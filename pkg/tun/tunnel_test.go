@@ -118,6 +118,8 @@ func TestTunnelReverse(t *testing.T) {
 	}
 
 	tunnel.Stop()
+	// be sure to catch the full stop event
+	time.Sleep(tunnel.reconnectionInterval + 2*time.Second)
 }
 
 func TestTunnelForward(t *testing.T) {
