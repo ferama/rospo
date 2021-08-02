@@ -53,6 +53,26 @@ func TestErrors(t *testing.T) {
 	if client.GetConnectionStatus() != STATUS_CONNECTING {
 		t.Fail()
 	}
+
+	// invalid tunnel hop
+	sshd1Port := startD()
+	clientConf = &SshClientConf{
+		Identity: "testdata/client",
+		Insecure: true, // disables known_hosts check
+		JumpHosts: []*JumpHostConf{
+			{
+				URI:      fmt.Sprintf("127.0.0.1:%s", "48739"),
+				Identity: "testdata/client",
+			},
+		},
+		ServerURI: fmt.Sprintf("127.0.0.1:%s", sshd1Port),
+	}
+	client = NewSshConnection(clientConf)
+	go client.Start()
+	time.Sleep(2 * time.Second)
+	if client.GetConnectionStatus() != STATUS_CONNECTING {
+		t.Fail()
+	}
 }
 
 func TestSshC(t *testing.T) {
