@@ -14,16 +14,12 @@ It's meant to make ssh tunnels fun and understendable again
 ### Table of Contents  
 1. [Why Rospo?](#why-rospo)
 2. [Quick command line usage](#quick-command-line-usage)
-3. [Scenarios](#scenarios)
+3. [Rospo UI](#rospo-ui)
+4. [Scenarios](#scenarios)
     * [Example scenario: Windows WSL reverse shell](#example-scenario-windows-wsl-reverse-shell)
     * [Example scenario: multiple complex tunnels](#example-scenario-multiple-complex-tunnels)
     * [Example scenario: kubernetes service exporter](#example-scenario-kubernetes-service-exporter)
-4. [How to Install](#how-to-install)
-    * [Linux (amd64)](#linux-amd64)
-    * [Linux (arm64)](#linux-arm64)
-    * [Linux (arm)](#linux-arm)
-    * [Mac Os (Apple silicon)](#mac-os)
-    * [Windows](#windows)
+5. [How to Install](#how-to-install)
 
 
 ## Why Rospo
@@ -55,6 +51,18 @@ Use a config file
 ```
 $ rospo config.yaml
 ```
+
+## Rospo UI
+Rospo supports a cool ui too. The ui will let you handle tunnels and pipes configuration at runtime through the web interface.
+You can start/stop new tunnels and pipes at runtime.
+
+Pipes and tunnels that are configured through the rospo config file will not be administrable from the ui.
+
+![Image of Home](https://raw.githubusercontent.com/ferama/rospo/main/img/home.png)
+
+![Image of tunnels](https://raw.githubusercontent.com/ferama/rospo/main/img/tunnels.png)
+
+![Image of tunnels](https://raw.githubusercontent.com/ferama/rospo/main/img/pipes.png)
 
 ## Scenarios
 
@@ -155,34 +163,9 @@ In this scenario the k8s pods act as a bridge between kubernetes services and th
 ## How to Install
 
 Rospo actually full supports *nix oses and Windows 10
+Grab the latest binary release from here [https://github.com/ferama/rospo/releases/latest](https://github.com/ferama/rospo/releases/latest)
 
-#### Linux amd64
-```
-curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-linux-amd64 --output rospo && chmod +x rospo
-```
-
-#### Linux arm64
-```
-curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-linux-arm64 --output rospo && chmod +x rospo
-```
-
-#### Linux arm
-```
-curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-linux-arm --output rospo && chmod +x rospo
-```
-
-#### Mac OS
-```
-curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-darwin-arm64 --output rospo && chmod +x rospo
-```
-
-#### Windows
-
-You will require Windows 10
-
-```
-(New-Object System.Net.WebClient).DownloadFile("https://github.com/ferama/rospo/releases/latest/download/rospo-windows-amd64.exe", "rospo.exe")
-```
+Alternatively you can use the docker ditribution where useful/needed. Look at an example on kubernetes here [./hack/k8s](./hack/k8s) 
 
 
 

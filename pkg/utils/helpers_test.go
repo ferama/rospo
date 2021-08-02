@@ -45,6 +45,10 @@ func TestExpandHome(t *testing.T) {
 	if err != nil {
 		t.Fail()
 	}
+	_, err = ExpandUserHome("/app/.ssh")
+	if err != nil {
+		t.Fail()
+	}
 }
 
 func TestDefaultShell(t *testing.T) {
