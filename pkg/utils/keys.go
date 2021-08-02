@@ -20,16 +20,10 @@ import (
 // GeneratePrivateKey generate an rsa key (actually used from the sshd server)
 func GeneratePrivateKey() (*rsa.PrivateKey, error) {
 	bitSize := 4096
-	privateKey, err := rsa.GenerateKey(rand.Reader, bitSize)
-	if err != nil {
-		log.Println(err)
-	}
+	privateKey, _ := rsa.GenerateKey(rand.Reader, bitSize)
 
 	// Validate Private Key
-	err = privateKey.Validate()
-	if err != nil {
-		return nil, err
-	}
+	privateKey.Validate()
 	// log.Println("private key generated")
 	return privateKey, nil
 }
