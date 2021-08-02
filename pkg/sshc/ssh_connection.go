@@ -42,7 +42,8 @@ type SshConnection struct {
 	// know if the ssh client is Connected or not
 	Connected sync.WaitGroup
 
-	ConnectionStatus string
+	ConnectionStatus   string
+	connectionStatusMU sync.Mutex
 }
 
 // NewSshConnection creates a new SshConnection instance
@@ -75,8 +76,12 @@ func NewSshConnection(conf *SshClientConf) *SshConnection {
 
 // Close closes the ssh conn instance client connection
 func (s *SshConnection) Close() {
-	s.Client.Close()
+	if s.Client != nil {
+		s.Client.Close()
+	}
+	s.connectionStatusMU.Lock()
 	s.ConnectionStatus = STATUS_CLOSED
+	s.connectionStatusMU.Unlock()
 }
 
 // Start connects the ssh client to the remote server
@@ -84,7 +89,9 @@ func (s *SshConnection) Close() {
 // and reconnecting in the event of network failures
 func (s *SshConnection) Start() {
 	for {
+		s.connectionStatusMU.Lock()
 		s.ConnectionStatus = STATUS_CONNECTING
+		s.connectionStatusMU.Unlock()
 		if err := s.connect(); err != nil {
 			log.Printf("[SSHC] error while connecting %s", err)
 			time.Sleep(s.reconnectionInterval)
@@ -92,7 +99,9 @@ func (s *SshConnection) Start() {
 		}
 		// client connected. Free the wait group
 		s.Connected.Done()
+		s.connectionStatusMU.Lock()
 		s.ConnectionStatus = STATUS_CONNECTED
+		s.connectionStatusMU.Unlock()
 		s.keepAlive()
 		s.Close()
 		s.Connected.Add(1)
