@@ -213,7 +213,7 @@ func (t *Tunnel) GetEndpoint() utils.Endpoint {
 
 func (t *Tunnel) listenRemote() error {
 	// Listen on remote server port
-	// you can use port :0 to get a radnom available tcp port
+	// you can use port :0 to get a random available tcp port
 	// Example:
 	//	listener, err := t.sshConn.Client.Listen("tcp", "127.0.0.1:0")
 	log.Println("[TUN] starting listen remote")

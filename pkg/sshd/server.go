@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -209,6 +210,23 @@ func (s *sshServer) handleRequests(sshConn *ssh.ServerConn, reqs <-chan *ssh.Req
 				req.Reply(false, []byte{})
 				continue
 			}
+
+			// if a random port was requested, extract it from the listener
+			// and use that as lport var. The lport value will be sent as reply
+			// to the client
+			if lport == 0 {
+				_, port, err := net.SplitHostPort(ln.Addr().String())
+				if err != nil {
+					panic(err)
+				}
+				u64, err := strconv.ParseUint(port, 10, 32)
+				if err != nil {
+					panic(err)
+				}
+				lport = uint32(u64)
+				// fix the addr value too
+				addr = fmt.Sprintf("[%s]:%d", laddr, lport)
+			}
 			log.Printf("[SSHD] tcpip-forward listening for %s", addr)
 			var replyPayload = struct{ Port uint32 }{lport}
 			// Tell client everything is OK
@@ -231,6 +249,7 @@ func (s *sshServer) handleRequests(sshConn *ssh.ServerConn, reqs <-chan *ssh.Req
 				req.Reply(false, []byte{})
 				continue
 			}
+			// TODO: what happens here if the original port was 0 (random port)?
 			laddr := payload.Addr
 			lport := payload.Port
 			addr := fmt.Sprintf("[%s]:%d", laddr, lport)
