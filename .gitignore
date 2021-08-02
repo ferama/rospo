@@ -1,9 +1,9 @@
-bin
-server_key
-server_key.pub
-authorized_keys
-identity
-identity.pub
-known_hosts
+/bin
+/server_key
+/server_key.pub
+/authorized_keys
+/identity
+/identity.pub
+/known_hosts
 .DS_Store
-config.yaml
+/config.yaml
