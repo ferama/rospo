@@ -18,7 +18,7 @@ func getPort(addr net.Addr) string {
 	return parts[1]
 }
 
-func TestSshC(t *testing.T) {
+func startD() string {
 	serverConf := &sshd.SshDConf{
 		Key:                "testdata/server",
 		AuthorizedKeysFile: "testdata/authorized_keys",
@@ -36,6 +36,11 @@ func TestSshC(t *testing.T) {
 		time.Sleep(500 * time.Millisecond)
 	}
 	sshdPort := getPort(addr)
+	return sshdPort
+}
+
+func TestSshC(t *testing.T) {
+	sshdPort := startD()
 
 	file, err := ioutil.TempFile("", "rospo_known_hosts")
 	if err != nil {
@@ -57,4 +62,31 @@ func TestSshC(t *testing.T) {
 	go client.Start()
 
 	client.Connected.Wait()
+}
+
+func TestJumpHosts(t *testing.T) {
+	sshd1Port := startD()
+	sshd2Port := startD()
+	sshd3Port := startD()
+
+	// create an ssh client
+	clientConf := &SshClientConf{
+		Identity: "testdata/client",
+		Insecure: true, // disables known_hosts check
+		JumpHosts: []*JumpHostConf{
+			{
+				URI:      fmt.Sprintf("127.0.0.1:%s", sshd2Port),
+				Identity: "testdata/client",
+			},
+			{
+				URI:      fmt.Sprintf("127.0.0.1:%s", sshd3Port),
+				Identity: "testdata/client",
+			},
+		},
+		ServerURI: fmt.Sprintf("127.0.0.1:%s", sshd1Port),
+	}
+	client := NewSshConnection(clientConf)
+	go client.Start()
+	client.Connected.Wait()
+	client.Close()
 }
