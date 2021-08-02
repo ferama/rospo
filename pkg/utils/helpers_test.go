@@ -46,3 +46,10 @@ func TestExpandHome(t *testing.T) {
 		t.Fail()
 	}
 }
+
+func TestDefaultShell(t *testing.T) {
+	shell := GetUserDefaultShell("notexistsinguser")
+	if shell != "/bin/sh" {
+		t.Fail()
+	}
+}
