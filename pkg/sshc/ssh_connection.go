@@ -42,7 +42,7 @@ type SshConnection struct {
 	// know if the ssh client is Connected or not
 	Connected sync.WaitGroup
 
-	ConnectionStatus   string
+	connectionStatus   string
 	connectionStatusMU sync.Mutex
 }
 
@@ -67,7 +67,7 @@ func NewSshConnection(conf *SshClientConf) *SshConnection {
 
 		keepAliveInterval:    5 * time.Second,
 		reconnectionInterval: 5 * time.Second,
-		ConnectionStatus:     STATUS_CONNECTING,
+		connectionStatus:     STATUS_CONNECTING,
 	}
 	// client is not connected on startup, so add 1 here
 	c.Connected.Add(1)
@@ -80,7 +80,7 @@ func (s *SshConnection) Close() {
 		s.Client.Close()
 	}
 	s.connectionStatusMU.Lock()
-	s.ConnectionStatus = STATUS_CLOSED
+	s.connectionStatus = STATUS_CLOSED
 	s.connectionStatusMU.Unlock()
 }
 
@@ -90,7 +90,7 @@ func (s *SshConnection) Close() {
 func (s *SshConnection) Start() {
 	for {
 		s.connectionStatusMU.Lock()
-		s.ConnectionStatus = STATUS_CONNECTING
+		s.connectionStatus = STATUS_CONNECTING
 		s.connectionStatusMU.Unlock()
 		if err := s.connect(); err != nil {
 			log.Printf("[SSHC] error while connecting %s", err)
@@ -100,12 +100,19 @@ func (s *SshConnection) Start() {
 		// client connected. Free the wait group
 		s.Connected.Done()
 		s.connectionStatusMU.Lock()
-		s.ConnectionStatus = STATUS_CONNECTED
+		s.connectionStatus = STATUS_CONNECTED
 		s.connectionStatusMU.Unlock()
 		s.keepAlive()
 		s.Close()
 		s.Connected.Add(1)
 	}
+}
+
+// GetConnectionStatus returns the current connection status as a string
+func (s *SshConnection) GetConnectionStatus() string {
+	s.connectionStatusMU.Lock()
+	defer s.connectionStatusMU.Unlock()
+	return s.connectionStatus
 }
 
 // GrabPubKey is an helper function that gets server pubkey

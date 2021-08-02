@@ -117,6 +117,9 @@ func TestTunnelReverse(t *testing.T) {
 		t.Fail()
 	}
 
+	tunnel.GetIsListenerLocal()
+	tunnel.GetEndpoint()
+
 	tunnel.Stop()
 	// be sure to catch the full stop event
 	time.Sleep(tunnel.reconnectionInterval + 2*time.Second)
@@ -202,6 +205,9 @@ func TestTunnelForward(t *testing.T) {
 	if !(tunnel.GetActiveClientsCount() == 1) {
 		t.Fail()
 	}
+
+	tunnel.GetIsListenerLocal()
+	tunnel.GetEndpoint()
 
 	tunnel.Stop()
 }

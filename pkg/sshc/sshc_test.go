@@ -39,6 +39,22 @@ func startD() string {
 	return sshdPort
 }
 
+func TestErrors(t *testing.T) {
+	// create an ssh client
+	clientConf := &SshClientConf{
+		Identity:  "testdata/client",
+		Insecure:  true,
+		JumpHosts: make([]*JumpHostConf, 0),
+		ServerURI: fmt.Sprintf("127.0.0.1:%s", "48738"), // some random not existing port
+	}
+	client := NewSshConnection(clientConf)
+	go client.Start()
+	time.Sleep(2 * time.Second)
+	if client.GetConnectionStatus() != STATUS_CONNECTING {
+		t.Fail()
+	}
+}
+
 func TestSshC(t *testing.T) {
 	sshdPort := startD()
 
