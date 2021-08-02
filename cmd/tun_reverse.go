@@ -72,7 +72,7 @@ var tunReverseCmd = &cobra.Command{
 			config.SshD = &sshd.SshDConf{
 				Key:                sshdKey,
 				AuthorizedKeysFile: sshdAuthorizedKeys,
-				Port:               sshdPort,
+				ListenAddress:      sshdPort,
 			}
 			s := sshd.NewSshServer(config.SshD)
 			go s.Start()
