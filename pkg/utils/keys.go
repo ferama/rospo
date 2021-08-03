@@ -89,6 +89,7 @@ func LoadIdentityFile(file string) ssh.AuthMethod {
 		log.Fatalln(fmt.Sprintf("cannot parse SSH identity key file %s", file))
 		return nil
 	}
+
 	return ssh.PublicKeys(key)
 }
 
