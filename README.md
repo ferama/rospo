@@ -16,7 +16,7 @@ It's meant to make ssh tunnels fun and understendable again
 2. [Quick command line usage](#quick-command-line-usage)
 3. [Rospo UI](#rospo-ui)
 4. [Scenarios](#scenarios)
-    * [Example scenario: Windows WSL reverse shell](#example-scenario-windows-wsl-reverse-shell)
+    * [Example scenario: Windows (WSL || PowerShell) reverse shell](#example-scenario-windows-reverse-shell)
     * [Example scenario: multiple complex tunnels](#example-scenario-multiple-complex-tunnels)
     * [Example scenario: kubernetes service exporter](#example-scenario-kubernetes-service-exporter)
 5. [How to Install](#how-to-install)
@@ -68,9 +68,9 @@ Pipes and tunnels that are configured through the rospo config file will not be 
 
 ## Scenarios
 
-### Example scenario: Windows WSL reverse shell
+### Example scenario: Windows reverse shell
 Why use an embedded sshd server you might ask me. 
-You have a Windows WSL instance that you want to access remotely without complicated setups on firewalls and other hassles and annoyances. With **rospo** you can do it in ONE simple step:
+Suppose you have a Windows WSL instance that you want to access remotely without complicated setups on firewalls and other hassles and annoyances. With **rospo** you can do it in ONE simple step:
 
 ```
 $ rospo run reverse -S remote_ssh_server
@@ -84,6 +84,14 @@ The command will open a socket (on port 2222 by default) into `remote_ssh_server
 ```
 $ ssh -p 2222 localhost
 ```
+
+Or even better (why not!) with rospo you can reverse forward a powershell.
+Using rospo for windows:
+```
+rospo.exe tun reverse -S remote_ssh_server
+```
+
+
 
 ### Example scenario: multiple complex tunnels
 
