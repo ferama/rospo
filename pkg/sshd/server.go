@@ -137,6 +137,21 @@ func (s *sshServer) Start() {
 				log.Printf("[SSHD] auth error: %s", err)
 			}
 		},
+		BannerCallback: func(conn ssh.ConnMetadata) string {
+			return `
+.-------------.
+| Rospo sshd  |
+.-------------.
+    _    _
+   (o)--(o)
+  /.______.\
+  \________/
+ ./        \.
+( .        , )
+ \ \_\\//_/ /
+  ~~  ~~  ~~
+`
+		},
 	}
 	config.AddHostKey(s.hostPrivateKey)
 	if *s.listenAddress == "" {
