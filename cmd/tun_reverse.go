@@ -14,7 +14,7 @@ func init() {
 
 	tunReverseCmd.Flags().BoolP("start-sshd", "S", false, "optional start the embedded sshd")
 	tunReverseCmd.Flags().StringP("sshd-authorized-keys", "K", "./authorized_keys", "ssh server authorized keys path")
-	tunReverseCmd.Flags().StringP("sshd-port", "P", "2222", "the ssh server tcp port")
+	tunReverseCmd.Flags().StringP("sshd-listen-address", "P", ":2222", "the ssh server tcp port")
 	tunReverseCmd.Flags().StringP("sshd-key", "I", "./server_key", "the ssh server key path")
 }
 
@@ -67,12 +67,12 @@ var tunReverseCmd = &cobra.Command{
 		if startSshD {
 			sshdKey, _ := cmd.Flags().GetString("sshd-key")
 			sshdAuthorizedKeys, _ := cmd.Flags().GetString("sshd-authorized-keys")
-			sshdPort, _ := cmd.Flags().GetString("sshd-port")
+			sshdListenAddress, _ := cmd.Flags().GetString("sshd-listen-address")
 
 			config.SshD = &sshd.SshDConf{
 				Key:                sshdKey,
 				AuthorizedKeysFile: sshdAuthorizedKeys,
-				ListenAddress:      sshdPort,
+				ListenAddress:      sshdListenAddress,
 			}
 			s := sshd.NewSshServer(config.SshD)
 			go s.Start()
