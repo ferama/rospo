@@ -52,6 +52,8 @@ Use a config file
 $ rospo config.yaml
 ```
 
+Look at the [config_template.yaml](https://github.com/ferama/rospo/blob/main/configs/config_template.yaml) for all the available options.
+
 ## Rospo UI
 Rospo supports a cool ui too. The ui will let you handle tunnels and pipes configuration at runtime through the web interface.
 You can start/stop new tunnels and pipes at runtime.
