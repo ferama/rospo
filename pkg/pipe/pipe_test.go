@@ -3,7 +3,6 @@ package pipe
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"net"
 	"strings"
 	"testing"

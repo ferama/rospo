@@ -3,17 +3,19 @@ package sshd
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/ferama/rospo/pkg/logger"
 	"github.com/ferama/rospo/pkg/utils"
 
 	"golang.org/x/crypto/ssh"
 )
+
+var log = logger.NewLogger("[SSHD] ", logger.Blue)
 
 // sshServer instance
 type sshServer struct {
@@ -38,7 +40,7 @@ func NewSshServer(conf *SshDConf) *sshServer {
 	keyPath, _ := utils.ExpandUserHome(conf.Key)
 	hostPrivateKey, err := ioutil.ReadFile(keyPath)
 	if err != nil {
-		log.Println("[SSHD] server identity do not exists. Generating one...")
+		log.Println("server identity do not exists. Generating one...")
 		key, err := utils.GeneratePrivateKey()
 		if err != nil {
 			panic(err)
@@ -109,7 +111,7 @@ func (s *sshServer) loadAuthorizedKeys() map[string]bool {
 }
 
 func (s *sshServer) keyAuth(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
-	log.Println("[SSHD] ", conn.RemoteAddr(), "authenticate with", pubKey.Type())
+	log.Println("", conn.RemoteAddr(), "authenticate with", pubKey.Type())
 
 	authorizedKeysMap := s.loadAuthorizedKeys()
 
@@ -134,7 +136,7 @@ func (s *sshServer) Start() {
 		PublicKeyCallback: s.keyAuth,
 		AuthLogCallback: func(conn ssh.ConnMetadata, method string, err error) {
 			if err != nil {
-				log.Printf("[SSHD] auth error: %s", err)
+				log.Printf("auth error: %s", err)
 			}
 		},
 		BannerCallback: func(conn ssh.ConnMetadata) string {
@@ -155,7 +157,7 @@ func (s *sshServer) Start() {
 	}
 	config.AddHostKey(s.hostPrivateKey)
 	if *s.listenAddress == "" {
-		log.Fatalf("[SSHD] listen port can't be empty")
+		log.Fatalf("listen port can't be empty")
 	}
 
 	listener, err := net.Listen("tcp", *s.listenAddress)
@@ -167,21 +169,21 @@ func (s *sshServer) Start() {
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("[SSHD] listening on %s\n", listener.Addr())
+	log.Printf("listening on %s\n", listener.Addr())
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
 			panic(err)
 		}
-		log.Printf("[SSHD] connection from %s", conn.RemoteAddr())
+		log.Printf("connection from %s", conn.RemoteAddr())
 		go func() {
 			// From a standard TCP connection to an encrypted SSH connection
 			sshConn, chans, reqs, err := ssh.NewServerConn(conn, &config)
 			if err != nil {
-				log.Printf("[SSHD] client connection error %s", err)
+				log.Printf("client connection error %s", err)
 				return
 			}
-			log.Printf("[SSHD] logged in with key %s", sshConn.Permissions.Extensions["pubkey-fp"])
+			log.Printf("logged in with key %s", sshConn.Permissions.Extensions["pubkey-fp"])
 
 			// handle forwards and keepalive requests
 			go s.handleRequests(sshConn, reqs)
@@ -211,7 +213,7 @@ func (s *sshServer) handleRequests(sshConn *ssh.ServerConn, reqs <-chan *ssh.Req
 				Port uint32
 			}{}
 			if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
-				log.Printf("[SSHD] Unable to unmarshal payload")
+				log.Printf("Unable to unmarshal payload")
 				req.Reply(false, []byte{})
 				continue
 			}
@@ -221,7 +223,7 @@ func (s *sshServer) handleRequests(sshConn *ssh.ServerConn, reqs <-chan *ssh.Req
 
 			ln, err := net.Listen("tcp", addr)
 			if err != nil {
-				log.Printf("[SSHD] listen failed for %s %s", addr, err)
+				log.Printf("listen failed for %s %s", addr, err)
 				req.Reply(false, []byte{})
 				continue
 			}
@@ -242,7 +244,7 @@ func (s *sshServer) handleRequests(sshConn *ssh.ServerConn, reqs <-chan *ssh.Req
 				// fix the addr value too
 				addr = fmt.Sprintf("[%s]:%d", laddr, lport)
 			}
-			log.Printf("[SSHD] tcpip-forward listening for %s", addr)
+			log.Printf("tcpip-forward listening for %s", addr)
 			var replyPayload = struct{ Port uint32 }{lport}
 			// Tell client everything is OK
 			req.Reply(true, ssh.Marshal(replyPayload))
@@ -260,7 +262,7 @@ func (s *sshServer) handleRequests(sshConn *ssh.ServerConn, reqs <-chan *ssh.Req
 				Port uint32
 			}{}
 			if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
-				log.Printf("[SSHD] Unable to unmarshal payload")
+				log.Printf("Unable to unmarshal payload")
 				req.Reply(false, []byte{})
 				continue
 			}
@@ -280,7 +282,7 @@ func (s *sshServer) handleRequests(sshConn *ssh.ServerConn, reqs <-chan *ssh.Req
 				req.Reply(true, nil)
 				continue
 			}
-			log.Printf("[SSHD] received out-of-band request: %+v", req)
+			log.Printf("received out-of-band request: %+v", req)
 		}
 	}
 }
@@ -288,12 +290,12 @@ func (s *sshServer) handleRequests(sshConn *ssh.ServerConn, reqs <-chan *ssh.Req
 func (s *sshServer) checkAlive(sshConn *ssh.ServerConn, ln net.Listener, addr string) {
 	ticker := time.NewTicker(s.forwardsKeepAliveInterval)
 
-	log.Println("[SSHD] starting check for forward availability")
+	log.Println("starting check for forward availability")
 	for {
 		<-ticker.C
 		_, _, err := sshConn.SendRequest("checkalive@rospo", true, nil)
 		if err != nil {
-			log.Printf("[SSHD] forward endpoint not available anymore. Closing socket %s", ln.Addr())
+			log.Printf("forward endpoint not available anymore. Closing socket %s", ln.Addr())
 			ln.Close()
 			s.forwardsMu.Lock()
 			delete(s.forwards, addr)

@@ -1,7 +1,6 @@
 package sshd
 
 import (
-	"log"
 	"net"
 
 	"github.com/ferama/rospo/pkg/utils"
@@ -14,17 +13,17 @@ func handleTcpIpForwardSession(client *ssh.ServerConn, listener net.Listener, la
 		if err != nil {
 			neterr := err.(net.Error)
 			if neterr.Timeout() {
-				log.Printf("[SSHD] Accept failed with timeout: %s", err)
+				log.Printf("Accept failed with timeout: %s", err)
 				continue
 			}
 			if neterr.Temporary() {
-				log.Printf("[SSHD] Accept failed with temporary: %s", err)
+				log.Printf("Accept failed with temporary: %s", err)
 				continue
 			}
 
 			break
 		}
-		log.Printf("[SSHD] started forward session: %s", lconn.LocalAddr())
+		log.Printf("started forward session: %s", lconn.LocalAddr())
 
 		go func(lconn net.Conn, laddr string, lport uint32) {
 			remotetcpaddr := lconn.RemoteAddr().(*net.TCPAddr)
@@ -44,7 +43,7 @@ func handleTcpIpForwardSession(client *ssh.ServerConn, listener net.Listener, la
 
 			c, requests, err := client.OpenChannel("forwarded-tcpip", mpayload)
 			if err != nil {
-				log.Printf("[SSHD] Unable to get channel: %s. Hanging up requesting party!", err)
+				log.Printf("Unable to get channel: %s. Hanging up requesting party!", err)
 				lconn.Close()
 				return
 			}

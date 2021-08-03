@@ -2,14 +2,16 @@ package tun
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"sync"
 	"time"
 
+	"github.com/ferama/rospo/pkg/logger"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/utils"
 )
+
+var log = logger.NewLogger("[TUN]  ", logger.Magenta)
 
 // Tunnel object
 type Tunnel struct {
@@ -87,7 +89,7 @@ func (t *Tunnel) Start() {
 			if t.waitForSshClient() {
 				break
 			} else {
-				log.Println("[TUN] terminated")
+				log.Println("terminated")
 				return
 			}
 		}
@@ -135,10 +137,10 @@ func (t *Tunnel) Stop() {
 
 func (t *Tunnel) listenLocal() error {
 	// Listen on remote server port
-	log.Println("[TUN] starting listen local")
+	log.Println("starting listen local")
 	listener, err := net.Listen("tcp", t.localEndpoint.String())
 	if err != nil {
-		log.Printf("[TUN] dial INTO remote service error. %s\n", err)
+		log.Printf("dial INTO remote service error. %s\n", err)
 		return err
 	}
 	defer listener.Close()
@@ -147,18 +149,18 @@ func (t *Tunnel) listenLocal() error {
 	t.listener = listener
 	t.listenerMU.Unlock()
 
-	log.Printf("[TUN] forward connected. Local: %s <- Remote: %s\n", t.listener.Addr(), t.remoteEndpoint.String())
+	log.Printf("forward connected. Local: %s <- Remote: %s\n", t.listener.Addr(), t.remoteEndpoint.String())
 	if t.sshConn != nil && listener != nil {
 		for {
 			remote, err := t.sshConn.Client.Dial("tcp", t.remoteEndpoint.String())
 			// Open a (local) connection to localEndpoint whose content will be forwarded so serverEndpoint
 			if err != nil {
-				log.Printf("[TUN] listen open port ON local server error. %s\n", err)
+				log.Printf("listen open port ON local server error. %s\n", err)
 				break
 			}
 			client, err := listener.Accept()
 			if err != nil {
-				log.Println("[TUN] disconnected")
+				log.Println("disconnected")
 				return err
 			}
 			t.clientsMapMU.Lock()
@@ -216,10 +218,10 @@ func (t *Tunnel) listenRemote() error {
 	// you can use port :0 to get a random available tcp port
 	// Example:
 	//	listener, err := t.sshConn.Client.Listen("tcp", "127.0.0.1:0")
-	log.Println("[TUN] starting listen remote")
+	log.Println("starting listen remote")
 	listener, err := t.sshConn.Client.Listen("tcp", t.remoteEndpoint.String())
 	if err != nil {
-		log.Printf("[TUN] listen open port ON remote server error. %s\n", err)
+		log.Printf("listen open port ON remote server error. %s\n", err)
 		return err
 	}
 	defer listener.Close()
@@ -228,19 +230,19 @@ func (t *Tunnel) listenRemote() error {
 	t.listener = listener
 	t.listenerMU.Unlock()
 
-	log.Printf("[TUN] reverse connected. Local: %s -> Remote: %s\n", t.localEndpoint.String(), t.listener.Addr())
+	log.Printf("reverse connected. Local: %s -> Remote: %s\n", t.localEndpoint.String(), t.listener.Addr())
 	if t.sshConn != nil && listener != nil {
 		for {
 			// Open a (local) connection to localEndpoint whose content will be forwarded so serverEndpoint
 			local, err := net.Dial("tcp", t.localEndpoint.String())
 			if err != nil {
-				log.Println(fmt.Printf("[TUN] dial INTO local service error. %s\n", err))
+				log.Println(fmt.Printf("dial INTO local service error. %s\n", err))
 				break
 			}
 
 			client, err := listener.Accept()
 			if err != nil {
-				log.Println("[TUN] disconnected")
+				log.Println("disconnected")
 				return err
 			}
 

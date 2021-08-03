@@ -2,7 +2,6 @@ package sshd
 
 import (
 	"fmt"
-	"log"
 	"net"
 
 	"github.com/ferama/rospo/pkg/utils"
@@ -18,14 +17,14 @@ func handleChannelDirect(c ssh.NewChannel) {
 	}{}
 
 	if err := ssh.Unmarshal(c.ExtraData(), &payload); err != nil {
-		log.Printf("[SSHD] Could not unmarshal extra data: %s\n", err)
+		log.Printf("Could not unmarshal extra data: %s\n", err)
 
 		c.Reject(ssh.Prohibited, "Bad payload")
 		return
 	}
 	connection, requests, err := c.Accept()
 	if err != nil {
-		log.Printf("[SSHD] Could not accept channel (%s)\n", err)
+		log.Printf("Could not accept channel (%s)\n", err)
 		return
 	}
 	go ssh.DiscardRequests(requests)
@@ -33,7 +32,7 @@ func handleChannelDirect(c ssh.NewChannel) {
 
 	rconn, err := net.Dial("tcp", addr)
 	if err != nil {
-		log.Printf("[SSHD] Could not dial remote (%s)", err)
+		log.Printf("Could not dial remote (%s)", err)
 		connection.Close()
 		return
 	}

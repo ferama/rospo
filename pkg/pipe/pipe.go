@@ -1,12 +1,14 @@
 package pipe
 
 import (
-	"log"
 	"net"
 	"sync"
 
+	"github.com/ferama/rospo/pkg/logger"
 	"github.com/ferama/rospo/pkg/utils"
 )
+
+var log = logger.NewLogger("[PIPE] ", logger.Red)
 
 // Pipe struct definition
 type Pipe struct {
@@ -75,12 +77,12 @@ func (p *Pipe) Start() {
 	p.listenerMU.Unlock()
 
 	if err != nil {
-		log.Printf("[PIPE] listening on %s error.\n", err)
+		log.Printf("listening on %s error.\n", err)
 		return
 	}
 	p.registryID = PipeRegistry().Add(p)
 
-	log.Printf("[PIPE] listening on %s\n", p.local)
+	log.Printf("listening on %s\n", p.local)
 	for {
 		select {
 		case <-p.terminate:
@@ -88,7 +90,7 @@ func (p *Pipe) Start() {
 		default:
 			client, err := listener.Accept()
 			if err != nil {
-				log.Println("[PIPE] disconnected")
+				log.Println("disconnected")
 				break
 			}
 			p.clientsMapMU.Lock()
@@ -97,7 +99,7 @@ func (p *Pipe) Start() {
 			go func() {
 				conn, err := net.Dial("tcp", p.remote.String())
 				if err != nil {
-					log.Println("[PIPE] remote connection refused")
+					log.Println("remote connection refused")
 					client.Close()
 					return
 				}
