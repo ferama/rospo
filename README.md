@@ -165,9 +165,37 @@ In this scenario the k8s pods act as a bridge between kubernetes services and th
 ## How to Install
 
 Rospo actually full supports *nix oses and Windows 10
-Grab the latest binary release from here [https://github.com/ferama/rospo/releases/latest](https://github.com/ferama/rospo/releases/latest)
+Grab the latest binary release from here [https://github.com/ferama/rospo/releases/latest](https://github.com/ferama/rospo/releases/latest) or use the copy and paste curl below
 
 Alternatively you can use the docker ditribution where useful/needed. Look at an example on kubernetes here [./hack/k8s](./hack/k8s) 
 
+
+#### Linux amd64
+```
+curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-linux-amd64 --output rospo && chmod +x rospo
+```
+
+#### Linux arm64
+```
+curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-linux-arm64 --output rospo && chmod +x rospo
+```
+
+#### Linux arm
+```
+curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-linux-arm --output rospo && chmod +x rospo
+```
+
+#### Mac OS
+```
+curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-darwin-arm64 --output rospo && chmod +x rospo
+```
+
+#### Windows
+
+You will require Windows 10
+
+```
+(New-Object System.Net.WebClient).DownloadFile("https://github.com/ferama/rospo/releases/latest/download/rospo-windows-amd64.exe", "rospo.exe")
+```
 
 
