@@ -2,7 +2,6 @@ package sshc
 
 import (
 	"errors"
-	"log"
 	"net"
 	"os"
 	"os/user"
@@ -10,10 +9,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ferama/rospo/pkg/logger"
 	"github.com/ferama/rospo/pkg/utils"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
 )
+
+var log = logger.NewLogger("[SSHC] ", logger.Green)
 
 // The ssh connection available statuses
 const (
@@ -93,7 +95,7 @@ func (s *SshConnection) Start() {
 		s.connectionStatus = STATUS_CONNECTING
 		s.connectionStatusMU.Unlock()
 		if err := s.connect(); err != nil {
-			log.Printf("[SSHC] error while connecting %s", err)
+			log.Printf("error while connecting %s", err)
 			time.Sleep(s.reconnectionInterval)
 			continue
 		}
@@ -126,12 +128,12 @@ func (s *SshConnection) GrabPubKey() {
 }
 
 func (s *SshConnection) keepAlive() {
-	log.Println("[SSHC] starting client keep alive")
+	log.Println("starting client keep alive")
 	for {
-		// log.Println("[SSHC] keep alive")
+		// log.Println("keep alive")
 		_, _, err := s.Client.SendRequest("keepalive@rospo", true, nil)
 		if err != nil {
-			log.Printf("[SSHC] error while sending keep alive %s", err)
+			log.Printf("error while sending keep alive %s", err)
 			return
 		}
 		time.Sleep(s.keepAliveInterval)
@@ -139,7 +141,7 @@ func (s *SshConnection) keepAlive() {
 }
 func (s *SshConnection) connect() error {
 	// refer to https://godoc.org/golang.org/x/crypto/ssh for other authentication types
-	log.Printf("[SSHC] using identity at %s", s.identity)
+	log.Printf("using identity at %s", s.identity)
 	sshConfig := &ssh.ClientConfig{
 		// SSH connection username
 		User: s.username,
@@ -148,7 +150,7 @@ func (s *SshConnection) connect() error {
 		},
 		HostKeyCallback: s.verifyHostCallback(true),
 	}
-	log.Println("[SSHC] trying to connect to remote server...")
+	log.Println("trying to connect to remote server...")
 
 	if len(s.jumpHosts) != 0 {
 		client, err := s.jumpHostConnect(s.serverEndpoint, sshConfig)
@@ -178,33 +180,33 @@ func (s *SshConnection) verifyHostCallback(fail bool) ssh.HostKeyCallback {
 	return func(host string, remote net.Addr, key ssh.PublicKey) error {
 		var err error
 
-		log.Printf("[SSHC] known_hosts file used: %s", s.knownHosts)
+		log.Printf("known_hosts file used: %s", s.knownHosts)
 
 		clb, err := knownhosts.New(s.knownHosts)
 		if err != nil {
-			log.Printf("[SSHC] error while parsing 'known_hosts' file: %s: %v", s.knownHosts, err)
+			log.Printf("error while parsing 'known_hosts' file: %s: %v", s.knownHosts, err)
 			f, fErr := os.OpenFile(s.knownHosts, os.O_CREATE, 0600)
 			if fErr != nil {
-				log.Fatalf("[SSHC] %s", fErr)
+				log.Fatalf("%s", fErr)
 			}
 			f.Close()
 			clb, err = knownhosts.New(s.knownHosts)
 			if err != nil {
-				log.Fatalf("[SSHC] %s", err)
+				log.Fatalf("%s", err)
 			}
 		}
 		var keyErr *knownhosts.KeyError
 		e := clb(host, remote, key)
 		if errors.As(e, &keyErr) && len(keyErr.Want) > 0 {
-			log.Printf("[SSHC] ERROR: %v is not a key of %s, either a man in the middle attack or %s host pub key was changed.", key, host, host)
+			log.Printf("ERROR: %v is not a key of %s, either a man in the middle attack or %s host pub key was changed.", key, host, host)
 			return e
 		} else if errors.As(e, &keyErr) && len(keyErr.Want) == 0 {
 			if fail {
-				log.Fatalf(`[SSHC] ERROR: the host '%s' is not trusted. If it is trusted instead, 
+				log.Fatalf(`ERROR: the host '%s' is not trusted. If it is trusted instead, 
 				  please grab its pub key using the 'rospo grabpubkey' command`, host)
 				return errors.New("")
 			}
-			log.Printf("[SSHC] WARNING: %s is not trusted, adding this key: \n\n%s\n\nto known_hosts file.", host, utils.SerializePublicKey(key))
+			log.Printf("WARNING: %s is not trusted, adding this key: \n\n%s\n\nto known_hosts file.", host, utils.SerializePublicKey(key))
 			return utils.AddHostKeyToKnownHosts(host, key, s.knownHosts)
 		}
 		return e
@@ -236,13 +238,13 @@ func (s *SshConnection) jumpHostConnect(
 			},
 			HostKeyCallback: s.verifyHostCallback(true),
 		}
-		log.Printf("[SSHC] connecting to hop %s@%s", parsed.Username, hop.String())
+		log.Printf("connecting to hop %s@%s", parsed.Username, hop.String())
 
 		// if it is the first hop, use ssh Dial to create the first client
 		if idx == 0 {
 			jhClient, err = ssh.Dial("tcp", hop.String(), config)
 			if err != nil {
-				log.Printf("[SSHC] dial INTO remote server error. %s", err)
+				log.Printf("dial INTO remote server error. %s", err)
 				return nil, err
 			}
 		} else {
@@ -256,11 +258,11 @@ func (s *SshConnection) jumpHostConnect(
 			}
 			jhClient = ssh.NewClient(ncc, chans, reqs)
 		}
-		log.Printf("[SSHC] reached the jump host %s@%s", parsed.Username, hop.String())
+		log.Printf("reached the jump host %s@%s", parsed.Username, hop.String())
 	}
 
 	// now I'm ready to reach the final hop, the server
-	log.Printf("[SSHC] connecting to %s@%s", sshConfig.User, server.String())
+	log.Printf("connecting to %s@%s", sshConfig.User, server.String())
 	jhConn, err = jhClient.Dial("tcp", server.String())
 	if err != nil {
 		return nil, err
@@ -279,12 +281,12 @@ func (s *SshConnection) directConnect(
 	sshConfig *ssh.ClientConfig,
 ) (*ssh.Client, error) {
 
-	log.Printf("[SSHC] connecting to %s", server.String())
+	log.Printf("connecting to %s", server.String())
 	client, err := ssh.Dial("tcp", server.String(), sshConfig)
 	if err != nil {
-		log.Printf("[SSHC] dial INTO remote server error. %s", err)
+		log.Printf("dial INTO remote server error. %s", err)
 		return nil, err
 	}
-	log.Println("[SSHC] connected to remote server.")
+	log.Println("connected to remote server.")
 	return client, nil
 }

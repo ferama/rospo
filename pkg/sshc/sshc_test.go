@@ -3,7 +3,6 @@ package sshc
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"os"
 	"strings"

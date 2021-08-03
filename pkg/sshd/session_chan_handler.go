@@ -3,7 +3,6 @@ package sshd
 import (
 	"encoding/binary"
 	"fmt"
-	"log"
 	"os/exec"
 	"os/user"
 	"sync"
@@ -16,7 +15,7 @@ import (
 func handleChannelSession(c ssh.NewChannel, disableShell bool) {
 	channel, requests, err := c.Accept()
 	if err != nil {
-		log.Printf("[SSHD] could not accept channel (%s)", err)
+		log.Printf("could not accept channel (%s)", err)
 		return
 	}
 
@@ -60,12 +59,12 @@ func handleChannelSession(c ssh.NewChannel, disableShell bool) {
 			usr, _ := user.Current()
 			envVal = append(envVal, fmt.Sprintf("HOME=%s", usr.HomeDir))
 			cmd.Env = envVal
-			log.Printf("[SSHD] env %s", envVal)
+			log.Printf("env %s", envVal)
 
 			if pty != nil {
-				log.Println("[SSHD] running within the pty")
+				log.Println("running within the pty")
 				if err := pty.Run(cmd); err != nil {
-					log.Printf("[SSHD] %s", err)
+					log.Printf("%s", err)
 				}
 				sessionClientServe(channel, pty)
 
@@ -75,17 +74,17 @@ func handleChannelSession(c ssh.NewChannel, disableShell bool) {
 				cmd.Stdin = channel
 				err := cmd.Start()
 				if err != nil {
-					log.Printf("[SSHD] %s", err)
+					log.Printf("%s", err)
 				}
 
 				go func() {
 					_, err := cmd.Process.Wait()
 					if err != nil {
-						log.Printf("[SSHD] failed to exit bash (%s)", err)
+						log.Printf("failed to exit bash (%s)", err)
 						cmd.Process.Kill()
 					}
 					channel.Close()
-					log.Printf("[SSHD] session closed")
+					log.Printf("session closed")
 				}()
 			}
 
@@ -96,11 +95,11 @@ func handleChannelSession(c ssh.NewChannel, disableShell bool) {
 			// know we have a pty ready for input
 			ok = true
 			// allocate a terminal for this channel
-			log.Print("[SSHD] creating pty...")
+			log.Print("creating pty...")
 			// Create new pty
 			pty, err = rpty.New()
 			if err != nil {
-				log.Printf("[SSHD] could not start pty (%s)", err)
+				log.Printf("could not start pty (%s)", err)
 				return
 			}
 			// Parse body...
@@ -108,7 +107,7 @@ func handleChannelSession(c ssh.NewChannel, disableShell bool) {
 			termEnv := string(req.Payload[4 : termLen+4])
 			w, h := parseDims(req.Payload[termLen+4:])
 			pty.Resize(uint16(w), uint16(h))
-			log.Printf("[SSHD] pty-req '%s'", termEnv)
+			log.Printf("pty-req '%s'", termEnv)
 
 		case "window-change":
 			w, h := parseDims(req.Payload)
@@ -119,14 +118,14 @@ func handleChannelSession(c ssh.NewChannel, disableShell bool) {
 			var payload = struct{ Name, Value string }{}
 
 			if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
-				log.Printf("[SSHD] invalid env payload: %s", req.Payload)
+				log.Printf("invalid env payload: %s", req.Payload)
 			}
 			env[payload.Name] = payload.Value
 			continue
 		}
 
 		if !ok {
-			log.Printf("[SSHD] declining %s request... ", req.Type)
+			log.Printf("declining %s request... ", req.Type)
 		}
 
 		req.Reply(ok, nil)
@@ -146,14 +145,14 @@ func sessionClientServe(channel ssh.Channel, pty rpty.Pty) {
 	close := func() {
 		channel.Close()
 		pty.Close()
-		log.Printf("[SSHD] client session closed")
+		log.Printf("client session closed")
 	}
 
 	// Pipe session to shell and vice-versa
 	go func() {
 		_, err := pty.WriteTo(channel)
 		if err != nil {
-			log.Println(fmt.Sprintf("[SSHD] error while copy from channel: %s", err))
+			log.Println(fmt.Sprintf("error while copy from channel: %s", err))
 		}
 		once.Do(close)
 	}()
@@ -161,7 +160,7 @@ func sessionClientServe(channel ssh.Channel, pty rpty.Pty) {
 	go func() {
 		_, err := pty.ReadFrom(channel)
 		if err != nil {
-			log.Println(fmt.Sprintf("[SSHD] error while copy to channel: %s", err))
+			log.Println(fmt.Sprintf("error while copy to channel: %s", err))
 		}
 		once.Do(close)
 	}()
