@@ -139,6 +139,7 @@ func (s *SshConnection) keepAlive() {
 }
 func (s *SshConnection) connect() error {
 	// refer to https://godoc.org/golang.org/x/crypto/ssh for other authentication types
+	log.Printf("[SSHC] using identity at %s", s.identity)
 	sshConfig := &ssh.ClientConfig{
 		// SSH connection username
 		User: s.username,
