@@ -150,18 +150,12 @@ func sessionClientServe(channel ssh.Channel, pty rpty.Pty) {
 
 	// Pipe session to shell and vice-versa
 	go func() {
-		_, err := pty.WriteTo(channel)
-		if err != nil {
-			log.Println(fmt.Sprintf("error while copy from channel: %s", err))
-		}
+		pty.WriteTo(channel)
 		once.Do(close)
 	}()
 
 	go func() {
-		_, err := pty.ReadFrom(channel)
-		if err != nil {
-			log.Println(fmt.Sprintf("error while copy to channel: %s", err))
-		}
+		pty.ReadFrom(channel)
 		once.Do(close)
 	}()
 }
