@@ -55,10 +55,3 @@ jobs:
           tags: |
             ${{ steps.get_tags.outputs.TAG1 }}
             ${{ steps.get_tags.outputs.TAG2 }}
-      
-      - name: Update repo description
-        uses: peter-evans/dockerhub-description@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: ferama/rospo
