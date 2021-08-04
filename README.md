@@ -26,6 +26,8 @@ It's meant to make ssh tunnels fun and understendable again
 I wanted an easy to use and reliable ssh tunnel tool. The available alternatives don't fully satisfy me and don't support all the features I need (as the embedded sshd server for example, or an out of the box connection monitoring mechanism) so I wrote my own
 
 ## Quick command line usage
+Keep in mind that rospo only supports keys based auth, so you always need to be sure that *identity*, *authorized_keys* etc are always correctly setup.
+
 Usage example:
 
 Starts an embedded ssh server and reverse proxy the port to remote_server
