@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 
 	"github.com/mattn/go-isatty"
 )
@@ -22,7 +23,7 @@ const (
 // NewLogger builds up and return a new logger
 func NewLogger(prefix string, color string) *log.Logger {
 	var logger *log.Logger
-	if isatty.IsTerminal(os.Stdout.Fd()) {
+	if isatty.IsTerminal(os.Stdout.Fd()) && runtime.GOOS != "windows" {
 		logger = log.New(os.Stdout, fmt.Sprintf("%s%s%s", color, prefix, reset), log.LstdFlags)
 	} else {
 		logger = log.New(os.Stdout, prefix, log.LstdFlags)

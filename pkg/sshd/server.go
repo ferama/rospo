@@ -130,6 +130,25 @@ func (s *sshServer) keyAuth(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.P
 // Start the sshServer actually listening for incoming connections
 // and handling requests and ssh channels
 func (s *sshServer) Start() {
+	bannerCb := func(conn ssh.ConnMetadata) string {
+		return `
+.-------------.
+| Rospo sshd  |
+.-------------.
+_    _
+(o)--(o)
+/.______.\
+\________/
+./        \.
+( .        , )
+\ \_\\//_/ /
+~~  ~~  ~~
+`
+	}
+	if runtime.GOOS == "windows" {
+		bannerCb = nil
+	}
+
 	config := ssh.ServerConfig{
 		// one try only. I'm supporting public key auth only.
 		// If it fails, there is nothing more to try
@@ -140,24 +159,7 @@ func (s *sshServer) Start() {
 				log.Printf("auth error: %s", err)
 			}
 		},
-		BannerCallback: func(conn ssh.ConnMetadata) string {
-			if runtime.GOOS == "windows" {
-				return ""
-			}
-			return `
-.-------------.
-| Rospo sshd  |
-.-------------.
-    _    _
-   (o)--(o)
-  /.______.\
-  \________/
- ./        \.
-( .        , )
- \ \_\\//_/ /
-  ~~  ~~  ~~
-`
-		},
+		BannerCallback: bannerCb,
 	}
 	config.AddHostKey(s.hostPrivateKey)
 	if *s.listenAddress == "" {
