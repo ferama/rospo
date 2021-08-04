@@ -51,7 +51,7 @@ jobs:
           file: ./hack/docker/Dockerfile
           platforms: linux/amd64,linux/arm64,linux/arm
           push: true
-          build_args: |
+          build-args: |
             VERSION=${{ steps.get_tags.outputs.VERSION }}
           tags: |
             ${{ steps.get_tags.outputs.TAG1 }}
