@@ -142,11 +142,15 @@ func (s *SshConnection) keepAlive() {
 func (s *SshConnection) connect() error {
 	// refer to https://godoc.org/golang.org/x/crypto/ssh for other authentication types
 	log.Printf("using identity at %s", s.identity)
+	auth, err := utils.LoadIdentityFile(s.identity)
+	if err != nil {
+		log.Fatal(err)
+	}
 	sshConfig := &ssh.ClientConfig{
 		// SSH connection username
 		User: s.username,
 		Auth: []ssh.AuthMethod{
-			utils.LoadIdentityFile(s.identity),
+			auth,
 		},
 		HostKeyCallback: s.verifyHostCallback(true),
 	}
@@ -231,10 +235,15 @@ func (s *SshConnection) jumpHostConnect(
 			Host: parsed.Host,
 			Port: parsed.Port,
 		}
+
+		auth, err := utils.LoadIdentityFile(jh.Identity)
+		if err != nil {
+			log.Fatal(err)
+		}
 		config := &ssh.ClientConfig{
 			User: parsed.Username,
 			Auth: []ssh.AuthMethod{
-				utils.LoadIdentityFile(jh.Identity),
+				auth,
 			},
 			HostKeyCallback: s.verifyHostCallback(true),
 		}

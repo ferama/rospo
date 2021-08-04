@@ -31,6 +31,12 @@ func TestGenerateKeys(t *testing.T) {
 		t.Error(err)
 	}
 
+	os.Chmod(file.Name(), 0000)
+	err = WriteKeyToFile(bytes, file.Name())
+	if err == nil {
+		t.Fail()
+	}
+
 	file, err = ioutil.TempFile("", "testkey")
 	if err != nil {
 		log.Fatal(err)
@@ -43,8 +49,13 @@ func TestGenerateKeys(t *testing.T) {
 }
 
 func TestIdentity(t *testing.T) {
-	id := LoadIdentityFile("testdata/identity")
-	if id == nil {
+	id, err := LoadIdentityFile("testdata/identity")
+	if id == nil || err != nil {
+		t.Fail()
+	}
+
+	id, err = LoadIdentityFile("some-not-existent")
+	if id != nil || err == nil {
 		t.Fail()
 	}
 }
