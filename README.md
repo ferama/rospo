@@ -2,6 +2,8 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/ferama/rospo.svg)](https://pkg.go.dev/github.com/ferama/rospo)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ferama/rospo)](https://goreportcard.com/report/github.com/ferama/rospo)
 [![codecov](https://codecov.io/gh/ferama/rospo/branch/main/graph/badge.svg)](https://codecov.io/gh/ferama/rospo)
+[![Docker Pulls](https://img.shields.io/docker/pulls/ferama/rospo.svg)](https://hub.docker.com/r/ferama/rospo/)
+
 
 
 
