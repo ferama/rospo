@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -140,6 +141,9 @@ func (s *sshServer) Start() {
 			}
 		},
 		BannerCallback: func(conn ssh.ConnMetadata) string {
+			if runtime.GOOS == "windows" {
+				return ""
+			}
 			return `
 .-------------.
 | Rospo sshd  |
