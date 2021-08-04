@@ -71,15 +71,14 @@ func (p *Pipe) GetActiveClientsCount() int {
 // local endpoint into the remote endpoint
 func (p *Pipe) Start() {
 	listener, err := net.Listen("tcp", p.local.String())
-
-	p.listenerMU.Lock()
-	p.listener = listener
-	p.listenerMU.Unlock()
-
 	if err != nil {
 		log.Printf("listening on %s error.\n", err)
 		return
 	}
+	p.listenerMU.Lock()
+	p.listener = listener
+	p.listenerMU.Unlock()
+
 	p.registryID = PipeRegistry().Add(p)
 
 	log.Printf("listening on %s\n", p.local)

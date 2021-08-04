@@ -69,7 +69,7 @@ func WriteKeyToFile(keyBytes []byte, keyPath string) error {
 
 // LoadIdentityFile reads a public key file and loads the keys to
 // an ssh.PublicKeys object
-func LoadIdentityFile(file string) ssh.AuthMethod {
+func LoadIdentityFile(file string) (ssh.AuthMethod, error) {
 	path, _ := ExpandUserHome(file)
 
 	usr, _ := user.Current()
@@ -80,17 +80,15 @@ func LoadIdentityFile(file string) ssh.AuthMethod {
 
 	buffer, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Fatalln(fmt.Sprintf("cannot read SSH idendity key file %s", path))
-		return nil
+		return nil, fmt.Errorf("cannot read SSH idendity key file %s", path)
 	}
 
 	key, err := ssh.ParsePrivateKey(buffer)
 	if err != nil {
-		log.Fatalln(fmt.Sprintf("cannot parse SSH identity key file %s", file))
-		return nil
+		return nil, fmt.Errorf("cannot parse SSH identity key file %s", file)
 	}
 
-	return ssh.PublicKeys(key)
+	return ssh.PublicKeys(key), nil
 }
 
 // AddHostKeyToKnownHosts updates user known_hosts file adding the host key
