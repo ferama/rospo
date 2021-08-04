@@ -6,10 +6,13 @@ RUN npm install && npm run build
 
 # go backend builder
 FROM golang:1.16 as gobuilder
+ARG VERSION=development
 WORKDIR /go/src/app
 COPY . .
 COPY --from=uibuilder /src/build pkg/web/ui/build
-RUN go build -o /rospo .
+RUN go build \
+    -ldflags="-X 'github.com/ferama/rospo/cmd.Version=$VERSION'" \
+    -o /rospo .
 
 # Final docker image
 FROM ubuntu:latest

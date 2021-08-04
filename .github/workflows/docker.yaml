@@ -34,10 +34,12 @@ jobs:
           if [ "$GITHUB_REF" = "refs/heads/main" ]
           then 
               TAG=${{ secrets.DOCKERHUB_USERNAME }}/rospo:dev
+              echo ::set-output name=VERSION::dev-docker
               echo ::set-output name=TAG1::$TAG
               echo ::set-output name=TAG2::$TAG
           else
               TAG=${GITHUB_REF/refs\/tags\/v/}
+              echo ::set-output name=VERSION::$TAG
               echo ::set-output name=TAG1::${{ secrets.DOCKERHUB_USERNAME }}/rospo:latest
               echo ::set-output name=TAG2::${{ secrets.DOCKERHUB_USERNAME }}/rospo:$TAG
           fi
@@ -49,6 +51,7 @@ jobs:
           file: ./hack/docker/Dockerfile
           platforms: linux/amd64,linux/arm64,linux/arm
           push: true
+          build_args: VERSION=${{ steps.get_tags.outputs.VERSION }}
           tags: |
             ${{ steps.get_tags.outputs.TAG1 }}
             ${{ steps.get_tags.outputs.TAG2 }}
@@ -57,5 +60,5 @@ jobs:
         uses: peter-evans/dockerhub-description@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          repository: user/app
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ferama/rospo
