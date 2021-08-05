@@ -11,7 +11,7 @@ WORKDIR /go/src/app
 COPY . .
 COPY --from=uibuilder /src/build pkg/web/ui/build
 RUN go build \
-    -ldflags="-X 'github.com/ferama/rospo/cmd.Version=$VERSION'" \
+    -ldflags="-s -w -X 'github.com/ferama/rospo/cmd.Version=$VERSION'" \
     -o /rospo .
 
 # Final docker image
