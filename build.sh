@@ -10,7 +10,7 @@ build() {
     [[ $GOOS = "windows" ]] && EXT=".exe"
     echo "Building ${GOOS} ${GOARCH}"
     go build \
-        -ldflags="-X 'github.com/ferama/rospo/cmd.Version=$VERSION'" \
+        -ldflags="-s -w -X 'github.com/ferama/rospo/cmd.Version=$VERSION'" \
         -o ./bin/rospo-${GOOS}-${GOARCH}${EXT} .
 }
 
