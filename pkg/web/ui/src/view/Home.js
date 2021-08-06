@@ -16,6 +16,27 @@ export class Home extends React.Component {
         this.intervalHandler = null
     }
     async componentDidMount() {
+        await this.updateState()
+        this.intervalHandler = setInterval(this.updateState, 5000)
+    }
+
+    formatBytes(bytes, decimals = 2) {
+        if (bytes === 0) return '0 Bytes'
+    
+        const k = 1024
+        const dm = decimals < 0 ? 0 : decimals
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+    
+        const i = Math.floor(Math.log(bytes) / Math.log(k))
+    
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
+    }
+
+    componentWillUnmount() {
+        clearInterval(this.intervalHandler)
+    }
+
+    updateState = async () => {
         let data
         try {
             data = await http.get("info")
@@ -27,16 +48,6 @@ export class Home extends React.Component {
             "info": data.data
         })
 
-        await this.updateStats()
-        this.intervalHandler = setInterval(this.updateStats, 5000)
-    }
-
-    componentWillUnmount() {
-        clearInterval(this.intervalHandler)
-    }
-
-    updateStats = async () => {
-        let data
         try {
             data = await http.get("stats")
         } catch {
@@ -55,13 +66,11 @@ export class Home extends React.Component {
                 <PageHeader
                     title="Home"
                 />
-                <Row gutter={16}>
-                    <Col span={8}>
+                <Row>
+                    <Col span={12}>
                         <Card title="Ssh Client">
-                            <p>
-                                <b>Server:</b> {this.state.info.SshClientURI}<br/>
-                                <b>Status:</b> {this.state.info.SshClientConnectionStatus}
-                            </p>
+                            <Statistic title="Server" value={this.state.info.SshClientURI} />
+                            <Statistic title="Status" value={this.state.info.SshClientConnectionStatus} />
                             {haveJH ? (
                                 <List
                                     header={<div>Jump Hosts</div>}
@@ -74,13 +83,21 @@ export class Home extends React.Component {
                             ): ""}
                         </Card>
                     </Col>
-                    <Col span={8}>
+                    <Col span={12}>
                         <Card title="Tunnels">
                             <Statistic title="Count" value={this.state.stats.CountTunnels} />
                             <Statistic title="Connected Clients" value={this.state.stats.CountTunnelsClients} />
                         </Card>
                     </Col>
-                    <Col span={8}>
+                </Row>
+                <Row>
+                    <Col span={12}>
+                        <Card title="Stats">
+                                <Statistic title="GoRoutines" value={this.state.stats.NumGoroutine} />
+                                <Statistic title="Allocated Memory" value={this.formatBytes(this.state.stats.MemTotal)} />
+                        </Card>
+                    </Col>
+                    <Col span={12}>
                         <Card title="Pipes">
                             <Statistic title="Count" value={this.state.stats.CountPipes} />
                             <Statistic title="Connected Clients" value={this.state.stats.CountPipesClients} />

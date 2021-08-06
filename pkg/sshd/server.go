@@ -112,7 +112,7 @@ func (s *sshServer) loadAuthorizedKeys() map[string]bool {
 }
 
 func (s *sshServer) keyAuth(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
-	log.Println("", conn.RemoteAddr(), "authenticate with", pubKey.Type())
+	log.Println(conn.RemoteAddr(), "authenticate with", pubKey.Type())
 
 	authorizedKeysMap := s.loadAuthorizedKeys()
 

@@ -1,7 +1,6 @@
 package tun
 
 import (
-	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -236,7 +235,7 @@ func (t *Tunnel) listenRemote() error {
 			// Open a (local) connection to localEndpoint whose content will be forwarded so serverEndpoint
 			local, err := net.Dial("tcp", t.localEndpoint.String())
 			if err != nil {
-				log.Println(fmt.Printf("dial INTO local service error. %s\n", err))
+				log.Printf("dial INTO local service error. %s\n", err)
 				break
 			}
 
