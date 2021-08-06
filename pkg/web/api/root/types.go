@@ -13,4 +13,8 @@ type statsResponse struct {
 
 	CountPipes        int `json:"CountPipes"`
 	CountPipesClients int `json:"CountPipesClients"`
+
+	// runtime stats
+	NumGoroutine int    `json:"NumGoroutine"`
+	MemTotal     uint64 `json:"MemTotal"`
 }

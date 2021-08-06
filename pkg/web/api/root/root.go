@@ -2,6 +2,7 @@ package rootapi
 
 import (
 	"net/http"
+	"runtime"
 
 	"github.com/ferama/rospo/pkg/pipe"
 	"github.com/ferama/rospo/pkg/sshc"
@@ -45,12 +46,17 @@ func (r *rootRoutes) getStats(c *gin.Context) {
 		pipeClientsCount += pipeI.GetActiveClientsCount()
 	}
 
+	memStats := new(runtime.MemStats)
+	runtime.ReadMemStats(memStats)
 	response := &statsResponse{
 		CountTunnels:        len(t),
 		CountTunnelsClients: tunnelClientsCount,
 
 		CountPipes:        len(p),
 		CountPipesClients: pipeClientsCount,
+
+		NumGoroutine: runtime.NumGoroutine(),
+		MemTotal:     memStats.HeapInuse + memStats.StackInuse + memStats.MSpanInuse + memStats.MCacheInuse,
 	}
 	c.JSON(http.StatusOK, response)
 }
