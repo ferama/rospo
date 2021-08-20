@@ -36,7 +36,6 @@ type sshServer struct {
 }
 
 // NewSshServer builds an SshServer object
-// func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *sshServer {
 func NewSshServer(conf *SshDConf) *sshServer {
 	keyPath, _ := utils.ExpandUserHome(conf.Key)
 	hostPrivateKey, err := ioutil.ReadFile(keyPath)
