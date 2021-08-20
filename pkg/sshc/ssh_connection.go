@@ -28,6 +28,7 @@ const (
 type SshConnection struct {
 	username   string
 	identity   string
+	password   string
 	knownHosts string
 
 	serverEndpoint *utils.Endpoint
@@ -62,6 +63,7 @@ func NewSshConnection(conf *SshClientConf) *SshConnection {
 	c := &SshConnection{
 		username:       parsed.Username,
 		identity:       conf.Identity,
+		password:       conf.Password,
 		knownHosts:     knownHostsPath,
 		serverEndpoint: conf.GetServerEndpoint(),
 		insecure:       conf.Insecure,
@@ -140,18 +142,23 @@ func (s *SshConnection) keepAlive() {
 	}
 }
 func (s *SshConnection) connect() error {
+	authMethods := []ssh.AuthMethod{}
+
+	// log.Printf("using identity at %s", s.identity)
 	// refer to https://godoc.org/golang.org/x/crypto/ssh for other authentication types
-	log.Printf("using identity at %s", s.identity)
-	auth, err := utils.LoadIdentityFile(s.identity)
-	if err != nil {
-		log.Fatal(err)
+	keysAuth, err := utils.LoadIdentityFile(s.identity)
+	if err == nil {
+		authMethods = append(authMethods, keysAuth)
+	} else {
+		if s.password == "" {
+			log.Fatal("No usable auth method defined")
+		}
+		authMethods = append(authMethods, ssh.Password(s.password))
 	}
 	sshConfig := &ssh.ClientConfig{
 		// SSH connection username
-		User: s.username,
-		Auth: []ssh.AuthMethod{
-			auth,
-		},
+		User:            s.username,
+		Auth:            authMethods,
 		HostKeyCallback: s.verifyHostCallback(true),
 	}
 	log.Println("trying to connect to remote server...")
@@ -236,15 +243,20 @@ func (s *SshConnection) jumpHostConnect(
 			Port: parsed.Port,
 		}
 
-		auth, err := utils.LoadIdentityFile(jh.Identity)
-		if err != nil {
-			log.Fatal(err)
+		authMethods := []ssh.AuthMethod{}
+
+		keysAuth, err := utils.LoadIdentityFile(s.identity)
+		if err == nil {
+			authMethods = append(authMethods, keysAuth)
+		} else {
+			if s.password == "" {
+				log.Fatal("No usable auth method defined")
+			}
+			authMethods = append(authMethods, ssh.Password(s.password))
 		}
 		config := &ssh.ClientConfig{
-			User: parsed.Username,
-			Auth: []ssh.AuthMethod{
-				auth,
-			},
+			User:            parsed.Username,
+			Auth:            authMethods,
 			HostKeyCallback: s.verifyHostCallback(true),
 		}
 		log.Printf("connecting to hop %s@%s", parsed.Username, hop.String())

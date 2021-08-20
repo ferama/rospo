@@ -7,11 +7,13 @@ type JumpHostConf struct {
 	// user@server:port
 	URI      string `yaml:"uri"`
 	Identity string `yaml:"identity"`
+	Password string `yaml:"password"`
 }
 
 // SshClientConf holds the ssh client configuration
 type SshClientConf struct {
 	Identity   string `yaml:"identity"`
+	Password   string `yaml:"password"`
 	KnownHosts string `yaml:"known_hosts"`
 	ServerURI  string `yaml:"server"`
 	// it this value is true host keys are not checked
