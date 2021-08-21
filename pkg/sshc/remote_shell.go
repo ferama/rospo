@@ -44,9 +44,13 @@ func (rs *RemoteShell) Start() {
 	fd := int(os.Stdin.Fd())
 	state, err := term.MakeRaw(fd)
 	if err != nil {
-		log.Fatalf("terminal make raw: %s", err)
+		log.Printf("terminal make raw: %s", err)
 	}
-	defer term.Restore(fd, state)
+	defer func() {
+		if term.IsTerminal(fd) {
+			term.Restore(fd, state)
+		}
+	}()
 
 	// terminal size poller
 	go func() {
@@ -63,7 +67,7 @@ func (rs *RemoteShell) Start() {
 
 	w, h, err := term.GetSize(fd)
 	if err != nil {
-		log.Fatalf("terminal get size: %s", err)
+		log.Printf("terminal get size: %s", err)
 	}
 
 	// Set up terminal modes
@@ -92,6 +96,6 @@ func (rs *RemoteShell) Start() {
 
 // Stop stops the remote shell
 func (rs *RemoteShell) Stop() {
-	rs.session.Close()
 	rs.stopCh <- true
+	rs.session.Close()
 }

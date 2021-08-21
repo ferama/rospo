@@ -13,6 +13,7 @@ var shellCmd = &cobra.Command{
 	Use:   "shell",
 	Short: "Starts a remote shell",
 	Long:  "Starts a remote shell",
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 
 		identity, _ := cmd.Flags().GetString("user-identity")
