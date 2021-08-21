@@ -2,6 +2,7 @@ package sshc
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"os/user"
@@ -13,6 +14,7 @@ import (
 	"github.com/ferama/rospo/pkg/utils"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
+	"golang.org/x/term"
 )
 
 var log = logger.NewLogger("[SSHC] ", logger.Green)
@@ -142,23 +144,10 @@ func (s *SshConnection) keepAlive() {
 	}
 }
 func (s *SshConnection) connect() error {
-	authMethods := []ssh.AuthMethod{}
-
-	// log.Printf("using identity at %s", s.identity)
-	// refer to https://godoc.org/golang.org/x/crypto/ssh for other authentication types
-	keysAuth, err := utils.LoadIdentityFile(s.identity)
-	if err == nil {
-		authMethods = append(authMethods, keysAuth)
-	} else {
-		if s.password == "" {
-			log.Fatal("No usable auth method defined")
-		}
-		authMethods = append(authMethods, ssh.Password(s.password))
-	}
 	sshConfig := &ssh.ClientConfig{
 		// SSH connection username
 		User:            s.username,
-		Auth:            authMethods,
+		Auth:            s.getAuthMethods(),
 		HostKeyCallback: s.verifyHostCallback(true),
 	}
 	log.Println("trying to connect to remote server...")
@@ -224,6 +213,29 @@ func (s *SshConnection) verifyHostCallback(fail bool) ssh.HostKeyCallback {
 	}
 }
 
+func (s *SshConnection) getAuthMethods() []ssh.AuthMethod {
+	authMethods := []ssh.AuthMethod{}
+
+	keysAuth, err := utils.LoadIdentityFile(s.identity)
+	if err == nil {
+		authMethods = append(authMethods, keysAuth)
+	} else {
+		if s.password == "" {
+			log.Fatal("No usable auth method defined")
+		}
+		authMethods = append(authMethods, ssh.Password(s.password))
+	}
+
+	authMethods = append(authMethods, ssh.PasswordCallback(func() (secret string, err error) {
+		fmt.Println("\nThe server asks for a password")
+		fmt.Println("Password: ")
+		p, err := term.ReadPassword(0)
+		return string(p), err
+	}))
+
+	return authMethods
+}
+
 func (s *SshConnection) jumpHostConnect(
 	server *utils.Endpoint,
 	sshConfig *ssh.ClientConfig,
@@ -243,20 +255,9 @@ func (s *SshConnection) jumpHostConnect(
 			Port: parsed.Port,
 		}
 
-		authMethods := []ssh.AuthMethod{}
-
-		keysAuth, err := utils.LoadIdentityFile(s.identity)
-		if err == nil {
-			authMethods = append(authMethods, keysAuth)
-		} else {
-			if s.password == "" {
-				log.Fatal("No usable auth method defined")
-			}
-			authMethods = append(authMethods, ssh.Password(s.password))
-		}
 		config := &ssh.ClientConfig{
 			User:            parsed.Username,
-			Auth:            authMethods,
+			Auth:            s.getAuthMethods(),
 			HostKeyCallback: s.verifyHostCallback(true),
 		}
 		log.Printf("connecting to hop %s@%s", parsed.Username, hop.String())
