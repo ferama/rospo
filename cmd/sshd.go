@@ -13,6 +13,7 @@ func init() {
 	sshdCmd.Flags().StringP("sshd-listen-address", "P", ":2222", "the ssh server listen address")
 	sshdCmd.Flags().StringP("sshd-key", "I", "./server_key", "the ssh server key path")
 	sshdCmd.Flags().BoolP("disable-shell", "D", false, "if set disable shell/exec")
+	sshdCmd.Flags().StringP("sshd-authorized-password", "A", "", "ssh server authorized password. Disabled if empty")
 }
 
 var sshdCmd = &cobra.Command{
@@ -24,10 +25,12 @@ var sshdCmd = &cobra.Command{
 		sshdAuthorizedKeys, _ := cmd.Flags().GetString("sshd-authorized-keys")
 		sshdListenAddress, _ := cmd.Flags().GetString("sshd-listen-address")
 		disableShell, _ := cmd.Flags().GetBool("disable-shell")
+		authorizedPasssword, _ := cmd.Flags().GetString("sshd-authorized-password")
 
 		config := &sshd.SshDConf{
 			Key:                sshdKey,
 			AuthorizedKeysFile: sshdAuthorizedKeys,
+			AuthorizedPassword: authorizedPasssword,
 			ListenAddress:      sshdListenAddress,
 			DisableShell:       disableShell,
 		}
