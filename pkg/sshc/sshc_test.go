@@ -17,12 +17,16 @@ func getPort(addr net.Addr) string {
 	return parts[1]
 }
 
-func startD() string {
+func startD(withPass bool) string {
 	serverConf := &sshd.SshDConf{
-		Key:                "testdata/server",
-		AuthorizedKeysFile: "testdata/authorized_keys",
-		ListenAddress:      "127.0.0.1:0",
-		DisableShell:       false,
+		Key:           "testdata/server",
+		ListenAddress: "127.0.0.1:0",
+		DisableShell:  false,
+	}
+	if !withPass {
+		serverConf.AuthorizedKeysFile = "testdata/authorized_keys"
+	} else {
+		serverConf.AuthorizedPassword = "password"
 	}
 	sd := sshd.NewSshServer(serverConf)
 	go sd.Start()
@@ -54,7 +58,7 @@ func TestErrors(t *testing.T) {
 	}
 
 	// invalid tunnel hop
-	sshd1Port := startD()
+	sshd1Port := startD(false)
 	clientConf = &SshClientConf{
 		Identity: "testdata/client",
 		Insecure: true, // disables known_hosts check
@@ -75,7 +79,7 @@ func TestErrors(t *testing.T) {
 }
 
 func TestSshC(t *testing.T) {
-	sshdPort := startD()
+	sshdPort := startD(false)
 
 	file, err := ioutil.TempFile("", "rospo_known_hosts")
 	if err != nil {
@@ -100,9 +104,9 @@ func TestSshC(t *testing.T) {
 }
 
 func TestJumpHosts(t *testing.T) {
-	sshd1Port := startD()
-	sshd2Port := startD()
-	sshd3Port := startD()
+	sshd1Port := startD(false)
+	sshd2Port := startD(false)
+	sshd3Port := startD(false)
 
 	// create an ssh client
 	clientConf := &SshClientConf{
@@ -123,5 +127,36 @@ func TestJumpHosts(t *testing.T) {
 	client := NewSshConnection(clientConf)
 	go client.Start()
 	client.Connected.Wait()
-	client.Close()
+	client.Stop()
+}
+
+func TestWithPassword(t *testing.T) {
+	sshdPort := startD(true)
+	clientConf := &SshClientConf{
+		ServerURI: fmt.Sprintf("127.0.0.1:%s", sshdPort),
+		JumpHosts: make([]*JumpHostConf, 0),
+		Insecure:  true,
+		Password:  "password",
+	}
+	client := NewSshConnection(clientConf)
+	go client.Start()
+	client.Connected.Wait()
+	client.Stop()
+}
+
+func TestRemoteShell(t *testing.T) {
+	sshdPort := startD(false)
+	clientConf := &SshClientConf{
+		ServerURI: fmt.Sprintf("127.0.0.1:%s", sshdPort),
+		Identity:  "testdata/client",
+		JumpHosts: make([]*JumpHostConf, 0),
+		Insecure:  true,
+	}
+	client := NewSshConnection(clientConf)
+	go client.Start()
+	remoteShell := NewRemoteShell(client)
+	go remoteShell.Start()
+	time.Sleep(1 * time.Second)
+	remoteShell.Stop()
+	client.Stop()
 }

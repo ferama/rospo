@@ -3,7 +3,6 @@ package cmd
 import (
 	"github.com/ferama/rospo/pkg/conf"
 	"github.com/ferama/rospo/pkg/sshc"
-	"github.com/ferama/rospo/pkg/sshd"
 	"github.com/ferama/rospo/pkg/tun"
 
 	"github.com/spf13/cobra"
@@ -11,11 +10,6 @@ import (
 
 func init() {
 	tunCmd.AddCommand(tunReverseCmd)
-
-	tunReverseCmd.Flags().BoolP("start-sshd", "S", false, "optional start the embedded sshd")
-	tunReverseCmd.Flags().StringP("sshd-authorized-keys", "K", "./authorized_keys", "ssh server authorized keys path")
-	tunReverseCmd.Flags().StringP("sshd-listen-address", "P", ":2222", "the ssh server tcp port")
-	tunReverseCmd.Flags().StringP("sshd-key", "I", "./server_key", "the ssh server key path")
 }
 
 var tunReverseCmd = &cobra.Command{
@@ -23,16 +17,12 @@ var tunReverseCmd = &cobra.Command{
 	Short: "Creates a reverse ssh tunnel",
 	Long:  `Creates a reverse ssh tunnel`,
 	Example: `
-  # Starts an embedded sshd and reverse proxy it to the remote server
-  $ rospo tun reverse -S -r :8888 user@server:port
-
-  # Start a reverse tunnelt from the local port 5000 to the remote 8888
+  # Start a reverse tunnel from the local port 5000 to the remote 8888
   # proxing through a jump host server
   $ rospo tun reverse -l :5000 -r :8888 -j jump_host_server user@server
 	`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		startSshD, _ := cmd.Flags().GetBool("start-sshd")
 		local, _ := cmd.Flags().GetString("local")
 		remote, _ := cmd.Flags().GetString("remote")
 		jumpHost, _ := cmd.Flags().GetString("jump-host")
@@ -62,20 +52,6 @@ var tunReverseCmd = &cobra.Command{
 				URI:      jumpHost,
 				Identity: identity,
 			})
-		}
-
-		if startSshD {
-			sshdKey, _ := cmd.Flags().GetString("sshd-key")
-			sshdAuthorizedKeys, _ := cmd.Flags().GetString("sshd-authorized-keys")
-			sshdListenAddress, _ := cmd.Flags().GetString("sshd-listen-address")
-
-			config.SshD = &sshd.SshDConf{
-				Key:                sshdKey,
-				AuthorizedKeysFile: sshdAuthorizedKeys,
-				ListenAddress:      sshdListenAddress,
-			}
-			s := sshd.NewSshServer(config.SshD)
-			go s.Start()
 		}
 
 		client := sshc.NewSshConnection(config.SshClient)

@@ -2,6 +2,7 @@ package sshc
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"os/user"
@@ -13,6 +14,7 @@ import (
 	"github.com/ferama/rospo/pkg/utils"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
+	"golang.org/x/term"
 )
 
 var log = logger.NewLogger("[SSHC] ", logger.Green)
@@ -28,6 +30,7 @@ const (
 type SshConnection struct {
 	username   string
 	identity   string
+	password   string
 	knownHosts string
 
 	serverEndpoint *utils.Endpoint
@@ -62,6 +65,7 @@ func NewSshConnection(conf *SshClientConf) *SshConnection {
 	c := &SshConnection{
 		username:       parsed.Username,
 		identity:       conf.Identity,
+		password:       conf.Password,
 		knownHosts:     knownHostsPath,
 		serverEndpoint: conf.GetServerEndpoint(),
 		insecure:       conf.Insecure,
@@ -76,8 +80,8 @@ func NewSshConnection(conf *SshClientConf) *SshConnection {
 	return c
 }
 
-// Close closes the ssh conn instance client connection
-func (s *SshConnection) Close() {
+// Stop closes the ssh conn instance client connection
+func (s *SshConnection) Stop() {
 	if s.Client != nil {
 		s.Client.Close()
 	}
@@ -105,7 +109,7 @@ func (s *SshConnection) Start() {
 		s.connectionStatus = STATUS_CONNECTED
 		s.connectionStatusMU.Unlock()
 		s.keepAlive()
-		s.Close()
+		s.Stop()
 		s.Connected.Add(1)
 	}
 }
@@ -140,18 +144,10 @@ func (s *SshConnection) keepAlive() {
 	}
 }
 func (s *SshConnection) connect() error {
-	// refer to https://godoc.org/golang.org/x/crypto/ssh for other authentication types
-	log.Printf("using identity at %s", s.identity)
-	auth, err := utils.LoadIdentityFile(s.identity)
-	if err != nil {
-		log.Fatal(err)
-	}
 	sshConfig := &ssh.ClientConfig{
 		// SSH connection username
-		User: s.username,
-		Auth: []ssh.AuthMethod{
-			auth,
-		},
+		User:            s.username,
+		Auth:            s.getAuthMethods(),
 		HostKeyCallback: s.verifyHostCallback(true),
 	}
 	log.Println("trying to connect to remote server...")
@@ -217,6 +213,27 @@ func (s *SshConnection) verifyHostCallback(fail bool) ssh.HostKeyCallback {
 	}
 }
 
+func (s *SshConnection) getAuthMethods() []ssh.AuthMethod {
+	authMethods := []ssh.AuthMethod{}
+
+	keysAuth, err := utils.LoadIdentityFile(s.identity)
+	if err == nil {
+		authMethods = append(authMethods, keysAuth)
+	}
+	if s.password != "" {
+		authMethods = append(authMethods, ssh.Password(s.password))
+	}
+
+	authMethods = append(authMethods, ssh.PasswordCallback(func() (secret string, err error) {
+		fmt.Println("\nThe server asks for a password")
+		fmt.Println("Password: ")
+		p, err := term.ReadPassword(0)
+		return string(p), err
+	}))
+
+	return authMethods
+}
+
 func (s *SshConnection) jumpHostConnect(
 	server *utils.Endpoint,
 	sshConfig *ssh.ClientConfig,
@@ -236,15 +253,9 @@ func (s *SshConnection) jumpHostConnect(
 			Port: parsed.Port,
 		}
 
-		auth, err := utils.LoadIdentityFile(jh.Identity)
-		if err != nil {
-			log.Fatal(err)
-		}
 		config := &ssh.ClientConfig{
-			User: parsed.Username,
-			Auth: []ssh.AuthMethod{
-				auth,
-			},
+			User:            parsed.Username,
+			Auth:            s.getAuthMethods(),
 			HostKeyCallback: s.verifyHostCallback(true),
 		}
 		log.Printf("connecting to hop %s@%s", parsed.Username, hop.String())

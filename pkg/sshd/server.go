@@ -22,6 +22,7 @@ var log = logger.NewLogger("[SSHD] ", logger.Blue)
 type sshServer struct {
 	hostPrivateKey    ssh.Signer
 	authorizedKeyFile *string
+	password          string
 	listenAddress     *string
 
 	disableShell bool
@@ -36,7 +37,6 @@ type sshServer struct {
 }
 
 // NewSshServer builds an SshServer object
-// func NewSshServer(identity *string, authorizedKeys *string, tcpPort *string) *sshServer {
 func NewSshServer(conf *SshDConf) *sshServer {
 	keyPath, _ := utils.ExpandUserHome(conf.Key)
 	hostPrivateKey, err := ioutil.ReadFile(keyPath)
@@ -67,6 +67,7 @@ func NewSshServer(conf *SshDConf) *sshServer {
 
 	ss := &sshServer{
 		authorizedKeyFile:         &conf.AuthorizedKeysFile,
+		password:                  conf.AuthorizedPassword,
 		hostPrivateKey:            hostPrivateKeySigner,
 		disableShell:              conf.DisableShell,
 		listenAddress:             &conf.ListenAddress,
@@ -90,7 +91,7 @@ func (s *sshServer) loadAuthorizedKeys() map[string]bool {
 		log.Fatalln(err)
 	}
 	authorizedKeysBytes, err := ioutil.ReadFile(path)
-	if err != nil {
+	if err != nil && s.password == "" {
 		log.Fatalf(`failed to load authorized_keys, err: %v
 
 	Please create ./authorized_keys file and fill in with 
@@ -109,6 +110,13 @@ func (s *sshServer) loadAuthorizedKeys() map[string]bool {
 		authorizedKeysBytes = rest
 	}
 	return authorizedKeysMap
+}
+
+func (s *sshServer) passwordAuth(conn ssh.ConnMetadata, password []byte) (*ssh.Permissions, error) {
+	if s.password == string(password) {
+		return &ssh.Permissions{}, nil
+	}
+	return nil, fmt.Errorf("wrong password")
 }
 
 func (s *sshServer) keyAuth(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
@@ -150,10 +158,6 @@ func (s *sshServer) Start() {
 	}
 
 	config := ssh.ServerConfig{
-		// one try only. I'm supporting public key auth only.
-		// If it fails, there is nothing more to try
-		MaxAuthTries:      1,
-		PublicKeyCallback: s.keyAuth,
 		AuthLogCallback: func(conn ssh.ConnMetadata, method string, err error) {
 			if err != nil {
 				log.Printf("auth error: %s", err)
@@ -164,6 +168,17 @@ func (s *sshServer) Start() {
 	config.AddHostKey(s.hostPrivateKey)
 	if *s.listenAddress == "" {
 		log.Fatalf("listen port can't be empty")
+	}
+
+	// if password auth is enabled, add the required config
+	if s.password != "" {
+		config.PasswordCallback = s.passwordAuth
+		config.MaxAuthTries = 3
+	} else {
+		// one try only. I'm supporting public key auth.
+		// If it fails, there is nothing more to try
+		config.MaxAuthTries = 1
+		config.PublicKeyCallback = s.keyAuth
 	}
 
 	listener, err := net.Listen("tcp", *s.listenAddress)
