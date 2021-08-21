@@ -123,5 +123,5 @@ func TestJumpHosts(t *testing.T) {
 	client := NewSshConnection(clientConf)
 	go client.Start()
 	client.Connected.Wait()
-	client.Close()
+	client.Stop()
 }

@@ -80,8 +80,8 @@ func NewSshConnection(conf *SshClientConf) *SshConnection {
 	return c
 }
 
-// Close closes the ssh conn instance client connection
-func (s *SshConnection) Close() {
+// Stop closes the ssh conn instance client connection
+func (s *SshConnection) Stop() {
 	if s.Client != nil {
 		s.Client.Close()
 	}
@@ -109,7 +109,7 @@ func (s *SshConnection) Start() {
 		s.connectionStatus = STATUS_CONNECTED
 		s.connectionStatusMU.Unlock()
 		s.keepAlive()
-		s.Close()
+		s.Stop()
 		s.Connected.Add(1)
 	}
 }
