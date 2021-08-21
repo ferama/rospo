@@ -67,7 +67,7 @@ func NewSshServer(conf *SshDConf) *sshServer {
 
 	ss := &sshServer{
 		authorizedKeyFile:         &conf.AuthorizedKeysFile,
-		password:                  conf.Password,
+		password:                  conf.AuthorizedPassword,
 		hostPrivateKey:            hostPrivateKeySigner,
 		disableShell:              conf.DisableShell,
 		listenAddress:             &conf.ListenAddress,
@@ -158,10 +158,6 @@ func (s *sshServer) Start() {
 	}
 
 	config := ssh.ServerConfig{
-		// one try only. I'm supporting public key auth.
-		// If it fails, there is nothing more to try
-		MaxAuthTries:      1,
-		PublicKeyCallback: s.keyAuth,
 		AuthLogCallback: func(conn ssh.ConnMetadata, method string, err error) {
 			if err != nil {
 				log.Printf("auth error: %s", err)
@@ -178,6 +174,11 @@ func (s *sshServer) Start() {
 	if s.password != "" {
 		config.PasswordCallback = s.passwordAuth
 		config.MaxAuthTries = 3
+	} else {
+		// one try only. I'm supporting public key auth.
+		// If it fails, there is nothing more to try
+		config.MaxAuthTries = 1
+		config.PublicKeyCallback = s.keyAuth
 	}
 
 	listener, err := net.Listen("tcp", *s.listenAddress)

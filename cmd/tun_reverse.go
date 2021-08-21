@@ -16,6 +16,7 @@ func init() {
 	tunReverseCmd.Flags().StringP("sshd-authorized-keys", "K", "./authorized_keys", "ssh server authorized keys path")
 	tunReverseCmd.Flags().StringP("sshd-listen-address", "P", ":2222", "the ssh server tcp port")
 	tunReverseCmd.Flags().StringP("sshd-key", "I", "./server_key", "the ssh server key path")
+	tunReverseCmd.Flags().StringP("sshd-authorized-password", "A", "", "ssh server authorized password. Disabled if empty")
 }
 
 var tunReverseCmd = &cobra.Command{
@@ -68,10 +69,12 @@ var tunReverseCmd = &cobra.Command{
 			sshdKey, _ := cmd.Flags().GetString("sshd-key")
 			sshdAuthorizedKeys, _ := cmd.Flags().GetString("sshd-authorized-keys")
 			sshdListenAddress, _ := cmd.Flags().GetString("sshd-listen-address")
+			authorizedPasssword, _ := cmd.Flags().GetString("sshd-authorized-password")
 
 			config.SshD = &sshd.SshDConf{
 				Key:                sshdKey,
 				AuthorizedKeysFile: sshdAuthorizedKeys,
+				AuthorizedPassword: authorizedPasssword,
 				ListenAddress:      sshdListenAddress,
 			}
 			s := sshd.NewSshServer(config.SshD)
