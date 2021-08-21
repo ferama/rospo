@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"strings"
+
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/spf13/cobra"
 )
@@ -10,12 +12,11 @@ func init() {
 }
 
 var shellCmd = &cobra.Command{
-	Use:   "shell",
+	Use:   "shell [user@]host[:port] [cmd_string]",
 	Short: "Starts a remote shell",
 	Long:  "Starts a remote shell",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-
 		identity, _ := cmd.Flags().GetString("user-identity")
 		knownHosts, _ := cmd.Flags().GetString("known-hosts")
 		insecure, _ := cmd.Flags().GetBool("insecure")
@@ -40,6 +41,6 @@ var shellCmd = &cobra.Command{
 		go conn.Start()
 
 		remoteShell := sshc.NewRemoteShell(conn)
-		remoteShell.Start()
+		remoteShell.Start(strings.Join(args[1:], " "), true)
 	},
 }
