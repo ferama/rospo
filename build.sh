@@ -3,7 +3,14 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $DIR
 
-VERSION=${VERSION:=development}
+if ! command -v git &> /dev/null
+then
+    DEV_VER="development"
+else
+    DEV_VER="dev-$(git rev-parse --short HEAD)"
+fi
+
+VERSION=${VERSION:=$DEV_VER}
 
 build() {
     EXT=""
