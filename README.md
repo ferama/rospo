@@ -35,7 +35,7 @@ Usage example:
 Starts an embedded ssh server and reverse proxy the port to remote_server
 
 ```
-$ rospo tun reverse -S -r :8888 user@server:port
+$ rospo revshell -r :8888 user@server:port
 ```
 
 Forwards the local 5000 port to the remote 6000 on the remote_server
@@ -77,7 +77,7 @@ Why use an embedded sshd server you might ask me.
 Suppose you have a Windows WSL instance that you want to access remotely without complicated setups on firewalls and other hassles and annoyances. With **rospo** you can do it in ONE simple step:
 
 ```
-$ rospo run reverse -S remote_ssh_server
+$ rospo revshell remote_ssh_server
 ```
 
 This command will run an embedded sshd server on your wsl instance and reverse proxy its port to the `remote_ssh_server`
@@ -92,7 +92,7 @@ $ ssh -p 2222 localhost
 Or even better (why not!) with rospo you can reverse forward a powershell.
 Using rospo for windows:
 ```
-rospo.exe tun reverse -S remote_ssh_server
+rospo.exe revshell remote_ssh_server
 ```
 
 
