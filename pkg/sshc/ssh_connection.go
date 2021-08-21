@@ -219,10 +219,8 @@ func (s *SshConnection) getAuthMethods() []ssh.AuthMethod {
 	keysAuth, err := utils.LoadIdentityFile(s.identity)
 	if err == nil {
 		authMethods = append(authMethods, keysAuth)
-	} else {
-		if s.password == "" {
-			log.Fatal("No usable auth method defined")
-		}
+	}
+	if s.password != "" {
 		authMethods = append(authMethods, ssh.Password(s.password))
 	}
 
