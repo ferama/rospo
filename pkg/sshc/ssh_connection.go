@@ -49,10 +49,12 @@ type SshConnection struct {
 
 	connectionStatus   string
 	connectionStatusMU sync.Mutex
+	clientMU           sync.Mutex
 }
 
 // NewSshConnection creates a new SshConnection instance
 func NewSshConnection(conf *SshClientConf) *SshConnection {
+
 	parsed := utils.ParseSSHUrl(conf.ServerURI)
 	var knownHostsPath string
 	if conf.KnownHosts == "" {
@@ -82,9 +84,12 @@ func NewSshConnection(conf *SshClientConf) *SshConnection {
 
 // Stop closes the ssh conn instance client connection
 func (s *SshConnection) Stop() {
+	s.clientMU.Lock()
 	if s.Client != nil {
 		s.Client.Close()
 	}
+	s.clientMU.Unlock()
+
 	s.connectionStatusMU.Lock()
 	s.connectionStatus = STATUS_CLOSED
 	s.connectionStatusMU.Unlock()
@@ -157,14 +162,18 @@ func (s *SshConnection) connect() error {
 		if err != nil {
 			return err
 		}
+		s.clientMU.Lock()
 		s.Client = client
+		s.clientMU.Unlock()
 
 	} else {
 		client, err := s.directConnect(s.serverEndpoint, sshConfig)
 		if err != nil {
 			return err
 		}
+		s.clientMU.Lock()
 		s.Client = client
+		s.clientMU.Unlock()
 	}
 
 	return nil

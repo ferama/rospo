@@ -2,6 +2,7 @@ package sshc
 
 import (
 	"os"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -14,6 +15,7 @@ type RemoteShell struct {
 	sshConn *SshConnection
 
 	session *ssh.Session
+	sessMU  sync.Mutex
 	stopCh  chan bool
 }
 
@@ -21,17 +23,20 @@ type RemoteShell struct {
 func NewRemoteShell(sshConn *SshConnection) *RemoteShell {
 	rs := &RemoteShell{
 		sshConn: sshConn,
-		stopCh:  make(chan bool),
+		stopCh:  make(chan bool, 1),
 	}
 	return rs
 }
 
 // Start starts the remote shell
-func (rs *RemoteShell) Start() {
+func (rs *RemoteShell) Start(cmd string, requestPty bool) {
 	rs.sshConn.Connected.Wait()
 
 	session, err := rs.sshConn.Client.NewSession()
+	rs.sessMU.Lock()
 	rs.session = session
+	rs.sessMU.Unlock()
+
 	if err != nil {
 		log.Fatalf("Failed to create session: " + err.Error())
 	}
@@ -42,60 +47,61 @@ func (rs *RemoteShell) Start() {
 	session.Stdin = os.Stdin
 
 	fd := int(os.Stdin.Fd())
-	state, err := term.MakeRaw(fd)
-	if err != nil {
-		log.Printf("terminal make raw: %s", err)
-	}
-	defer func() {
-		if term.IsTerminal(fd) {
-			term.Restore(fd, state)
+	if term.IsTerminal(fd) && requestPty {
+		state, err := term.MakeRaw(fd)
+		if err != nil {
+			log.Printf("terminal make raw: %s", err)
 		}
-	}()
+		defer term.Restore(fd, state)
 
-	// terminal size poller
-	go func() {
-		for {
-			select {
-			case <-time.After(100 * time.Millisecond):
-				w, h, _ := term.GetSize(fd)
-				session.WindowChange(h, w)
-			case <-rs.stopCh:
-				return
+		// terminal size poller
+		go func() {
+			for {
+				select {
+				case <-time.After(100 * time.Millisecond):
+					w, h, _ := term.GetSize(fd)
+					session.WindowChange(h, w)
+				case <-rs.stopCh:
+					return
+				}
 			}
+		}()
+
+		w, h, err := term.GetSize(fd)
+		if err != nil {
+			log.Printf("terminal get size: %s", err)
 		}
-	}()
 
-	w, h, err := term.GetSize(fd)
-	if err != nil {
-		log.Printf("terminal get size: %s", err)
-	}
+		// Set up terminal modes
+		modes := ssh.TerminalModes{
+			ssh.ECHO:          1,
+			ssh.TTY_OP_ISPEED: 14400,
+			ssh.TTY_OP_OSPEED: 14400,
+		}
 
-	// Set up terminal modes
-	modes := ssh.TerminalModes{
-		ssh.ECHO:          1,
-		ssh.TTY_OP_ISPEED: 14400,
-		ssh.TTY_OP_OSPEED: 14400,
+		terminal := os.Getenv("TERM")
+		if terminal == "" {
+			terminal = "xterm-256color"
+		}
+		// Request pseudo terminal
+		if err := session.RequestPty(terminal, h, w, modes); err != nil {
+			log.Fatalf("request for pseudo terminal failed: %s", err)
+		}
 	}
+	if cmd == "" {
+		// Start remote shell
+		if err := session.Shell(); err != nil {
+			log.Fatalf("failed to start shell: %s", err)
+		}
+		session.Wait()
 
-	terminal := os.Getenv("TERM")
-	if terminal == "" {
-		terminal = "xterm-256color"
+	} else {
+		// run the cmd
+		session.Run(cmd)
 	}
-	// Request pseudo terminal
-	if err := session.RequestPty(terminal, h, w, modes); err != nil {
-		log.Fatalf("request for pseudo terminal failed: %s", err)
-	}
-
-	// Start remote shell
-	if err := session.Shell(); err != nil {
-		log.Fatalf("failed to start shell: %s", err)
-	}
-
-	session.Wait()
 }
 
 // Stop stops the remote shell
 func (rs *RemoteShell) Stop() {
 	rs.stopCh <- true
-	rs.session.Close()
 }

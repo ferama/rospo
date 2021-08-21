@@ -155,7 +155,7 @@ func TestRemoteShell(t *testing.T) {
 	client := NewSshConnection(clientConf)
 	go client.Start()
 	remoteShell := NewRemoteShell(client)
-	go remoteShell.Start()
+	go remoteShell.Start("", false)
 	time.Sleep(1 * time.Second)
 	remoteShell.Stop()
 	client.Stop()
