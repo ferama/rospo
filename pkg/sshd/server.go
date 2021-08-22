@@ -188,7 +188,7 @@ func (s *sshServer) Start() {
 	s.listenerMU.Unlock()
 
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	log.Printf("listening on %s\n", listener.Addr())
 	for {

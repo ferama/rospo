@@ -17,7 +17,7 @@ func init() {
 }
 
 var grabpubkeyCmd = &cobra.Command{
-	Use:   "grabpubkey [host:port]",
+	Use:   "grabpubkey host:port",
 	Short: "Grab the host pubkey and put it into the known_hosts file",
 	Long:  `Grab the host pubkey and put it into the known_hosts file`,
 	Args:  cobra.MinimumNArgs(1),

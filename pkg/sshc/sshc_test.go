@@ -155,7 +155,24 @@ func TestRemoteShell(t *testing.T) {
 	client := NewSshConnection(clientConf)
 	go client.Start()
 	remoteShell := NewRemoteShell(client)
-	go remoteShell.Start("", false)
+	go remoteShell.Start("", true)
+	time.Sleep(1 * time.Second)
+	remoteShell.Stop()
+	client.Stop()
+}
+
+func TestRemoteShellCmd(t *testing.T) {
+	sshdPort := startD(false)
+	clientConf := &SshClientConf{
+		ServerURI: fmt.Sprintf("127.0.0.1:%s", sshdPort),
+		Identity:  "testdata/client",
+		JumpHosts: make([]*JumpHostConf, 0),
+		Insecure:  true,
+	}
+	client := NewSshConnection(clientConf)
+	go client.Start()
+	remoteShell := NewRemoteShell(client)
+	go remoteShell.Start("ls", false)
 	time.Sleep(1 * time.Second)
 	remoteShell.Stop()
 	client.Stop()
