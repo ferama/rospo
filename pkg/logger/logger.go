@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"runtime"
@@ -20,6 +21,15 @@ const (
 	reset   = "\033[0m"
 )
 
+var instances []*log.Logger
+
+// DisableLoggers prevents any log output to be printed on console
+func DisableLoggers() {
+	for _, v := range instances {
+		v.SetOutput(io.Discard)
+	}
+}
+
 // NewLogger builds up and return a new logger
 func NewLogger(prefix string, color string) *log.Logger {
 	var logger *log.Logger
@@ -28,5 +38,6 @@ func NewLogger(prefix string, color string) *log.Logger {
 	} else {
 		logger = log.New(os.Stdout, prefix, log.LstdFlags)
 	}
+	instances = append(instances, logger)
 	return logger
 }
