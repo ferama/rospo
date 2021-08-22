@@ -3,12 +3,14 @@ package cmd
 import (
 	"strings"
 
+	"github.com/ferama/rospo/pkg/logger"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/spf13/cobra"
 )
 
 func init() {
 	rootCmd.AddCommand(shellCmd)
+	logger.DisableLoggers()
 }
 
 var shellCmd = &cobra.Command{
