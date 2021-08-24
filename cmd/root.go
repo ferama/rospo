@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/ferama/rospo/pkg/conf"
+	"github.com/ferama/rospo/pkg/logger"
 	"github.com/ferama/rospo/pkg/pipe"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/sshd"
@@ -17,11 +18,20 @@ import (
 // is set during the build process using -ldflags="-X 'github.com/ferama/rospo/cmd.Version=
 var Version = "development"
 
+func init() {
+	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "if set disable all logs")
+}
+
 var rootCmd = &cobra.Command{
 	Use:     "rospo config_file_path.yaml",
 	Long:    "The tool to create relieable ssh tunnels.",
 	Version: Version,
 	Args:    cobra.MinimumNArgs(1),
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if quiet, _ := cmd.Flags().GetBool("quiet"); quiet {
+			logger.DisableLoggers()
+		}
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		conf, err := conf.LoadConfig(args[0])
 		if err != nil {

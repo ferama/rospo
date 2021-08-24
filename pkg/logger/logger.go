@@ -30,6 +30,13 @@ func DisableLoggers() {
 	}
 }
 
+// EnableLoggers enables any disabled logger
+func EnableLoggers() {
+	for _, v := range instances {
+		v.SetOutput(os.Stdout)
+	}
+}
+
 // NewLogger builds up and return a new logger
 func NewLogger(prefix string, color string) *log.Logger {
 	var logger *log.Logger
