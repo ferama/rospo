@@ -10,7 +10,7 @@ import (
 
 func init() {
 	rootCmd.AddCommand(shellCmd)
-	logger.DisableLoggers()
+	shellCmd.Flags().BoolP("disable-banner", "b", false, "if set disable server banner printing")
 }
 
 var shellCmd = &cobra.Command{
@@ -19,14 +19,19 @@ var shellCmd = &cobra.Command{
 	Long:  "Starts a remote shell",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		logger.DisableLoggers()
+
 		identity, _ := cmd.Flags().GetString("user-identity")
 		knownHosts, _ := cmd.Flags().GetString("known-hosts")
 		insecure, _ := cmd.Flags().GetBool("insecure")
 		jumpHost, _ := cmd.Flags().GetString("jump-host")
 
+		disableBanner, _ := cmd.Flags().GetBool("disable-banner")
+
 		sshcConf := sshc.SshClientConf{
 			Identity:   identity,
 			KnownHosts: knownHosts,
+			Quiet:      disableBanner,
 			ServerURI:  args[0],
 			JumpHosts:  make([]*sshc.JumpHostConf, 0),
 			Insecure:   insecure,

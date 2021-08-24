@@ -36,6 +36,7 @@ type SshConnection struct {
 	serverEndpoint *utils.Endpoint
 
 	insecure  bool
+	quiet     bool
 	jumpHosts []*JumpHostConf
 
 	reconnectionInterval time.Duration
@@ -71,6 +72,7 @@ func NewSshConnection(conf *SshClientConf) *SshConnection {
 		knownHosts:     knownHostsPath,
 		serverEndpoint: conf.GetServerEndpoint(),
 		insecure:       conf.Insecure,
+		quiet:          conf.Quiet,
 		jumpHosts:      conf.JumpHosts,
 
 		keepAliveInterval:    5 * time.Second,
@@ -79,6 +81,7 @@ func NewSshConnection(conf *SshClientConf) *SshConnection {
 	}
 	// client is not connected on startup, so add 1 here
 	c.Connected.Add(1)
+
 	return c
 }
 
@@ -103,6 +106,7 @@ func (s *SshConnection) Start() {
 		s.connectionStatusMU.Lock()
 		s.connectionStatus = STATUS_CONNECTING
 		s.connectionStatusMU.Unlock()
+
 		if err := s.connect(); err != nil {
 			log.Printf("error while connecting %s", err)
 			time.Sleep(s.reconnectionInterval)
@@ -110,9 +114,11 @@ func (s *SshConnection) Start() {
 		}
 		// client connected. Free the wait group
 		s.Connected.Done()
+
 		s.connectionStatusMU.Lock()
 		s.connectionStatus = STATUS_CONNECTED
 		s.connectionStatusMU.Unlock()
+
 		s.keepAlive()
 		s.Stop()
 		s.Connected.Add(1)
@@ -154,6 +160,12 @@ func (s *SshConnection) connect() error {
 		User:            s.username,
 		Auth:            s.getAuthMethods(),
 		HostKeyCallback: s.verifyHostCallback(true),
+		BannerCallback: func(message string) error {
+			if !s.quiet {
+				fmt.Print(message)
+			}
+			return nil
+		},
 	}
 	log.Println("trying to connect to remote server...")
 

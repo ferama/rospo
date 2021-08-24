@@ -19,6 +19,7 @@ type SshClientConf struct {
 	// it this value is true host keys are not checked
 	// against known_hosts file
 	Insecure  bool            `yaml:"insecure"`
+	Quiet     bool            `yaml:"quiet"`
 	JumpHosts []*JumpHostConf `yaml:"jump_hosts"`
 }
 
