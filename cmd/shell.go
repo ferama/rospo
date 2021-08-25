@@ -11,7 +11,6 @@ import (
 func init() {
 	rootCmd.AddCommand(shellCmd)
 	shellCmd.Flags().BoolP("disable-banner", "b", false, "if set disable server banner printing")
-	logger.DisableLoggers()
 }
 
 var shellCmd = &cobra.Command{
@@ -20,6 +19,8 @@ var shellCmd = &cobra.Command{
 	Long:  "Starts a remote shell",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		logger.DisableLoggers()
+
 		identity, _ := cmd.Flags().GetString("user-identity")
 		knownHosts, _ := cmd.Flags().GetString("known-hosts")
 		insecure, _ := cmd.Flags().GetBool("insecure")
