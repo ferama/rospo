@@ -21,6 +21,7 @@ func init() {
 var revshellCmd = &cobra.Command{
 	Use:   "revshell [user@]host[:port]",
 	Short: "Starts a reverse shell",
+	Args:  cobra.MinimumNArgs(1),
 	Long:  "Starts a local sshd and forwards its port to the remote host",
 	Example: `
   $ rospo revshell user@server	
