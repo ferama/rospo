@@ -1,4 +1,4 @@
-// +build windows
+//go:build windows
 
 // This file was adapted from here
 // https://github.com/UserExistsError/conpty
@@ -12,9 +12,10 @@ package rpty
 
 import (
 	"fmt"
-	"golang.org/x/sys/windows"
 	"sync"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 var (
