@@ -18,6 +18,9 @@ spec:
         - name: rospo
           image: ferama/rospo:latest
           command: ["rospo", "/etc/rospo/rospo.yaml"]
+          # allows super powers! Allows actions like tun device creation and stuff
+          securityContext:
+            privileged: true
           volumeMounts:
           - name: config-volume
             mountPath: /etc/rospo
