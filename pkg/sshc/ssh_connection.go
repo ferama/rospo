@@ -328,6 +328,6 @@ func (s *SshConnection) directConnect(
 		log.Printf("dial INTO remote server error. %s", err)
 		return nil, err
 	}
-	log.Println("connected to remote server.")
+	log.Println("connected to remote server")
 	return client, nil
 }

@@ -136,7 +136,7 @@ func (t *Tunnel) Stop() {
 
 func (t *Tunnel) listenLocal() error {
 	// Listen on remote server port
-	log.Println("starting listen local")
+	log.Println("starting local listener")
 	listener, err := net.Listen("tcp", t.localEndpoint.String())
 	if err != nil {
 		log.Printf("dial INTO remote service error. %s\n", err)
@@ -217,7 +217,7 @@ func (t *Tunnel) listenRemote() error {
 	// you can use port :0 to get a random available tcp port
 	// Example:
 	//	listener, err := t.sshConn.Client.Listen("tcp", "127.0.0.1:0")
-	log.Println("starting listen remote")
+	log.Println("starting remote listener")
 	listener, err := t.sshConn.Client.Listen("tcp", t.remoteEndpoint.String())
 	if err != nil {
 		log.Printf("listen open port ON remote server error. %s\n", err)
