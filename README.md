@@ -28,7 +28,7 @@ It's meant to make ssh tunnels fun and understendable again
 I wanted an easy to use and reliable ssh tunnel tool. The available alternatives don't fully satisfy me and don't support all the features I need (as the embedded sshd server for example, or an out of the box connection monitoring mechanism) so I wrote my own
 
 ## Quick command line usage
-Keep in mind that rospo only supports keys based auth, so you always need to be sure that *identity*, *authorized_keys* etc are always correctly setup.
+Rospo supports keys based auth and password auth. Keys based one is always the preferred, so it is better if *identity*, *authorized_keys* etc are always correctly setup.
 
 Usage example:
 
@@ -51,12 +51,19 @@ $ rospo tun reverse --help
 $ rospo sshd --help
 ```
 
-Use a config file
+For more complex use cases and more options, you can use a config file
 ```
 $ rospo config.yaml
 ```
 
 Look at the [config_template.yaml](https://github.com/ferama/rospo/blob/main/configs/config_template.yaml) for all the available options.
+
+A config file is required for example to setup pipes. Pipes let's you do things like:
+
+1. opening a socket on locahost on port 1234
+2. copy all packets from and to local port 1234 to remote reachable host:whathever_port
+
+This is handy in some situations when you want to use a host as bridge for a service (its almost like a **socat** bidirectional pipe but without the need for another tool)
 
 ## Rospo UI
 Rospo supports a cool ui too. The ui will let you handle tunnels and pipes configuration at runtime through the web interface.
@@ -82,14 +89,14 @@ $ rospo revshell remote_ssh_server
 
 This command will run an embedded sshd server on your wsl instance and reverse proxy its port to the `remote_ssh_server`
 
-The only assumption here is that you have access to `remote_ssh_server` using ssh keys.
+The only assumption here is that you have access to `remote_ssh_server`.
 The command will open a socket (on port 2222 by default) into `remote_ssh_server` that you can use to log back to WSL using a standard ssh client with a command like:
 
 ```
 $ ssh -p 2222 localhost
 ```
 
-Or even better (why not!) with rospo you can reverse forward a powershell.
+Or even better (why not!) with rospo you can reverse proxy a powershell.
 Using rospo for windows:
 ```
 rospo.exe revshell remote_ssh_server
@@ -129,7 +136,7 @@ $ rospo config.yaml
 What's happens here is that rospo will connect to `remote_server_address` through the `jumphost_address` server and will:
 
 1. open a socket on the local machine listening on port 8000 that forwards all the traffic to the service listening on port 8000 on the `remote_server_address` machine
-2. open a socket on the local machine listening on port 9999 that forwards all the traffic to the service listening on port 9999 on the `remote_server_address` machinev
+2. open a socket on the local machine listening on port 9999 that forwards all the traffic to the service listening on port 9999 on the `remote_server_address` machine
 3. open a socket on the remote machine listening on port 5000 that forwards all the traffic from remote machine to a local service (on the local machine) listening on port 5000
 
 But these are just an examples. Rospo can do a lot more.
