@@ -10,4 +10,7 @@ type SshDConf struct {
 	ListenAddress string `yaml:"listen_address"`
 	// if true the exec,shell requests will be ignored
 	DisableShell bool `yaml:"disable_shell"`
+	// if true all auth mechanism will be disabled
+	// use with caution
+	DisableAuth bool `yaml:"disable_auth"`
 }

@@ -56,6 +56,10 @@ sshd:
   # the sshd for tunnels, forwards but not to gain a remote shell or to execute
   # commands
   disable_shell: false
+  # OPTIONAL: default false. If set to true clients can connect without
+  # any authentication form (so no keys and no passwords!). 
+  # Use with caution!
+  disable_auth: false
 
 # starts a pipe from local port 5432 to my_remote_postgres:5432
 # This will copy packets from local to remote endpoint
