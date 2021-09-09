@@ -26,6 +26,7 @@ type sshServer struct {
 	listenAddress     *string
 
 	disableShell bool
+	disableAuth  bool
 
 	forwards   map[string]net.Listener
 	forwardsMu sync.Mutex
@@ -70,6 +71,7 @@ func NewSshServer(conf *SshDConf) *sshServer {
 		password:                  conf.AuthorizedPassword,
 		hostPrivateKey:            hostPrivateKeySigner,
 		disableShell:              conf.DisableShell,
+		disableAuth:               conf.DisableAuth,
 		listenAddress:             &conf.ListenAddress,
 		forwards:                  make(map[string]net.Listener),
 		forwardsKeepAliveInterval: 5 * time.Second,
@@ -77,7 +79,9 @@ func NewSshServer(conf *SshDConf) *sshServer {
 
 	// run here, to make sure I have a valid authorized keys
 	// file on start
-	ss.loadAuthorizedKeys()
+	if !conf.DisableAuth {
+		ss.loadAuthorizedKeys()
+	}
 
 	return ss
 }
@@ -170,15 +174,19 @@ func (s *sshServer) Start() {
 		log.Fatalf("listen port can't be empty")
 	}
 
-	// if password auth is enabled, add the required config
-	if s.password != "" {
-		config.PasswordCallback = s.passwordAuth
-		config.MaxAuthTries = 3
+	if !s.disableAuth {
+		// if password auth is enabled, add the required config
+		if s.password != "" {
+			config.PasswordCallback = s.passwordAuth
+			config.MaxAuthTries = 3
+		} else {
+			// one try only. I'm supporting public key auth.
+			// If it fails, there is nothing more to try
+			config.MaxAuthTries = 1
+			config.PublicKeyCallback = s.keyAuth
+		}
 	} else {
-		// one try only. I'm supporting public key auth.
-		// If it fails, there is nothing more to try
-		config.MaxAuthTries = 1
-		config.PublicKeyCallback = s.keyAuth
+		config.NoClientAuth = true
 	}
 
 	listener, err := net.Listen("tcp", *s.listenAddress)
@@ -204,7 +212,11 @@ func (s *sshServer) Start() {
 				log.Printf("client connection error %s", err)
 				return
 			}
-			log.Printf("logged in with key %s", sshConn.Permissions.Extensions["pubkey-fp"])
+			if !s.disableAuth {
+				log.Printf("logged in %s", sshConn.Permissions.Extensions["pubkey-fp"])
+			} else {
+				log.Println("logged in WITHOUT authentication")
+			}
 
 			// handle forwards and keepalive requests
 			go s.handleRequests(sshConn, reqs)
