@@ -32,10 +32,10 @@ Rospo supports keys based auth and password auth. Keys based one is always the p
 
 Usage example:
 
-Starts an embedded ssh server and reverse proxy the port to remote_server
+Starts an embedded ssh server and reverse proxy the port (2222 by default) to remote_server
 
 ```
-$ rospo revshell -r :8888 user@server:port
+$ rospo revshell user@server:port
 ```
 
 Forwards the local 5000 port to the remote 6000 on the remote_server
