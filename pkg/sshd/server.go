@@ -80,13 +80,23 @@ func NewSshServer(conf *SshDConf) *sshServer {
 	// run here, to make sure I have a valid authorized keys
 	// file on start
 	if !conf.DisableAuth {
-		ss.loadAuthorizedKeys()
+		_, err := ss.loadAuthorizedKeys()
+		if err != nil && conf.AuthorizedPassword == "" {
+			log.Fatalf(`failed to load authorized_keys, err: %v
+
+	Please create ./authorized_keys file and fill in with 
+	your authorized users public keys
+
+`, err)
+		}
 	}
 
 	return ss
 }
 
-func (s *sshServer) loadAuthorizedKeys() map[string]bool {
+func (s *sshServer) loadAuthorizedKeys() (map[string]bool, error) {
+	authorizedKeysMap := map[string]bool{}
+
 	// Public key authentication is done by comparing
 	// the public key of a received connection
 	// with the entries in the authorized_keys file.
@@ -95,15 +105,9 @@ func (s *sshServer) loadAuthorizedKeys() map[string]bool {
 		log.Fatalln(err)
 	}
 	authorizedKeysBytes, err := ioutil.ReadFile(path)
-	if err != nil && s.password == "" {
-		log.Fatalf(`failed to load authorized_keys, err: %v
-
-	Please create ./authorized_keys file and fill in with 
-	your authorized users public keys
-
-`, err)
+	if err != nil {
+		return authorizedKeysMap, err
 	}
-	authorizedKeysMap := map[string]bool{}
 	for len(authorizedKeysBytes) > 0 {
 		pubKey, _, _, rest, err := ssh.ParseAuthorizedKey(authorizedKeysBytes)
 		if err != nil {
@@ -113,7 +117,7 @@ func (s *sshServer) loadAuthorizedKeys() map[string]bool {
 		authorizedKeysMap[string(pubKey.Marshal())] = true
 		authorizedKeysBytes = rest
 	}
-	return authorizedKeysMap
+	return authorizedKeysMap, nil
 }
 
 func (s *sshServer) passwordAuth(conn ssh.ConnMetadata, password []byte) (*ssh.Permissions, error) {
@@ -126,7 +130,7 @@ func (s *sshServer) passwordAuth(conn ssh.ConnMetadata, password []byte) (*ssh.P
 func (s *sshServer) keyAuth(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
 	log.Println(conn.RemoteAddr(), "authenticate with", pubKey.Type())
 
-	authorizedKeysMap := s.loadAuthorizedKeys()
+	authorizedKeysMap, _ := s.loadAuthorizedKeys()
 
 	if authorizedKeysMap[string(pubKey.Marshal())] {
 		return &ssh.Permissions{
