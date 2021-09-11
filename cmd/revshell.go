@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"os/user"
+	"path/filepath"
+
 	"github.com/ferama/rospo/pkg/conf"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/sshd"
@@ -11,7 +14,16 @@ import (
 func init() {
 	rootCmd.AddCommand(revshellCmd)
 
+	usr, _ := user.Current()
+	defaultIdentity := filepath.Join(usr.HomeDir, ".ssh", "id_rsa")
+	knownHostFile := filepath.Join(usr.HomeDir, ".ssh", "known_hosts")
+
+	revshellCmd.Flags().BoolP("insecure", "i", false, "disable known_hosts key server verification")
 	revshellCmd.Flags().StringP("remote", "r", "127.0.0.1:2222", "the remote shell listener endpoint")
+	revshellCmd.Flags().StringP("jump-host", "j", "", "optional jump host conf")
+	revshellCmd.Flags().StringP("user-identity", "s", defaultIdentity, "the ssh identity (private) key absolute path")
+	revshellCmd.Flags().StringP("known-hosts", "k", knownHostFile, "the known_hosts file absolute path")
+
 	revshellCmd.Flags().StringP("sshd-authorized-keys", "K", "./authorized_keys", "ssh server authorized keys path")
 	revshellCmd.Flags().StringP("sshd-listen-address", "P", ":2222", "the ssh server tcp port")
 	revshellCmd.Flags().StringP("sshd-key", "I", "./server_key", "the ssh server key path")
