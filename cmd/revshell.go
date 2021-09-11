@@ -18,15 +18,18 @@ func init() {
 	defaultIdentity := filepath.Join(usr.HomeDir, ".ssh", "id_rsa")
 	knownHostFile := filepath.Join(usr.HomeDir, ".ssh", "known_hosts")
 
+	// sshc options
 	revshellCmd.Flags().BoolP("insecure", "i", false, "disable known_hosts key server verification")
 	revshellCmd.Flags().StringP("remote", "r", "127.0.0.1:2222", "the remote shell listener endpoint")
 	revshellCmd.Flags().StringP("jump-host", "j", "", "optional jump host conf")
 	revshellCmd.Flags().StringP("user-identity", "s", defaultIdentity, "the ssh identity (private) key absolute path")
 	revshellCmd.Flags().StringP("known-hosts", "k", knownHostFile, "the known_hosts file absolute path")
 
+	// sshd options
 	revshellCmd.Flags().StringP("sshd-authorized-keys", "K", "./authorized_keys", "ssh server authorized keys path")
 	revshellCmd.Flags().StringP("sshd-listen-address", "P", ":2222", "the ssh server tcp port")
 	revshellCmd.Flags().StringP("sshd-key", "I", "./server_key", "the ssh server key path")
+	revshellCmd.Flags().BoolP("disable-auth", "T", false, "if set clients can connect without authentication")
 	revshellCmd.Flags().StringP("sshd-authorized-password", "A", "", "ssh server authorized password. Disabled if empty")
 }
 
@@ -43,12 +46,14 @@ var revshellCmd = &cobra.Command{
 		sshdAuthorizedKeys, _ := cmd.Flags().GetString("sshd-authorized-keys")
 		sshdListenAddress, _ := cmd.Flags().GetString("sshd-listen-address")
 		authorizedPasssword, _ := cmd.Flags().GetString("sshd-authorized-password")
+		disableAuth, _ := cmd.Flags().GetBool("disable-auth")
 
 		sshdConf := &sshd.SshDConf{
 			Key:                sshdKey,
 			AuthorizedKeysFile: sshdAuthorizedKeys,
 			AuthorizedPassword: authorizedPasssword,
 			ListenAddress:      sshdListenAddress,
+			DisableAuth:        disableAuth,
 		}
 		s := sshd.NewSshServer(sshdConf)
 		go s.Start()
