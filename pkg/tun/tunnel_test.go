@@ -39,10 +39,10 @@ func getPort(addr net.Addr) string {
 func TestTunnelReverse(t *testing.T) {
 	// start a local sshd
 	serverConf := &sshd.SshDConf{
-		Key:                "testdata/server",
-		AuthorizedKeysFile: "testdata/authorized_keys",
-		ListenAddress:      "127.0.0.1:0",
-		DisableShell:       false,
+		Key:               "testdata/server",
+		AuthorizedKeysURI: "testdata/authorized_keys",
+		ListenAddress:     "127.0.0.1:0",
+		DisableShell:      false,
 	}
 	sd := sshd.NewSshServer(serverConf)
 	go sd.Start()
@@ -128,10 +128,10 @@ func TestTunnelReverse(t *testing.T) {
 func TestTunnelForward(t *testing.T) {
 	// start a local sshd
 	serverConf := &sshd.SshDConf{
-		Key:                "testdata/server",
-		AuthorizedKeysFile: "testdata/authorized_keys",
-		ListenAddress:      "127.0.0.1:0",
-		DisableShell:       false,
+		Key:               "testdata/server",
+		AuthorizedKeysURI: "testdata/authorized_keys",
+		ListenAddress:     "127.0.0.1:0",
+		DisableShell:      false,
 	}
 	sd := sshd.NewSshServer(serverConf)
 	go sd.Start()
