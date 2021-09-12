@@ -9,7 +9,7 @@ import (
 func init() {
 	rootCmd.AddCommand(sshdCmd)
 
-	sshdCmd.Flags().StringP("sshd-authorized-keys", "K", "./authorized_keys", "ssh server authorized keys path")
+	sshdCmd.Flags().StringP("sshd-authorized-keys", "K", "./authorized_keys", "ssh server authorized keys path.\nhttp url like https://github.com/<username>.keys are supported too")
 	sshdCmd.Flags().StringP("sshd-listen-address", "P", ":2222", "the ssh server listen address")
 	sshdCmd.Flags().StringP("sshd-key", "I", "./server_key", "the ssh server key path")
 	sshdCmd.Flags().BoolP("disable-shell", "D", false, "if set disable shell/exec")
@@ -31,7 +31,7 @@ var sshdCmd = &cobra.Command{
 
 		config := &sshd.SshDConf{
 			Key:                sshdKey,
-			AuthorizedKeysFile: sshdAuthorizedKeys,
+			AuthorizedKeysURI:  sshdAuthorizedKeys,
 			AuthorizedPassword: authorizedPasssword,
 			ListenAddress:      sshdListenAddress,
 			DisableShell:       disableShell,

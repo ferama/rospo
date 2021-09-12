@@ -2,8 +2,8 @@ package sshd
 
 // SshDConf holds the sshd configuration
 type SshDConf struct {
-	Key                string `yaml:"server_key"`
-	AuthorizedKeysFile string `yaml:"authorized_keys"`
+	Key               string `yaml:"server_key"`
+	AuthorizedKeysURI string `yaml:"authorized_keys"`
 
 	AuthorizedPassword string `yaml:"authorized_password"`
 	// The address the sshd server will listen too

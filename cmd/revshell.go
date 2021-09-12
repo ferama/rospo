@@ -26,7 +26,7 @@ func init() {
 	revshellCmd.Flags().StringP("known-hosts", "k", knownHostFile, "the known_hosts file absolute path")
 
 	// sshd options
-	revshellCmd.Flags().StringP("sshd-authorized-keys", "K", "./authorized_keys", "ssh server authorized keys path")
+	revshellCmd.Flags().StringP("sshd-authorized-keys", "K", "./authorized_keys", "ssh server authorized keys path.\nhttp url like https://github.com/<username>.keys are supported too")
 	revshellCmd.Flags().StringP("sshd-listen-address", "P", ":2222", "the ssh server tcp port")
 	revshellCmd.Flags().StringP("sshd-key", "I", "./server_key", "the ssh server key path")
 	revshellCmd.Flags().BoolP("disable-auth", "T", false, "if set clients can connect without authentication")
@@ -50,7 +50,7 @@ var revshellCmd = &cobra.Command{
 
 		sshdConf := &sshd.SshDConf{
 			Key:                sshdKey,
-			AuthorizedKeysFile: sshdAuthorizedKeys,
+			AuthorizedKeysURI:  sshdAuthorizedKeys,
 			AuthorizedPassword: authorizedPasssword,
 			ListenAddress:      sshdListenAddress,
 			DisableAuth:        disableAuth,

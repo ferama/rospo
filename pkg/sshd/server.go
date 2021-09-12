@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/http"
+	"net/url"
 	"runtime"
 	"strconv"
 	"strings"
@@ -20,10 +22,10 @@ var log = logger.NewLogger("[SSHD] ", logger.Blue)
 
 // sshServer instance
 type sshServer struct {
-	hostPrivateKey    ssh.Signer
-	authorizedKeyFile *string
-	password          string
-	listenAddress     *string
+	hostPrivateKey   ssh.Signer
+	authorizedKeyURI *string
+	password         string
+	listenAddress    *string
 
 	disableShell bool
 	disableAuth  bool
@@ -67,7 +69,7 @@ func NewSshServer(conf *SshDConf) *sshServer {
 	}
 
 	ss := &sshServer{
-		authorizedKeyFile:         &conf.AuthorizedKeysFile,
+		authorizedKeyURI:          &conf.AuthorizedKeysURI,
 		password:                  conf.AuthorizedPassword,
 		hostPrivateKey:            hostPrivateKeySigner,
 		disableShell:              conf.DisableShell,
@@ -94,30 +96,51 @@ func NewSshServer(conf *SshDConf) *sshServer {
 	return ss
 }
 
-func (s *sshServer) loadAuthorizedKeys() (map[string]bool, error) {
+func (s *sshServer) parseAuthorizedKeysBytes(bytes []byte) (map[string]bool, error) {
 	authorizedKeysMap := map[string]bool{}
-
-	// Public key authentication is done by comparing
-	// the public key of a received connection
-	// with the entries in the authorized_keys file.
-	path, err := utils.ExpandUserHome(*s.authorizedKeyFile)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	authorizedKeysBytes, err := ioutil.ReadFile(path)
-	if err != nil {
-		return authorizedKeysMap, err
-	}
+	authorizedKeysBytes := bytes
 	for len(authorizedKeysBytes) > 0 {
 		pubKey, _, _, rest, err := ssh.ParseAuthorizedKey(authorizedKeysBytes)
 		if err != nil {
-			log.Fatal(err)
+			return authorizedKeysMap, err
 		}
 
 		authorizedKeysMap[string(pubKey.Marshal())] = true
 		authorizedKeysBytes = rest
 	}
 	return authorizedKeysMap, nil
+}
+
+func (s *sshServer) loadAuthorizedKeys() (map[string]bool, error) {
+	emptyRes := map[string]bool{}
+
+	u, err := url.ParseRequestURI(*s.authorizedKeyURI)
+	if err != nil {
+		path, err := utils.ExpandUserHome(*s.authorizedKeyURI)
+		if err != nil {
+			return emptyRes, err
+		}
+		authorizedKeysBytes, err := ioutil.ReadFile(path)
+		if err != nil {
+			return emptyRes, err
+		}
+		return s.parseAuthorizedKeysBytes(authorizedKeysBytes)
+	} else {
+		if u.Scheme == "http" || u.Scheme == "https" {
+			res, err := http.Get(u.String())
+			if err != nil {
+				return emptyRes, err
+			}
+
+			bytes, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				return emptyRes, err
+			}
+			return s.parseAuthorizedKeysBytes(bytes)
+		}
+	}
+
+	return map[string]bool{}, nil
 }
 
 func (s *sshServer) passwordAuth(conn ssh.ConnMetadata, password []byte) (*ssh.Permissions, error) {
