@@ -115,7 +115,8 @@ func (s *sshServer) loadAuthorizedKeys() (map[string]bool, error) {
 	emptyRes := map[string]bool{}
 
 	u, err := url.ParseRequestURI(*s.authorizedKeyURI)
-	if err != nil {
+	if err != nil || u.Scheme == "" {
+		log.Println("loading keys from file", *s.authorizedKeyURI)
 		path, err := utils.ExpandUserHome(*s.authorizedKeyURI)
 		if err != nil {
 			return emptyRes, err
@@ -127,6 +128,7 @@ func (s *sshServer) loadAuthorizedKeys() (map[string]bool, error) {
 		return s.parseAuthorizedKeysBytes(authorizedKeysBytes)
 	} else {
 		if u.Scheme == "http" || u.Scheme == "https" {
+			log.Println("loading keys from http", *s.authorizedKeyURI)
 			res, err := http.Get(u.String())
 			if err != nil {
 				return emptyRes, err
