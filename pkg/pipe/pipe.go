@@ -12,8 +12,8 @@ var log = logger.NewLogger("[PIPE] ", logger.Red)
 
 // Pipe struct definition
 type Pipe struct {
-	local  *utils.Endpoint
-	remote *utils.Endpoint
+	local  string
+	remote string
 
 	// the pipe connection listener
 	listener net.Listener
@@ -33,8 +33,8 @@ type Pipe struct {
 // NewPipe creates a Pipe object
 func NewPipe(conf *PipeConf, stoppable bool) *Pipe {
 	pipe := &Pipe{
-		local:      utils.NewEndpoint(conf.Local),
-		remote:     utils.NewEndpoint(conf.Remote),
+		local:      conf.Local,
+		remote:     conf.Remote,
 		terminate:  make(chan bool),
 		stoppable:  stoppable,
 		clientsMap: make(map[string]net.Conn),
@@ -55,8 +55,8 @@ func (p *Pipe) GetListenerAddr() net.Addr {
 
 // GetEndpoint returns the pipe remote endpoint
 // This is actually used from pipe api routes
-func (p *Pipe) GetEndpoint() utils.Endpoint {
-	return *p.remote
+func (p *Pipe) GetEndpoint() string {
+	return p.remote
 }
 
 // GetActiveClientsCount returns how many clients are actually using the pipe
@@ -70,7 +70,7 @@ func (p *Pipe) GetActiveClientsCount() int {
 // Start the pipe. It basically copy all the tcp packets incoming to the
 // local endpoint into the remote endpoint
 func (p *Pipe) Start() {
-	listener, err := net.Listen("tcp", p.local.String())
+	listener, err := net.Listen("tcp", p.local)
 	if err != nil {
 		log.Printf("listening on %s error.\n", err)
 		return
@@ -96,7 +96,7 @@ func (p *Pipe) Start() {
 			p.clientsMap[client.RemoteAddr().String()] = client
 			p.clientsMapMU.Unlock()
 			go func() {
-				conn, err := net.Dial("tcp", p.remote.String())
+				conn, err := net.Dial("tcp", p.remote)
 				if err != nil {
 					log.Println("remote connection refused")
 					client.Close()
