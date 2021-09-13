@@ -85,37 +85,25 @@ export class Pipes extends React.Component {
               key: '1',
             },
             {
-                title: 'Listener IP',
+                title: 'Local',
                 dataIndex: 'Listener',
                 key: '2',
-                render: item => { return item ? item.IP: "" }
+                render: item => { return item ? `${item.IP} ${item.Port}` : "" }
             },
             {
-                title: 'Listener Port',
-                dataIndex: 'Listener',
+                title: 'Remote',
+                dataIndex: 'Endpoint',
                 key: '3',
-                render: item => { return item ? item.Port: "" }
-            },
-            {
-                title: 'Endpoint Host',
-                dataIndex: 'Endpoint',
-                key: '4',
-                render: item => item.Host
-            },
-            {
-                title: 'Endpoint Port',
-                dataIndex: 'Endpoint',
-                key: '5',
-                render: item => item.Port
+                render: item => item
             },
             {
                 title: 'Active Clients',
                 dataIndex: 'ClientsCount',
-                key: '7',
+                key: '4',
             },
             {
                 title: 'Action',
-                key: '8',
+                key: '5',
                 render: (_, record) =>  (
                     <React.Fragment>
                         {record.IsStoppable?(
