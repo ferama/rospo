@@ -17,7 +17,6 @@ func init() {
 var pipeCmd = &cobra.Command{
 	Use:   "pipe",
 	Short: "Starts a pipe ",
-	Args:  cobra.MinimumNArgs(1),
 	Long:  "Starts a pipe",
 	Run: func(cmd *cobra.Command, args []string) {
 		local, _ := cmd.Flags().GetString("local")
