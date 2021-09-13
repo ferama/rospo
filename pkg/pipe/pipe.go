@@ -95,22 +95,28 @@ func (p *Pipe) Start() {
 			p.clientsMapMU.Lock()
 			p.clientsMap[client.RemoteAddr().String()] = client
 			p.clientsMapMU.Unlock()
-			go func() {
-				conn, err := net.Dial("tcp", p.remote)
-				if err != nil {
-					log.Println("remote connection refused")
-					client.Close()
-					return
-				}
-				utils.CopyConnWithOnClose(client, conn, func() {
-					p.clientsMapMU.Lock()
-					delete(p.clientsMap, client.RemoteAddr().String())
-					p.clientsMapMU.Unlock()
-				})
-			}()
+			go p.handleRemote(client)
 		}
 
 	}
+}
+
+func (p *Pipe) handleRemote(client net.Conn) {
+	p.handleTcpRemote(client)
+}
+
+func (p *Pipe) handleTcpRemote(client net.Conn) {
+	conn, err := net.Dial("tcp", p.remote)
+	if err != nil {
+		log.Println("remote connection refused")
+		client.Close()
+		return
+	}
+	utils.CopyConnWithOnClose(client, conn, func() {
+		p.clientsMapMU.Lock()
+		delete(p.clientsMap, client.RemoteAddr().String())
+		p.clientsMapMU.Unlock()
+	})
 }
 
 // IsStoppable return true if the pipe can be stopped calling the Stop
