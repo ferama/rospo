@@ -79,3 +79,39 @@ func TestPipe(t *testing.T) {
 	pipe.Stop()
 	l.Close()
 }
+
+func TestPipeWithExec(t *testing.T) {
+	conf := &PipeConf{
+		Local:  ":0",
+		Remote: "exec://echo test", // this one works on bash and windows cmd
+	}
+	pipe := NewPipe(conf, true)
+	if pipe.GetEndpoint() != "exec://echo test" {
+		t.Fail()
+	}
+	go pipe.Start()
+	var pipeAddr net.Addr
+	for {
+		pipeAddr = pipe.GetListenerAddr()
+		if pipeAddr == nil {
+			time.Sleep(200 * time.Millisecond)
+		} else {
+			break
+		}
+	}
+	conn, err := net.Dial("tcp", pipeAddr.String())
+	if err != nil {
+		t.Error(err)
+	}
+	buf := make([]byte, 4)
+	_, err = conn.Read(buf)
+	if err != nil {
+		t.Error(err)
+	}
+	if string(buf) != "test" {
+		t.Error("assert data written is equal to data read")
+	}
+
+	pipe.Stop()
+	conn.Close()
+}

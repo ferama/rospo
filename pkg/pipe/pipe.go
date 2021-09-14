@@ -1,7 +1,10 @@
 package pipe
 
 import (
+	"io"
 	"net"
+	"os/exec"
+	"runtime"
 	"sync"
 
 	"github.com/ferama/rospo/pkg/logger"
@@ -12,8 +15,8 @@ var log = logger.NewLogger("[PIPE] ", logger.Red)
 
 // Pipe struct definition
 type Pipe struct {
-	local  *utils.Endpoint
-	remote *utils.Endpoint
+	local  string
+	remote string
 
 	// the pipe connection listener
 	listener net.Listener
@@ -24,8 +27,13 @@ type Pipe struct {
 
 	registryID int
 
+	// holds all active pipe clients
 	clientsMap   map[string]net.Conn
 	clientsMapMU sync.Mutex
+
+	// holds all active subprocesses
+	processes   map[int]*exec.Cmd
+	processesMU sync.Mutex
 
 	listenerMU sync.RWMutex
 }
@@ -33,11 +41,12 @@ type Pipe struct {
 // NewPipe creates a Pipe object
 func NewPipe(conf *PipeConf, stoppable bool) *Pipe {
 	pipe := &Pipe{
-		local:      utils.NewEndpoint(conf.Local),
-		remote:     utils.NewEndpoint(conf.Remote),
+		local:      conf.Local,
+		remote:     conf.Remote,
 		terminate:  make(chan bool),
 		stoppable:  stoppable,
 		clientsMap: make(map[string]net.Conn),
+		processes:  make(map[int]*exec.Cmd),
 	}
 	return pipe
 }
@@ -55,8 +64,8 @@ func (p *Pipe) GetListenerAddr() net.Addr {
 
 // GetEndpoint returns the pipe remote endpoint
 // This is actually used from pipe api routes
-func (p *Pipe) GetEndpoint() utils.Endpoint {
-	return *p.remote
+func (p *Pipe) GetEndpoint() string {
+	return p.remote
 }
 
 // GetActiveClientsCount returns how many clients are actually using the pipe
@@ -70,7 +79,7 @@ func (p *Pipe) GetActiveClientsCount() int {
 // Start the pipe. It basically copy all the tcp packets incoming to the
 // local endpoint into the remote endpoint
 func (p *Pipe) Start() {
-	listener, err := net.Listen("tcp", p.local.String())
+	listener, err := net.Listen("tcp", p.local)
 	if err != nil {
 		log.Printf("listening on %s error.\n", err)
 		return
@@ -95,22 +104,91 @@ func (p *Pipe) Start() {
 			p.clientsMapMU.Lock()
 			p.clientsMap[client.RemoteAddr().String()] = client
 			p.clientsMapMU.Unlock()
-			go func() {
-				conn, err := net.Dial("tcp", p.remote.String())
-				if err != nil {
-					log.Println("remote connection refused")
-					client.Close()
-					return
-				}
-				utils.CopyConnWithOnClose(client, conn, func() {
-					p.clientsMapMU.Lock()
-					delete(p.clientsMap, client.RemoteAddr().String())
-					p.clientsMapMU.Unlock()
-				})
-			}()
+			go p.handleRemote(client)
 		}
 
 	}
+}
+
+func (p *Pipe) handleRemote(client net.Conn) {
+	parsed := parseRemote(p.remote)
+	switch scheme := parsed.Scheme; scheme {
+	case "exec":
+		p.handleExecRemote(client, parsed.Data)
+	case "tcp":
+		p.handleTcpRemote(client)
+	}
+}
+
+func (p *Pipe) handleExecRemote(client net.Conn, cmdline string) {
+	var cmd *exec.Cmd
+	if runtime.GOOS != "windows" {
+		cmd = exec.Command("sh", "-c", cmdline)
+	} else {
+		cmd = exec.Command("cmd", "/C", cmdline)
+	}
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		log.Println(err)
+		client.Close()
+		return
+	}
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Println(err)
+		client.Close()
+		return
+	}
+	cmd.Stderr = cmd.Stdout
+
+	err = cmd.Start()
+
+	p.processesMU.Lock()
+	p.processes[cmd.Process.Pid] = cmd
+	p.processesMU.Unlock()
+
+	if err != nil {
+		log.Println(err)
+		client.Write([]byte(err.Error()))
+		client.Close()
+		return
+	}
+	var once sync.Once
+	close := func() {
+		p.processesMU.Lock()
+		delete(p.processes, cmd.Process.Pid)
+		p.processesMU.Unlock()
+
+		cmd.Process.Kill()
+
+		client.Close()
+		p.clientsMapMU.Lock()
+		delete(p.clientsMap, client.RemoteAddr().String())
+		p.clientsMapMU.Unlock()
+
+	}
+	go func() {
+		io.Copy(stdin, client)
+		once.Do(close)
+	}()
+	go func() {
+		io.Copy(client, stdout)
+		once.Do(close)
+	}()
+}
+
+func (p *Pipe) handleTcpRemote(client net.Conn) {
+	conn, err := net.Dial("tcp", p.remote)
+	if err != nil {
+		log.Println("remote connection refused")
+		client.Close()
+		return
+	}
+	utils.CopyConnWithOnClose(client, conn, func() {
+		p.clientsMapMU.Lock()
+		delete(p.clientsMap, client.RemoteAddr().String())
+		p.clientsMapMU.Unlock()
+	})
 }
 
 // IsStoppable return true if the pipe can be stopped calling the Stop
@@ -140,5 +218,13 @@ func (p *Pipe) Stop() {
 			delete(p.clientsMap, k)
 		}
 		p.clientsMapMU.Unlock()
+
+		p.processesMU.Lock()
+		for pid, v := range p.processes {
+			delete(p.processes, pid)
+			v.Process.Kill()
+		}
+
+		p.processesMU.Unlock()
 	}()
 }

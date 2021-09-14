@@ -84,43 +84,31 @@ export class Tunnels extends React.Component {
                 key: '1',
             },
             {
-                title: 'Listener IP',
+                title: 'Listener',
                 dataIndex: 'Listener',
                 key: '2',
-                render: item => { return item ? item.IP: "" }
-            },
-            {
-                title: 'Listener Port',
-                dataIndex: 'Listener',
-                key: '3',
-                render: item => { return item ? item.Port: "" }
+                render: item => { return item ? `${item.IP} ${item.Port}` : "" }
             },
             {
                 title: 'Is Local Listener',
                 dataIndex: 'IsListenerLocal',
-                key: '4',
+                key: '3',
                 render: item => item ? "true": "false"
             },
             {
-                title: 'Endpoint Addr',
+                title: 'Endpoint',
                 dataIndex: 'Endpoint',
-                key: '5',
-                render: item => item.Host
-            },
-            {
-                title: 'Endpoint Port',
-                dataIndex: 'Endpoint',
-                key: '6',
-                render: item => item.Port
+                key: '4',
+                render: item => `${item.Host} ${item.Port}`
             },
             {
                 title: 'Active Clients',
                 dataIndex: 'ClientsCount',
-                key: '7',
+                key: '5',
             },
             {
                 title: 'Action',
-                key: '8',
+                key: '6',
                 render: (_, record) =>  (
                     <React.Fragment>
                         {record.IsStoppable?(
