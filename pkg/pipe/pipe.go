@@ -1,7 +1,10 @@
 package pipe
 
 import (
+	"io"
 	"net"
+	"os/exec"
+	"strings"
 	"sync"
 
 	"github.com/ferama/rospo/pkg/logger"
@@ -102,7 +105,58 @@ func (p *Pipe) Start() {
 }
 
 func (p *Pipe) handleRemote(client net.Conn) {
-	p.handleTcpRemote(client)
+	parsed := parseRemote(p.remote)
+	switch scheme := parsed.Scheme; scheme {
+	case "exec":
+		p.handleExecRemote(client, parsed.Data)
+	case "tcp":
+		p.handleTcpRemote(client)
+	}
+}
+
+func (p *Pipe) handleExecRemote(client net.Conn, cmdline string) {
+	parts := strings.Fields(cmdline)
+	for _, v := range parts {
+		log.Println(v)
+	}
+	cmd := exec.Command(parts[0], parts[1:]...)
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		log.Println(err)
+		client.Close()
+		return
+	}
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Println(err)
+		client.Close()
+		return
+	}
+	cmd.Stderr = cmd.Stdout
+
+	err = cmd.Start()
+	if err != nil {
+		log.Println(err)
+		client.Write([]byte(err.Error()))
+		client.Close()
+		return
+	}
+	var once sync.Once
+	close := func() {
+		client.Close()
+		cmd.Process.Kill()
+		p.clientsMapMU.Lock()
+		delete(p.clientsMap, client.RemoteAddr().String())
+		p.clientsMapMU.Unlock()
+	}
+	go func() {
+		io.Copy(stdin, client)
+		once.Do(close)
+	}()
+	go func() {
+		io.Copy(client, stdout)
+		once.Do(close)
+	}()
 }
 
 func (p *Pipe) handleTcpRemote(client net.Conn) {
