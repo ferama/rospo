@@ -2,5 +2,6 @@
 # Comment this section to disable the embedded ssh server
 sshd:
   server_key: "./server_key"
-  authorized_keys: "./authorized_keys"
+  authorized_keys: 
+    - "./authorized_keys"
   port: "2222"
