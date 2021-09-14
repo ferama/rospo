@@ -47,10 +47,13 @@ tunnel:
 sshd:
   server_key: "./server_key"
   # REQUIRED
-  # This is the authorized_keys file path. It can be also an http resource
+  # This is the authorized_keys file paths. It can be also an http resource
   # so you can use paths like https://github.com/<your_username>.keys
   # Github exposes all users public_keys by default on that url
-  authorized_keys: "./authorized_keys"
+  # You can use multiple authorized_keys sources at the same time
+  authorized_keys: 
+    - ./authorized_keys
+    - https://github.com/<your_username>.keys
   # OPTIONAL: if set will permit password based authentication.
   # The keys will always take precedence
   authorized_password: mypass

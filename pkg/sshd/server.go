@@ -22,10 +22,10 @@ var log = logger.NewLogger("[SSHD] ", logger.Blue)
 
 // sshServer instance
 type sshServer struct {
-	hostPrivateKey   ssh.Signer
-	authorizedKeyURI *string
-	password         string
-	listenAddress    *string
+	hostPrivateKey    ssh.Signer
+	authorizedKeysURI []string
+	password          string
+	listenAddress     *string
 
 	disableShell bool
 	disableAuth  bool
@@ -69,7 +69,7 @@ func NewSshServer(conf *SshDConf) *sshServer {
 	}
 
 	ss := &sshServer{
-		authorizedKeyURI:          &conf.AuthorizedKeysURI,
+		authorizedKeysURI:         conf.AuthorizedKeysURI,
 		password:                  conf.AuthorizedPassword,
 		hostPrivateKey:            hostPrivateKeySigner,
 		disableShell:              conf.DisableShell,
@@ -82,8 +82,8 @@ func NewSshServer(conf *SshDConf) *sshServer {
 	// run here, to make sure I have a valid authorized keys
 	// file on start
 	if !conf.DisableAuth {
-		_, err := ss.loadAuthorizedKeys()
-		if err != nil && conf.AuthorizedPassword == "" {
+		res := ss.loadAuthorizedKeys()
+		if len(res) == 0 && conf.AuthorizedPassword == "" {
 			log.Fatalf(`failed to load authorized_keys, err: %v
 
 	Please create ./authorized_keys file and fill in with 
@@ -111,38 +111,50 @@ func (s *sshServer) parseAuthorizedKeysBytes(bytes []byte) (map[string]bool, err
 	return authorizedKeysMap, nil
 }
 
-func (s *sshServer) loadAuthorizedKeys() (map[string]bool, error) {
-	emptyRes := map[string]bool{}
-
-	u, err := url.ParseRequestURI(*s.authorizedKeyURI)
-	if err != nil || u.Scheme == "" {
-		log.Println("loading keys from file", *s.authorizedKeyURI)
-		path, err := utils.ExpandUserHome(*s.authorizedKeyURI)
-		if err != nil {
-			return emptyRes, err
-		}
-		authorizedKeysBytes, err := ioutil.ReadFile(path)
-		if err != nil {
-			return emptyRes, err
-		}
-		return s.parseAuthorizedKeysBytes(authorizedKeysBytes)
-	} else {
-		if u.Scheme == "http" || u.Scheme == "https" {
-			log.Println("loading keys from http", *s.authorizedKeyURI)
-			res, err := http.Get(u.String())
-			if err != nil {
-				return emptyRes, err
-			}
-
-			bytes, err := ioutil.ReadAll(res.Body)
-			if err != nil {
-				return emptyRes, err
-			}
-			return s.parseAuthorizedKeysBytes(bytes)
+func (s *sshServer) loadAuthorizedKeys() map[string]bool {
+	res := map[string]bool{}
+	mergeMap := func(m map[string]bool) {
+		for k, v := range m {
+			res[k] = v
 		}
 	}
 
-	return map[string]bool{}, nil
+	for _, keyURI := range s.authorizedKeysURI {
+		u, err := url.ParseRequestURI(keyURI)
+		if err != nil || u.Scheme == "" {
+			log.Println("loading keys from file", keyURI)
+			path, err := utils.ExpandUserHome(keyURI)
+			if err != nil {
+				continue
+			}
+			authorizedKeysBytes, err := ioutil.ReadFile(path)
+			if err != nil {
+				continue
+			}
+			result, err := s.parseAuthorizedKeysBytes(authorizedKeysBytes)
+			if err == nil {
+				mergeMap(result)
+			}
+		} else {
+			if u.Scheme == "http" || u.Scheme == "https" {
+				log.Println("loading keys from http", keyURI)
+				res, err := http.Get(u.String())
+				if err != nil {
+					continue
+				}
+
+				bytes, err := ioutil.ReadAll(res.Body)
+				if err != nil {
+					continue
+				}
+				result, err := s.parseAuthorizedKeysBytes(bytes)
+				if err == nil {
+					mergeMap(result)
+				}
+			}
+		}
+	}
+	return res
 }
 
 func (s *sshServer) passwordAuth(conn ssh.ConnMetadata, password []byte) (*ssh.Permissions, error) {
@@ -155,7 +167,7 @@ func (s *sshServer) passwordAuth(conn ssh.ConnMetadata, password []byte) (*ssh.P
 func (s *sshServer) keyAuth(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
 	log.Println(conn.RemoteAddr(), "authenticate with", pubKey.Type())
 
-	authorizedKeysMap, _ := s.loadAuthorizedKeys()
+	authorizedKeysMap := s.loadAuthorizedKeys()
 
 	if authorizedKeysMap[string(pubKey.Marshal())] {
 		return &ssh.Permissions{

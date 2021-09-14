@@ -40,7 +40,7 @@ func TestTunnelReverse(t *testing.T) {
 	// start a local sshd
 	serverConf := &sshd.SshDConf{
 		Key:               "testdata/server",
-		AuthorizedKeysURI: "testdata/authorized_keys",
+		AuthorizedKeysURI: []string{"testdata/authorized_keys"},
 		ListenAddress:     "127.0.0.1:0",
 		DisableShell:      false,
 	}
@@ -129,7 +129,7 @@ func TestTunnelForward(t *testing.T) {
 	// start a local sshd
 	serverConf := &sshd.SshDConf{
 		Key:               "testdata/server",
-		AuthorizedKeysURI: "testdata/authorized_keys",
+		AuthorizedKeysURI: []string{"testdata/authorized_keys"},
 		ListenAddress:     "127.0.0.1:0",
 		DisableShell:      false,
 	}

@@ -24,7 +24,7 @@ func startD(withPass bool) string {
 		DisableShell:  false,
 	}
 	if !withPass {
-		serverConf.AuthorizedKeysURI = "testdata/authorized_keys"
+		serverConf.AuthorizedKeysURI = []string{"testdata/authorized_keys"}
 	} else {
 		serverConf.AuthorizedPassword = "password"
 	}
