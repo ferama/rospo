@@ -31,7 +31,7 @@ var sshdCmd = &cobra.Command{
 
 		config := &sshd.SshDConf{
 			Key:                sshdKey,
-			AuthorizedKeysURI:  sshdAuthorizedKeys,
+			AuthorizedKeysURI:  []string{sshdAuthorizedKeys},
 			AuthorizedPassword: authorizedPasssword,
 			ListenAddress:      sshdListenAddress,
 			DisableShell:       disableShell,

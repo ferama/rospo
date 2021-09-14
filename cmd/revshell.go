@@ -50,7 +50,7 @@ var revshellCmd = &cobra.Command{
 
 		sshdConf := &sshd.SshDConf{
 			Key:                sshdKey,
-			AuthorizedKeysURI:  sshdAuthorizedKeys,
+			AuthorizedKeysURI:  []string{sshdAuthorizedKeys},
 			AuthorizedPassword: authorizedPasssword,
 			ListenAddress:      sshdListenAddress,
 			DisableAuth:        disableAuth,
