@@ -4,7 +4,7 @@ import (
 	"io"
 	"net"
 	"os/exec"
-	"strings"
+	"runtime"
 	"sync"
 
 	"github.com/ferama/rospo/pkg/logger"
@@ -115,11 +115,12 @@ func (p *Pipe) handleRemote(client net.Conn) {
 }
 
 func (p *Pipe) handleExecRemote(client net.Conn, cmdline string) {
-	parts := strings.Fields(cmdline)
-	for _, v := range parts {
-		log.Println(v)
+	var cmd *exec.Cmd
+	if runtime.GOOS != "windows" {
+		cmd = exec.Command("sh", "-c", cmdline)
+	} else {
+		cmd = exec.Command("cmd", "/C", cmdline)
 	}
-	cmd := exec.Command(parts[0], parts[1:]...)
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		log.Println(err)
