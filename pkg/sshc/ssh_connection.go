@@ -219,7 +219,7 @@ func (s *SshConnection) verifyHostCallback(fail bool) ssh.HostKeyCallback {
 		var keyErr *knownhosts.KeyError
 		e := clb(host, remote, key)
 		if errors.As(e, &keyErr) && len(keyErr.Want) > 0 {
-			log.Printf("ERROR: %v is not a key of %s, either a man in the middle attack or %s host pub key was changed.", key, host, host)
+			log.Printf("ERROR: %s is not a key of %s, either a man in the middle attack or %s host pub key was changed.", ssh.FingerprintSHA256(key), host, host)
 			return e
 		} else if errors.As(e, &keyErr) && len(keyErr.Want) == 0 {
 			if fail {
