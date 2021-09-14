@@ -16,11 +16,15 @@ func TestRemoteParser(t *testing.T) {
 		"exec://python -i -u",
 		":5000",
 		"127.0.0.1:5000",
+		"tcp://:5000",
+		"tcp://127.0.0.1:5000",
 	}
 
 	expected := []parsedRemote{
 		{Scheme: "exec", Data: "python"},
 		{Scheme: "exec", Data: "python -i -u"},
+		{Scheme: "tcp", Data: ":5000"},
+		{Scheme: "tcp", Data: "127.0.0.1:5000"},
 		{Scheme: "tcp", Data: ":5000"},
 		{Scheme: "tcp", Data: "127.0.0.1:5000"},
 	}

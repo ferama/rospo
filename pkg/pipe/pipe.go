@@ -27,8 +27,13 @@ type Pipe struct {
 
 	registryID int
 
+	// holds all active pipe clients
 	clientsMap   map[string]net.Conn
 	clientsMapMU sync.Mutex
+
+	// holds all active subprocesses
+	processes   map[int]*exec.Cmd
+	processesMU sync.Mutex
 
 	listenerMU sync.RWMutex
 }
@@ -41,6 +46,7 @@ func NewPipe(conf *PipeConf, stoppable bool) *Pipe {
 		terminate:  make(chan bool),
 		stoppable:  stoppable,
 		clientsMap: make(map[string]net.Conn),
+		processes:  make(map[int]*exec.Cmd),
 	}
 	return pipe
 }
@@ -136,6 +142,11 @@ func (p *Pipe) handleExecRemote(client net.Conn, cmdline string) {
 	cmd.Stderr = cmd.Stdout
 
 	err = cmd.Start()
+
+	p.processesMU.Lock()
+	p.processes[cmd.Process.Pid] = cmd
+	p.processesMU.Unlock()
+
 	if err != nil {
 		log.Println(err)
 		client.Write([]byte(err.Error()))
@@ -144,11 +155,17 @@ func (p *Pipe) handleExecRemote(client net.Conn, cmdline string) {
 	}
 	var once sync.Once
 	close := func() {
-		client.Close()
+		p.processesMU.Lock()
+		delete(p.processes, cmd.Process.Pid)
+		p.processesMU.Unlock()
+
 		cmd.Process.Kill()
+
+		client.Close()
 		p.clientsMapMU.Lock()
 		delete(p.clientsMap, client.RemoteAddr().String())
 		p.clientsMapMU.Unlock()
+
 	}
 	go func() {
 		io.Copy(stdin, client)
@@ -201,5 +218,13 @@ func (p *Pipe) Stop() {
 			delete(p.clientsMap, k)
 		}
 		p.clientsMapMU.Unlock()
+
+		p.processesMU.Lock()
+		for pid, v := range p.processes {
+			delete(p.processes, pid)
+			v.Process.Kill()
+		}
+
+		p.processesMU.Unlock()
 	}()
 }
