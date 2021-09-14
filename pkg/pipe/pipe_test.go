@@ -86,6 +86,9 @@ func TestPipeWithExec(t *testing.T) {
 		Remote: "exec://echo test", // this one works on bash and windows cmd
 	}
 	pipe := NewPipe(conf, true)
+	if pipe.GetEndpoint() != "exec://echo test" {
+		t.Fail()
+	}
 	go pipe.Start()
 	var pipeAddr net.Addr
 	for {
@@ -108,4 +111,7 @@ func TestPipeWithExec(t *testing.T) {
 	if string(buf) != "test" {
 		t.Error("assert data written is equal to data read")
 	}
+
+	pipe.Stop()
+	conn.Close()
 }
