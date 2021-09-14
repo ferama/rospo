@@ -141,18 +141,12 @@ func (p *Pipe) handleExecRemote(client net.Conn, cmdline string) {
 	}
 	cmd.Stderr = cmd.Stdout
 
-	err = cmd.Start()
+	cmd.Start()
 
 	p.processesMU.Lock()
 	p.processes[cmd.Process.Pid] = cmd
 	p.processesMU.Unlock()
 
-	if err != nil {
-		log.Println(err)
-		client.Write([]byte(err.Error()))
-		client.Close()
-		return
-	}
 	var once sync.Once
 	close := func() {
 		p.processesMU.Lock()
