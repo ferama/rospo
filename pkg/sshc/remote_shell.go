@@ -33,13 +33,13 @@ func (rs *RemoteShell) Start(cmd string, requestPty bool) {
 	rs.sshConn.Connected.Wait()
 
 	session, err := rs.sshConn.Client.NewSession()
-	rs.sessMU.Lock()
-	rs.session = session
-	rs.sessMU.Unlock()
-
 	if err != nil {
 		log.Fatalf("Failed to create session: " + err.Error())
 	}
+
+	rs.sessMU.Lock()
+	rs.session = session
+	rs.sessMU.Unlock()
 	defer session.Close()
 
 	session.Stdout = os.Stdout
