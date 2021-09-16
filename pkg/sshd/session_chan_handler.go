@@ -35,7 +35,6 @@ func handleChannelSession(c ssh.NewChannel, disableShell bool) {
 			req.Reply(false, nil)
 			continue
 		}
-		// log.Printf("### %v %s", req.Type, req.Payload)
 		ok := false
 		switch req.Type {
 		case "shell", "exec":
