@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os/user"
+	"path/filepath"
 	"strings"
 
 	"github.com/ferama/rospo/pkg/logger"
@@ -11,6 +13,16 @@ import (
 func init() {
 	rootCmd.AddCommand(shellCmd)
 	shellCmd.Flags().BoolP("disable-banner", "b", false, "if set disable server banner printing")
+
+	usr, _ := user.Current()
+	defaultIdentity := filepath.Join(usr.HomeDir, ".ssh", "id_rsa")
+	knownHostFile := filepath.Join(usr.HomeDir, ".ssh", "known_hosts")
+
+	shellCmd.Flags().BoolP("insecure", "i", false, "disable known_hosts key server verification")
+	shellCmd.Flags().StringP("remote", "r", "127.0.0.1:2222", "the remote shell listener endpoint")
+	shellCmd.Flags().StringP("jump-host", "j", "", "optional jump host conf")
+	shellCmd.Flags().StringP("user-identity", "s", defaultIdentity, "the ssh identity (private) key absolute path")
+	shellCmd.Flags().StringP("known-hosts", "k", knownHostFile, "the known_hosts file absolute path")
 }
 
 var shellCmd = &cobra.Command{
