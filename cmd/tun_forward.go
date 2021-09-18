@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/ferama/rospo/cmd/cmnflags"
 	"github.com/ferama/rospo/pkg/conf"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/tun"
@@ -24,19 +25,10 @@ var tunForwardCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		local, _ := cmd.Flags().GetString("local")
 		remote, _ := cmd.Flags().GetString("remote")
-		jumpHost, _ := cmd.Flags().GetString("jump-host")
-		identity, _ := cmd.Flags().GetString("user-identity")
-		knownHosts, _ := cmd.Flags().GetString("known-hosts")
-		insecure, _ := cmd.Flags().GetBool("insecure")
 
+		sshcConf := cmnflags.GetSshClientConf(cmd, args)
 		config := &conf.Config{
-			SshClient: &sshc.SshClientConf{
-				Identity:   identity,
-				KnownHosts: knownHosts,
-				ServerURI:  args[0],
-				JumpHosts:  make([]*sshc.JumpHostConf, 0),
-				Insecure:   insecure,
-			},
+			SshClient: sshcConf,
 			Tunnel: []*tun.TunnelConf{
 				{
 					Remote:  remote,
@@ -44,13 +36,6 @@ var tunForwardCmd = &cobra.Command{
 					Forward: true,
 				},
 			},
-		}
-
-		if jumpHost != "" {
-			config.SshClient.JumpHosts = append(config.SshClient.JumpHosts, &sshc.JumpHostConf{
-				URI:      jumpHost,
-				Identity: identity,
-			})
 		}
 
 		client := sshc.NewSshConnection(config.SshClient)

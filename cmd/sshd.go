@@ -10,7 +10,7 @@ import (
 func init() {
 	rootCmd.AddCommand(sshdCmd)
 
-	cmnflags.AddSshdFlags(sshdCmd.Flags())
+	cmnflags.AddSshDFlags(sshdCmd.Flags())
 	sshdCmd.Flags().BoolP("disable-shell", "D", false, "if set disable shell/exec")
 }
 
