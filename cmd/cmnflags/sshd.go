@@ -6,8 +6,8 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// AddSshdFlags adds sshd common flags to FlagSet
-func AddSshdFlags(fs *pflag.FlagSet) {
+// AddSshDFlags adds sshd common flags to FlagSet
+func AddSshDFlags(fs *pflag.FlagSet) {
 	fs.StringP("sshd-authorized-keys", "K", "./authorized_keys", "ssh server authorized keys path.\nhttp url like https://github.com/<username>.keys are supported too")
 	fs.StringP("sshd-listen-address", "P", ":2222", "the ssh server tcp port")
 	fs.StringP("sshd-key", "I", "./server_key", "the ssh server key path")
