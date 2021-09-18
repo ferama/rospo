@@ -20,10 +20,12 @@ func init() {
 
 	// sshc options
 	revshellCmd.Flags().BoolP("insecure", "i", false, "disable known_hosts key server verification")
-	revshellCmd.Flags().StringP("remote", "r", "127.0.0.1:2222", "the remote shell listener endpoint")
 	revshellCmd.Flags().StringP("jump-host", "j", "", "optional jump host conf")
 	revshellCmd.Flags().StringP("user-identity", "s", defaultIdentity, "the ssh identity (private) key absolute path")
 	revshellCmd.Flags().StringP("known-hosts", "k", knownHostFile, "the known_hosts file absolute path")
+
+	// tun options
+	revshellCmd.Flags().StringP("remote", "r", "127.0.0.1:2222", "the remote shell listener endpoint")
 
 	// sshd options
 	revshellCmd.Flags().StringP("sshd-authorized-keys", "K", "./authorized_keys", "ssh server authorized keys path.\nhttp url like https://github.com/<username>.keys are supported too")

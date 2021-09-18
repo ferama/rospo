@@ -19,7 +19,6 @@ func init() {
 	knownHostFile := filepath.Join(usr.HomeDir, ".ssh", "known_hosts")
 
 	shellCmd.Flags().BoolP("insecure", "i", false, "disable known_hosts key server verification")
-	shellCmd.Flags().StringP("remote", "r", "127.0.0.1:2222", "the remote shell listener endpoint")
 	shellCmd.Flags().StringP("jump-host", "j", "", "optional jump host conf")
 	shellCmd.Flags().StringP("user-identity", "s", defaultIdentity, "the ssh identity (private) key absolute path")
 	shellCmd.Flags().StringP("known-hosts", "k", knownHostFile, "the known_hosts file absolute path")
