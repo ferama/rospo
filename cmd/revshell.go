@@ -4,6 +4,7 @@ import (
 	"os/user"
 	"path/filepath"
 
+	"github.com/ferama/rospo/cmd/cmnflags"
 	"github.com/ferama/rospo/pkg/conf"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/sshd"
@@ -28,11 +29,7 @@ func init() {
 	revshellCmd.Flags().StringP("remote", "r", "127.0.0.1:2222", "the remote shell listener endpoint")
 
 	// sshd options
-	revshellCmd.Flags().StringP("sshd-authorized-keys", "K", "./authorized_keys", "ssh server authorized keys path.\nhttp url like https://github.com/<username>.keys are supported too")
-	revshellCmd.Flags().StringP("sshd-listen-address", "P", ":2222", "the ssh server tcp port")
-	revshellCmd.Flags().StringP("sshd-key", "I", "./server_key", "the ssh server key path")
-	revshellCmd.Flags().BoolP("disable-auth", "T", false, "if set clients can connect without authentication")
-	revshellCmd.Flags().StringP("sshd-authorized-password", "A", "", "ssh server authorized password. Disabled if empty")
+	cmnflags.AddSshdFlags(revshellCmd.Flags())
 }
 
 var revshellCmd = &cobra.Command{
@@ -44,19 +41,7 @@ var revshellCmd = &cobra.Command{
   $ rospo revshell user@server	
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		sshdKey, _ := cmd.Flags().GetString("sshd-key")
-		sshdAuthorizedKeys, _ := cmd.Flags().GetString("sshd-authorized-keys")
-		sshdListenAddress, _ := cmd.Flags().GetString("sshd-listen-address")
-		authorizedPasssword, _ := cmd.Flags().GetString("sshd-authorized-password")
-		disableAuth, _ := cmd.Flags().GetBool("disable-auth")
-
-		sshdConf := &sshd.SshDConf{
-			Key:                sshdKey,
-			AuthorizedKeysURI:  []string{sshdAuthorizedKeys},
-			AuthorizedPassword: authorizedPasssword,
-			ListenAddress:      sshdListenAddress,
-			DisableAuth:        disableAuth,
-		}
+		sshdConf := cmnflags.GetSshDConf(cmd)
 		s := sshd.NewSshServer(sshdConf)
 		go s.Start()
 
@@ -77,7 +62,7 @@ var revshellCmd = &cobra.Command{
 			Tunnel: []*tun.TunnelConf{
 				{
 					Remote:  remote,
-					Local:   sshdListenAddress,
+					Local:   sshdConf.ListenAddress,
 					Forward: false,
 				},
 			},
