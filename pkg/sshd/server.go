@@ -140,11 +140,13 @@ func (s *sshServer) loadAuthorizedKeys() map[string]bool {
 				log.Println("loading keys from http", keyURI)
 				res, err := http.Get(u.String())
 				if err != nil {
+					log.Println("failed to load keys from http", err)
 					continue
 				}
 
 				bytes, err := ioutil.ReadAll(res.Body)
 				if err != nil {
+					log.Println("failed to read http body", err)
 					continue
 				}
 				result, err := s.parseAuthorizedKeysBytes(bytes)
