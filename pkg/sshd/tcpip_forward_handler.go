@@ -49,6 +49,7 @@ func handleTcpIpForwardSession(client *ssh.ServerConn, listener net.Listener, la
 			}
 			go ssh.DiscardRequests(requests)
 			utils.CopyConn(c, lconn)
+			log.Printf("ended forward session: %s", lconn.LocalAddr())
 		}(lconn, laddr, lport)
 	}
 }
