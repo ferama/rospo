@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/ferama/rospo/cmd/cmnflags"
-	"github.com/ferama/rospo/pkg/logger"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/spf13/cobra"
 )
@@ -21,8 +20,6 @@ var shellCmd = &cobra.Command{
 	Long:  "Starts a remote shell",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		logger.DisableLoggers()
-
 		sshcConf := cmnflags.GetSshClientConf(cmd, args)
 		conn := sshc.NewSshConnection(sshcConf)
 		go conn.Start()
