@@ -27,6 +27,8 @@ func TestSSHUrlParser(t *testing.T) {
 		"192.168.0.1:2222",
 		":22",
 		"user-name@192.168.0.1:2222",
+		"user@dm1.dm2.dm3.com",
+		"user@dm1.dm2.dm3.com:2222",
 	}
 
 	expected := []sshUrl{
@@ -35,6 +37,8 @@ func TestSSHUrlParser(t *testing.T) {
 		{Username: currentUser.Username, Host: "192.168.0.1", Port: 2222},
 		{Username: currentUser.Username, Host: "127.0.0.1", Port: 22},
 		{Username: "user-name", Host: "192.168.0.1", Port: 2222},
+		{Username: "user", Host: "dm1.dm2.dm3.com", Port: 22},
+		{Username: "user", Host: "dm1.dm2.dm3.com", Port: 2222},
 	}
 	for idx, s := range list {
 		parsed := ParseSSHUrl(s)
