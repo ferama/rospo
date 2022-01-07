@@ -1,8 +1,0 @@
-sshclient:
-  identity: "~/.ssh/id_rsa"
-  server: user@192.168.0.10:22
-  known_hosts: "~/.ssh/known_hosts"
-  insecure: false
-  jump_hosts:
-    - uri: user@server:port
-      identity: "~/.ssh/id_rsa"
