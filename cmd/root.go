@@ -41,7 +41,7 @@ var rootCmd = &cobra.Command{
 		var sshConn *sshc.SshConnection
 		if conf.Tunnel != nil || conf.Web != nil {
 			if conf.SshClient == nil {
-				log.Fatalln("You need to configure sshclient section to support tunnels")
+				log.Fatalln("You need to configure sshclient section to support tunnels or webui")
 			}
 			sshConn = sshc.NewSshConnection(conf.SshClient)
 			go sshConn.Start()

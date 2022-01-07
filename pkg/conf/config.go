@@ -29,11 +29,8 @@ func LoadConfig(filePath string) (*Config, error) {
 	}
 	defer f.Close()
 
-	// set some reasonable defaults
 	cfg := Config{
-		&sshc.SshClientConf{
-			Insecure: false,
-		},
+		nil,
 		nil,
 		nil,
 		nil,
@@ -44,6 +41,11 @@ func LoadConfig(filePath string) (*Config, error) {
 	err = decoder.Decode(&cfg)
 	if err != nil {
 		return nil, err
+	}
+
+	// set some reasonable defaults
+	if cfg.SshClient != nil {
+		cfg.SshClient.Insecure = false
 	}
 
 	return &cfg, nil
