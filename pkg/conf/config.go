@@ -43,10 +43,5 @@ func LoadConfig(filePath string) (*Config, error) {
 		return nil, err
 	}
 
-	// set some reasonable defaults
-	if cfg.SshClient != nil {
-		cfg.SshClient.Insecure = false
-	}
-
 	return &cfg, nil
 }
