@@ -1,0 +1,4 @@
+sshclient:
+  server: localhost:5022
+  known_hosts: "./known_hosts"
+  identity: "~/.ssh/id_rsa"
