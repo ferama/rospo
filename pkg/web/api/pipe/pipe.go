@@ -23,12 +23,12 @@ type pipeRoutes struct {
 
 func (r *pipeRoutes) get(c *gin.Context) {
 	if c.Param("pipe-id") == "" {
-		var res []responseItem
+		var res []pipeResponseItem
 		data := pipe.PipeRegistry().GetAll()
 		for id, val := range data {
 			pipeItem := val.(*pipe.Pipe)
 			addr := pipeItem.GetListenerAddr()
-			res = append(res, responseItem{
+			res = append(res, pipeResponseItem{
 				ID:           id,
 				Listener:     addr,
 				IsStoppable:  pipeItem.IsStoppable(),
@@ -55,7 +55,7 @@ func (r *pipeRoutes) get(c *gin.Context) {
 		}
 		pipeItem := val.(*pipe.Pipe)
 		addr := pipeItem.GetListenerAddr()
-		c.JSON(http.StatusOK, responseItem{
+		c.JSON(http.StatusOK, pipeResponseItem{
 			ID:           tunId,
 			Listener:     addr,
 			IsStoppable:  pipeItem.IsStoppable(),

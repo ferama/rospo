@@ -26,12 +26,12 @@ type tunRoutes struct {
 
 func (r *tunRoutes) get(c *gin.Context) {
 	if c.Param("tun-id") == "" {
-		var res []responseItem
+		var res []tunResponseItem
 		data := tun.TunRegistry().GetAll()
 		for id, val := range data {
 			tunnel := val.(*tun.Tunnel)
 			addr := tunnel.GetListenerAddr()
-			res = append(res, responseItem{
+			res = append(res, tunResponseItem{
 				ID:              id,
 				Listener:        addr,
 				IsListenerLocal: tunnel.GetIsListenerLocal(),
@@ -59,7 +59,7 @@ func (r *tunRoutes) get(c *gin.Context) {
 		}
 		tunnel := val.(*tun.Tunnel)
 		addr := tunnel.GetListenerAddr()
-		c.JSON(http.StatusOK, responseItem{
+		c.JSON(http.StatusOK, tunResponseItem{
 			ID:              tunId,
 			Listener:        addr,
 			IsListenerLocal: tunnel.GetIsListenerLocal(),
