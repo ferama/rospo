@@ -48,15 +48,23 @@ func (r *rootRoutes) getStats(c *gin.Context) {
 
 	memStats := new(runtime.MemStats)
 	runtime.ReadMemStats(memStats)
-	response := &statsResponse{
-		CountTunnels:        len(t),
-		CountTunnelsClients: tunnelClientsCount,
+	var response struct {
+		CountTunnels        int
+		CountTunnelsClients int
 
-		CountPipes:        len(p),
-		CountPipesClients: pipeClientsCount,
+		CountPipes        int
+		CountPipesClients int
 
-		NumGoroutine: runtime.NumGoroutine(),
-		MemTotal:     memStats.HeapInuse + memStats.StackInuse + memStats.MSpanInuse + memStats.MCacheInuse,
+		// runtime stats
+		NumGoroutine int
+		MemTotal     uint64
 	}
+	response.CountTunnels = len(t)
+	response.CountTunnelsClients = tunnelClientsCount
+	response.CountPipes = len(p)
+	response.CountPipesClients = pipeClientsCount
+	response.NumGoroutine = runtime.NumGoroutine()
+	response.MemTotal = memStats.HeapInuse + memStats.StackInuse + memStats.MSpanInuse + memStats.MCacheInuse
+
 	c.JSON(http.StatusOK, response)
 }

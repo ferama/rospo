@@ -4,7 +4,7 @@ import (
 	"net"
 )
 
-type responseItem struct {
+type pipeResponseItem struct {
 	ID           int      `json:"Id"`
 	Listener     net.Addr `json:"Listener"`
 	Endpoint     string   `json:"Endpoint"`

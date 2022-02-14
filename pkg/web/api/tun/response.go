@@ -6,7 +6,7 @@ import (
 	"github.com/ferama/rospo/pkg/utils"
 )
 
-type responseItem struct {
+type tunResponseItem struct {
 	ID              int            `json:"Id"`
 	Listener        net.Addr       `json:"Listener"`
 	IsListenerLocal bool           `json:"IsListenerLocal"`
