@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"log"
+	"os"
+	"os/signal"
 
 	"github.com/ferama/rospo/pkg/conf"
 	"github.com/ferama/rospo/pkg/logger"
@@ -54,20 +56,12 @@ var rootCmd = &cobra.Command{
 		}
 
 		if conf.SshD != nil {
-			if conf.Tunnel != nil {
-				go sshd.NewSshServer(conf.SshD).Start()
-			} else {
-				sshd.NewSshServer(conf.SshD).Start()
-			}
+			go sshd.NewSshServer(conf.SshD).Start()
 		}
 
 		if conf.Tunnel != nil && len(conf.Tunnel) > 0 {
-			for idx, c := range conf.Tunnel {
-				if idx == len(conf.Tunnel)-1 && conf.Web == nil {
-					tun.NewTunnel(sshConn, c, false).Start()
-				} else {
-					go tun.NewTunnel(sshConn, c, false).Start()
-				}
+			for _, c := range conf.Tunnel {
+				go tun.NewTunnel(sshConn, c, false).Start()
 			}
 		}
 
@@ -84,9 +78,12 @@ var rootCmd = &cobra.Command{
 				SshClientURI: conf.SshClient.ServerURI,
 				JumpHosts:    jh,
 			}
-			web.StartServer(dev, sshConn, conf.Web, info)
+			go web.StartServer(dev, sshConn, conf.Web, info)
 		}
 
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+		<-c
 	},
 }
 
