@@ -6,6 +6,7 @@ require (
 	github.com/creack/pty v1.1.17
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.7.7
+	github.com/judwhite/go-svc v1.2.1
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292

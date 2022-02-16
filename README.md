@@ -5,8 +5,6 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/ferama/rospo.svg)](https://hub.docker.com/r/ferama/rospo/)
 
 
-
-
 Rospo is a tool meant to create reliable ssh tunnels.
 It embeds an ssh server too if you want to reverse proxy a secured
 shell
@@ -19,6 +17,7 @@ It's meant to make ssh tunnels fun and understendable again
 3. [Rospo UI](#rospo-ui)
 4. [Scenarios](#scenarios)
     * [Example scenario: Windows (WSL || PowerShell) reverse shell](#example-scenario-windows-reverse-shell)
+    * [Example scenario: Windows service to reverse tunnel Remote Desktop](#example-scenario-windows-service)
     * [Example scenario: multiple complex tunnels](#example-scenario-multiple-complex-tunnels)
     * [Example scenario: kubernetes service exporter](#example-scenario-kubernetes-service-exporter)
 5. [How to Install](#how-to-install)
@@ -102,7 +101,44 @@ Using rospo for windows:
 rospo.exe revshell remote_ssh_server
 ```
 
+### Example scenario: Windows service
+N.B. this functionality is not released yet. You need to build rospo from source code
 
+Rospo support execution as a service on windows. This means that you can create
+a persistent tunnel that can be installed as a service and started automatically with
+the machine.
+
+Let's do this with the Windows Remote Desktop service.
+
+Create a rospo conf file like this:
+```yaml
+sshclient:
+  server: your-rospo-or-sshd-server-uri:2222
+  identity: "c:\\absolute_path_to_your\\id_rsa"
+  known_hosts: "C:\\absolute_path_to_your\\known_hosts"
+
+tunnel:
+  - remote: :3389
+    local: :3389  # the windows remote desktop port
+    forward: false
+```
+
+Launch a terminal (powershell) with Administrative rights.
+You can then perform the following actions:
+
+```powershell
+# create the rospo service
+sc.exe create rospo start= auto type= own DisplayName= Rospo binpath= "C:\rospo.exe C:\rospo_conf.yaml"
+
+# start service
+sc.exe start rospo
+
+# query service status
+sc.exe query rospo
+
+# stop and delete the service
+sc.exe stop rospo; sc.exe delete rospo
+```
 
 ### Example scenario: multiple complex tunnels
 
