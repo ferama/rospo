@@ -15,11 +15,11 @@ It's meant to make ssh tunnels fun and understendable again
 1. [Features](#features)
 2. [Quick command line usage](#quick-command-line-usage)
 3. [Rospo UI](#rospo-ui)
-4. [Scenarios](#scenarios)
-    * [Example scenario: Windows (WSL || PowerShell) reverse shell](#example-scenario-windows-reverse-shell)
-    * [Example scenario: Windows service to reverse tunnel Remote Desktop](#example-scenario-windows-service)
-    * [Example scenario: multiple complex tunnels](#example-scenario-multiple-complex-tunnels)
-    * [Example scenario: kubernetes service exporter](#example-scenario-kubernetes-service-exporter)
+4. [Example Scenarios](#scenarios)
+    * [Windows (WSL || PowerShell) reverse shell](#example-scenario-windows-reverse-shell)
+    * [Windows service to reverse tunnel Remote Desktop](#example-scenario-windows-service)
+    * [Multiple complex tunnels](#example-scenario-multiple-complex-tunnels)
+    * [Kubernetes service exporter](#example-scenario-kubernetes-service-exporter)
 5. [How to Install](#how-to-install)
 
 
