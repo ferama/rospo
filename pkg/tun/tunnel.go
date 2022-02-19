@@ -249,11 +249,18 @@ func (t *Tunnel) listenRemote() error {
 			t.clientsMap[client.RemoteAddr().String()] = client
 			t.clientsMapMU.Unlock()
 
-			utils.CopyConnWithOnClose(client, local, func() {
+			throughput := utils.CopyConnWithOnClose(client, local, func() {
 				t.clientsMapMU.Lock()
 				delete(t.clientsMap, client.RemoteAddr().String())
 				t.clientsMapMU.Unlock()
 			})
+
+			go func() {
+				for w := range throughput {
+					log.Printf("writes: %d", w)
+				}
+				log.Println("=== ended ====")
+			}()
 		}
 	}
 	return nil
