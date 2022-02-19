@@ -12,7 +12,7 @@ shell
 It's meant to make ssh tunnels fun and understendable again
 
 ### Table of Contents  
-1. [Why Rospo?](#why-rospo)
+1. [Features](#features)
 2. [Quick command line usage](#quick-command-line-usage)
 3. [Rospo UI](#rospo-ui)
 4. [Scenarios](#scenarios)
@@ -23,8 +23,17 @@ It's meant to make ssh tunnels fun and understendable again
 5. [How to Install](#how-to-install)
 
 
-## Why Rospo
-I wanted an easy to use and reliable ssh tunnel tool. The available alternatives don't fully satisfy me and don't support all the features I need (as the embedded sshd server for example, or an out of the box connection monitoring mechanism) so I wrote my own
+## Features
+
+  * Easy to use (single binary client/server functionalities)
+  * Encrypted connections through ssh ( `crypto/ssh` package )
+  * Embedded sshd server
+  * Forward and reverse tunnels support
+  * JumpHosts support
+  * Pipes support ( socat bidirectional pipe like )
+  * Command line options or `human readable` yaml config file
+  * Run as a Windows Service support
+  * Pty on Windows through conpty apis
 
 ## Quick command line usage
 Rospo supports keys based auth and password auth. Keys based one is always the preferred, so it is better if *identity*, *authorized_keys* etc are always correctly setup.
@@ -56,13 +65,6 @@ $ rospo config.yaml
 ```
 
 Look at the [config_template.yaml](https://github.com/ferama/rospo/blob/main/configs/config_template.yaml) for all the available options.
-
-A config file is required for example to setup pipes. Pipes let's you do things like:
-
-1. opening a socket on locahost on port 1234
-2. copy all packets from and to local port 1234 to remote reachable host:whathever_port
-
-This is handy in some situations when you want to use a host as bridge for a service (its almost like a **socat** bidirectional pipe but without the need for another tool)
 
 ## Rospo UI
 Rospo supports a cool ui too. The ui will let you handle tunnels and pipes configuration at runtime through the web interface.
