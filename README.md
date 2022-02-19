@@ -5,11 +5,8 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/ferama/rospo.svg)](https://hub.docker.com/r/ferama/rospo/)
 
 
-Rospo is a tool meant to create reliable ssh tunnels.
-It embeds an ssh server too if you want to reverse proxy a secured
-shell
-
-It's meant to make ssh tunnels fun and understendable again
+Rospo is a tool meant to create secure and reliable SSH tunnels. A single binary includes both client and server.
+It's meant to make SSH tunnels fun and understendable again
 
 ### Table of Contents  
 1. [Features](#features)
@@ -27,6 +24,7 @@ It's meant to make ssh tunnels fun and understendable again
 
   * Easy to use (single binary client/server functionalities)
   * Encrypted connections through ssh ( `crypto/ssh` package )
+  * Automatic connection monitoring to keep it always up
   * Embedded sshd server
   * Forward and reverse tunnels support
   * JumpHosts support
