@@ -113,7 +113,7 @@ func TestCopyConn(t *testing.T) {
 			}
 			go func() {
 				conn, _ := net.Dial("tcp", fmt.Sprintf("127.0.0.1:%s", port1))
-				CopyConn(conn, client)
+				CopyConn(conn, client, nil)
 			}()
 		}
 	}()

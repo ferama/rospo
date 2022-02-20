@@ -157,35 +157,33 @@ func copyBuffer(dst io.Writer, src io.Reader, wch chan int64) (err error) {
 func CopyConnWithOnClose(
 	c1 io.ReadWriteCloser,
 	c2 io.ReadWriteCloser,
-	onClose func()) chan int64 {
+	byteswritten chan int64,
+	onClose func()) {
 
 	w1 := make(chan int64)
 	w2 := make(chan int64)
-	throughput := make(chan int64)
 
 	var once sync.Once
+
 	connClose := func() {
 		c1.Close()
 		c2.Close()
-		close(w1)
-		close(w2)
-		close(throughput)
 		onClose()
 	}
 
 	go func() {
 		for nw := range w1 {
 			select {
-			case throughput <- int64(nw):
+			case byteswritten <- int64(nw):
 			default:
 			}
 		}
 	}()
 
 	go func() {
-		for nw := range w1 {
+		for nw := range w2 {
 			select {
-			case throughput <- int64(nw):
+			case byteswritten <- int64(nw):
 			default:
 			}
 		}
@@ -193,18 +191,19 @@ func CopyConnWithOnClose(
 
 	go func() {
 		copyBuffer(c1, c2, w1)
+		close(w1)
 		once.Do(connClose)
 	}()
 
 	go func() {
 		copyBuffer(c2, c1, w2)
+		close(w2)
 		once.Do(connClose)
 	}()
 
-	return throughput
 }
 
 // CopyConn copy packets from c1 to c2 and viceversa
-func CopyConn(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser) {
-	CopyConnWithOnClose(c1, c2, func() {})
+func CopyConn(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, byteswritten chan int64) {
+	CopyConnWithOnClose(c1, c2, byteswritten, func() {})
 }
