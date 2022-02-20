@@ -166,11 +166,25 @@ func (t *Tunnel) listenLocal() error {
 			t.clientsMap[client.RemoteAddr().String()] = client
 			t.clientsMapMU.Unlock()
 
-			utils.CopyConnWithOnClose(client, remote, func() {
+			// utils.CopyConnWithOnClose(client, remote, func() {
+			// 	t.clientsMapMU.Lock()
+			// 	delete(t.clientsMap, client.RemoteAddr().String())
+			// 	t.clientsMapMU.Unlock()
+			// })
+
+			byteswritten := make(chan int64)
+			utils.CopyConnWithOnClose(client, remote, byteswritten, func() {
 				t.clientsMapMU.Lock()
 				delete(t.clientsMap, client.RemoteAddr().String())
 				t.clientsMapMU.Unlock()
+				close(byteswritten)
 			})
+
+			go func() {
+				for w := range byteswritten {
+					log.Printf("writes: %d", w)
+				}
+			}()
 		}
 	}
 	return nil
@@ -249,17 +263,18 @@ func (t *Tunnel) listenRemote() error {
 			t.clientsMap[client.RemoteAddr().String()] = client
 			t.clientsMapMU.Unlock()
 
-			throughput := utils.CopyConnWithOnClose(client, local, func() {
+			byteswritten := make(chan int64)
+			utils.CopyConnWithOnClose(client, local, byteswritten, func() {
 				t.clientsMapMU.Lock()
 				delete(t.clientsMap, client.RemoteAddr().String())
 				t.clientsMapMU.Unlock()
+				close(byteswritten)
 			})
 
 			go func() {
-				for w := range throughput {
+				for w := range byteswritten {
 					log.Printf("writes: %d", w)
 				}
-				log.Println("=== ended ====")
 			}()
 		}
 	}

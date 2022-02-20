@@ -178,7 +178,7 @@ func (p *Pipe) handleTcpRemote(client net.Conn) {
 		client.Close()
 		return
 	}
-	utils.CopyConnWithOnClose(client, conn, func() {
+	utils.CopyConnWithOnClose(client, conn, nil, func() {
 		p.clientsMapMU.Lock()
 		delete(p.clientsMap, client.RemoteAddr().String())
 		p.clientsMapMU.Unlock()

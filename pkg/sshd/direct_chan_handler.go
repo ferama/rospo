@@ -37,5 +37,5 @@ func handleChannelDirect(c ssh.NewChannel) {
 		return
 	}
 
-	utils.CopyConn(connection, rconn)
+	utils.CopyConn(connection, rconn, nil)
 }
