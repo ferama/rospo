@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/ferama/rospo/pkg/logger"
-	"github.com/ferama/rospo/pkg/utils"
+	"github.com/ferama/rospo/pkg/rio"
 )
 
 var log = logger.NewLogger("[PIPE] ", logger.Red)
@@ -178,7 +178,7 @@ func (p *Pipe) handleTcpRemote(client net.Conn) {
 		client.Close()
 		return
 	}
-	utils.CopyConnWithOnClose(client, conn, nil, func() {
+	rio.CopyConnWithOnClose(client, conn, false, func() {
 		p.clientsMapMU.Lock()
 		delete(p.clientsMap, client.RemoteAddr().String())
 		p.clientsMapMU.Unlock()
