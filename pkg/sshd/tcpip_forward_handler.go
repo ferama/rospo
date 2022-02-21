@@ -3,7 +3,7 @@ package sshd
 import (
 	"net"
 
-	"github.com/ferama/rospo/pkg/utils"
+	"github.com/ferama/rospo/pkg/rio"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -48,7 +48,7 @@ func handleTcpIpForwardSession(client *ssh.ServerConn, listener net.Listener, la
 				return
 			}
 			go ssh.DiscardRequests(requests)
-			utils.CopyConn(c, lconn, nil)
+			rio.CopyConn(c, lconn)
 			log.Printf("ended forward session: %s", lconn.LocalAddr())
 		}(lconn, laddr, lport)
 	}
