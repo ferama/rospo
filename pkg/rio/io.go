@@ -8,7 +8,7 @@ import (
 
 // borrowed from the official go io package with some changes to support
 // throughtput metrics
-func copyBuffer(dst io.Writer, src io.Reader, wch chan int64) (err error) {
+func CopyBuffer(dst io.Writer, src io.Reader, wch chan int64) (err error) {
 	var buf []byte
 	size := 32 * 1024
 	if l, ok := src.(*io.LimitedReader); ok && int64(size) > l.N {
@@ -78,13 +78,13 @@ func CopyConnWithOnClose(
 
 	wg.Add(2)
 	go func() {
-		copyBuffer(c1, c2, bw)
+		CopyBuffer(c1, c2, bw)
 		once.Do(connClose)
 		wg.Done()
 	}()
 
 	go func() {
-		copyBuffer(c2, c1, bw)
+		CopyBuffer(c2, c1, bw)
 		once.Do(connClose)
 		wg.Done()
 	}()
