@@ -64,3 +64,17 @@ func TestSshcSecureDefault(t *testing.T) {
 		t.Fatalf("sshclient should be secure by default")
 	}
 }
+
+func TestFailOnNonExistendUnparsableConf(t *testing.T) {
+	path := filepath.Join("testdata", "not_existent.yaml")
+	_, err := LoadConfig(path)
+	if err == nil {
+		t.Fatalf("should fail on not existent conf")
+	}
+
+	path = filepath.Join("testdata", "unaparsable.yaml")
+	_, err = LoadConfig(path)
+	if err == nil {
+		t.Fatalf("should fail on not parsable conf")
+	}
+}
