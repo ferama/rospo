@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"log"
 	"os/user"
 	"testing"
 )
@@ -60,4 +61,33 @@ func TestDefaultShell(t *testing.T) {
 	if shell != "/bin/sh" {
 		t.Fail()
 	}
+}
+
+func TestByteCountSI(t *testing.T) {
+	list := []int64{
+		1000,
+		1001,
+		1101,
+		10000,
+		1000000,
+		1000000000,
+		1000000000000,
+	}
+	expected := []string{
+		"1.0 kB",
+		"1.0 kB",
+		"1.1 kB",
+		"10.0 kB",
+		"1.0 MB",
+		"1.0 GB",
+		"1.0 TB",
+	}
+	for idx, b := range list {
+		parsed := ByteCountSI(b)
+		log.Println(parsed, expected[idx])
+		if parsed != expected[idx] {
+			t.Fatalf("+%v", expected[idx])
+		}
+	}
+
 }
