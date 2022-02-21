@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/ferama/rospo/pkg/utils"
+	"github.com/ferama/rospo/pkg/rio"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -37,5 +37,5 @@ func handleChannelDirect(c ssh.NewChannel) {
 		return
 	}
 
-	utils.CopyConn(connection, rconn)
+	rio.CopyConn(connection, rconn)
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/tun"
+	"github.com/ferama/rospo/pkg/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -32,12 +33,14 @@ func (r *tunRoutes) get(c *gin.Context) {
 			tunnel := val.(*tun.Tunnel)
 			addr := tunnel.GetListenerAddr()
 			res = append(res, tunResponseItem{
-				ID:              id,
-				Listener:        addr,
-				IsListenerLocal: tunnel.GetIsListenerLocal(),
-				IsStoppable:     tunnel.IsStoppable(),
-				Endpoint:        tunnel.GetEndpoint(),
-				ClientsCount:    tunnel.GetActiveClientsCount(),
+				ID:               id,
+				Listener:         addr,
+				IsListenerLocal:  tunnel.GetIsListenerLocal(),
+				IsStoppable:      tunnel.IsStoppable(),
+				Endpoint:         tunnel.GetEndpoint(),
+				ClientsCount:     tunnel.GetActiveClientsCount(),
+				Throughput:       tunnel.GetCurrentBytesPerSecond(),
+				ThroughputString: utils.ByteCountSI(tunnel.GetCurrentBytesPerSecond()) + "/s",
 			})
 		}
 		c.JSON(http.StatusOK, res)
@@ -60,12 +63,14 @@ func (r *tunRoutes) get(c *gin.Context) {
 		tunnel := val.(*tun.Tunnel)
 		addr := tunnel.GetListenerAddr()
 		c.JSON(http.StatusOK, tunResponseItem{
-			ID:              tunId,
-			Listener:        addr,
-			IsListenerLocal: tunnel.GetIsListenerLocal(),
-			IsStoppable:     tunnel.IsStoppable(),
-			Endpoint:        tunnel.GetEndpoint(),
-			ClientsCount:    tunnel.GetActiveClientsCount(),
+			ID:               tunId,
+			Listener:         addr,
+			IsListenerLocal:  tunnel.GetIsListenerLocal(),
+			IsStoppable:      tunnel.IsStoppable(),
+			Endpoint:         tunnel.GetEndpoint(),
+			ClientsCount:     tunnel.GetActiveClientsCount(),
+			Throughput:       tunnel.GetCurrentBytesPerSecond(),
+			ThroughputString: utils.ByteCountSI(tunnel.GetCurrentBytesPerSecond()) + "/s",
 		})
 	}
 }

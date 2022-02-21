@@ -1,14 +1,14 @@
 package pipe
 
 import (
-	"io"
 	"net"
 	"os/exec"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/ferama/rospo/pkg/logger"
-	"github.com/ferama/rospo/pkg/utils"
+	"github.com/ferama/rospo/pkg/rio"
 )
 
 var log = logger.NewLogger("[PIPE] ", logger.Red)
@@ -36,6 +36,12 @@ type Pipe struct {
 	processesMU sync.Mutex
 
 	listenerMU sync.RWMutex
+
+	// metrics related
+	currentBytes          int64
+	currentBytesPerSecond int64
+	metricsMU             sync.RWMutex
+	metricsSamplerCloser  chan bool
 }
 
 // NewPipe creates a Pipe object
@@ -47,8 +53,19 @@ func NewPipe(conf *PipeConf, stoppable bool) *Pipe {
 		stoppable:  stoppable,
 		clientsMap: make(map[string]net.Conn),
 		processes:  make(map[int]*exec.Cmd),
+
+		currentBytes:          0,
+		currentBytesPerSecond: 0,
+		metricsSamplerCloser:  make(chan bool),
 	}
 	return pipe
+}
+
+// GetsCurrentBytesPerSecond return the current tunnel throughput
+func (p *Pipe) GetCurrentBytesPerSecond() int64 {
+	p.metricsMU.RLock()
+	defer p.metricsMU.RUnlock()
+	return p.currentBytesPerSecond
 }
 
 // GetListenerAddr returns the pipe listener network address
@@ -89,6 +106,7 @@ func (p *Pipe) Start() {
 	p.listenerMU.Unlock()
 
 	p.registryID = PipeRegistry().Add(p)
+	go p.metricsSampler()
 
 	log.Printf("listening on %s\n", p.local)
 	for {
@@ -107,6 +125,21 @@ func (p *Pipe) Start() {
 			go p.handleRemote(client)
 		}
 
+	}
+}
+
+func (p *Pipe) metricsSampler() {
+	for {
+		select {
+		case <-p.metricsSamplerCloser:
+			return
+		case <-time.After(5 * time.Second):
+			p.metricsMU.Lock()
+			p.currentBytesPerSecond = p.currentBytes / 5
+			p.currentBytes = 0
+			p.metricsMU.Unlock()
+			// log.Printf("pipe: [%d] - %s/s", p.registryID, utils.ByteCountSI(p.currentBytesPerSecond))
+		}
 	}
 }
 
@@ -148,7 +181,11 @@ func (p *Pipe) handleExecRemote(client net.Conn, cmdline string) {
 	p.processesMU.Unlock()
 
 	var once sync.Once
-	close := func() {
+	var wg sync.WaitGroup
+	// byteswritten
+	bw := make(chan int64)
+
+	connClose := func() {
 		p.processesMU.Lock()
 		delete(p.processes, cmd.Process.Pid)
 		p.processesMU.Unlock()
@@ -161,13 +198,32 @@ func (p *Pipe) handleExecRemote(client net.Conn, cmdline string) {
 		p.clientsMapMU.Unlock()
 
 	}
+
+	wg.Add(2)
 	go func() {
-		io.Copy(stdin, client)
-		once.Do(close)
+		rio.CopyBuffer(stdin, client, bw)
+		once.Do(connClose)
+		wg.Done()
 	}()
 	go func() {
-		io.Copy(client, stdout)
-		once.Do(close)
+		rio.CopyBuffer(client, stdout, bw)
+		once.Do(connClose)
+		wg.Done()
+	}()
+
+	// waits for the bidirectional copy routines to terminate
+	go func() {
+		wg.Wait()
+		close(bw)
+	}()
+
+	// consumes messages from bytewritten channel and stores value
+	go func() {
+		for w := range bw {
+			p.metricsMU.Lock()
+			p.currentBytes += w
+			p.metricsMU.Unlock()
+		}
 	}()
 }
 
@@ -178,11 +234,18 @@ func (p *Pipe) handleTcpRemote(client net.Conn) {
 		client.Close()
 		return
 	}
-	utils.CopyConnWithOnClose(client, conn, func() {
+	byteswrittench := rio.CopyConnWithOnClose(client, conn, true, func() {
 		p.clientsMapMU.Lock()
 		delete(p.clientsMap, client.RemoteAddr().String())
 		p.clientsMapMU.Unlock()
 	})
+	go func() {
+		for w := range byteswrittench {
+			p.metricsMU.Lock()
+			p.currentBytes += w
+			p.metricsMU.Unlock()
+		}
+	}()
 }
 
 // IsStoppable return true if the pipe can be stopped calling the Stop
@@ -196,6 +259,7 @@ func (p *Pipe) Stop() {
 	if !p.stoppable {
 		return
 	}
+	close(p.metricsSamplerCloser)
 	PipeRegistry().Delete(p.registryID)
 	close(p.terminate)
 	go func() {

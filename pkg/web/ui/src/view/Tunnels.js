@@ -87,7 +87,7 @@ export class Tunnels extends React.Component {
                 title: 'Listener',
                 dataIndex: 'Listener',
                 key: '2',
-                render: item => { return item ? `${item.IP} ${item.Port}` : "" }
+                render: item => { return item ? `${item.IP}:${item.Port}` : "" }
             },
             {
                 title: 'Is Local Listener',
@@ -99,7 +99,7 @@ export class Tunnels extends React.Component {
                 title: 'Endpoint',
                 dataIndex: 'Endpoint',
                 key: '4',
-                render: item => `${item.Host} ${item.Port}`
+                render: item => `${item.Host}:${item.Port}`
             },
             {
                 title: 'Active Clients',
@@ -107,8 +107,13 @@ export class Tunnels extends React.Component {
                 key: '5',
             },
             {
-                title: 'Action',
+                title: 'Throughput',
+                dataIndex: 'ThroughputString',
                 key: '6',
+            },
+            {
+                title: 'Action',
+                key: '7',
                 render: (_, record) =>  (
                     <React.Fragment>
                         {record.IsStoppable?(
