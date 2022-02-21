@@ -2,7 +2,7 @@ package utils
 
 import (
 	"bufio"
-	"io"
+	"fmt"
 	"log"
 	"os"
 	"os/user"
@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 type sshUrl struct {
@@ -105,27 +104,16 @@ func GetUserDefaultShell(username string) string {
 	return fallback
 }
 
-// CopyConnWithOnClose copy packets from c1 to c2 and viceversa. Calls the onClose function
-// when the connection is interrupted
-func CopyConnWithOnClose(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, onClose func()) {
-	var once sync.Once
-	close := func() {
-		c1.Close()
-		c2.Close()
-		onClose()
+func ByteCountSI(b int64) string {
+	const unit = 1000
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
 	}
-	go func() {
-		io.Copy(c1, c2)
-		once.Do(close)
-	}()
-
-	go func() {
-		io.Copy(c2, c1)
-		once.Do(close)
-	}()
-}
-
-// CopyConn copy packets from c1 to c2 and viceversa
-func CopyConn(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser) {
-	CopyConnWithOnClose(c1, c2, func() {})
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB",
+		float64(b)/float64(div), "kMGTPE"[exp])
 }

@@ -83,6 +83,10 @@ func TestTunnelReverse(t *testing.T) {
 	tunnel := NewTunnel(client, tunnelConf, true)
 	go tunnel.Start()
 
+	if tunnel.GetCurrentBytesPerSecond() != 0 {
+		t.Fail()
+	}
+
 	var tunaddr net.Addr
 	for {
 		tunaddr = tunnel.GetListenerAddr()
@@ -171,6 +175,10 @@ func TestTunnelForward(t *testing.T) {
 	}
 	tunnel := NewTunnel(client, tunnelConf, true)
 	go tunnel.Start()
+
+	if tunnel.GetCurrentBytesPerSecond() != 0 {
+		t.Fail()
+	}
 
 	var tunaddr net.Addr
 	for {

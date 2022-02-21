@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/ferama/rospo/pkg/pipe"
+	"github.com/ferama/rospo/pkg/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -29,11 +30,13 @@ func (r *pipeRoutes) get(c *gin.Context) {
 			pipeItem := val.(*pipe.Pipe)
 			addr := pipeItem.GetListenerAddr()
 			res = append(res, pipeResponseItem{
-				ID:           id,
-				Listener:     addr,
-				IsStoppable:  pipeItem.IsStoppable(),
-				Endpoint:     pipeItem.GetEndpoint(),
-				ClientsCount: pipeItem.GetActiveClientsCount(),
+				ID:               id,
+				Listener:         addr,
+				IsStoppable:      pipeItem.IsStoppable(),
+				Endpoint:         pipeItem.GetEndpoint(),
+				ClientsCount:     pipeItem.GetActiveClientsCount(),
+				Throughput:       pipeItem.GetCurrentBytesPerSecond(),
+				ThroughputString: utils.ByteCountSI(pipeItem.GetCurrentBytesPerSecond()) + "/s",
 			})
 		}
 		c.JSON(http.StatusOK, res)
@@ -56,11 +59,13 @@ func (r *pipeRoutes) get(c *gin.Context) {
 		pipeItem := val.(*pipe.Pipe)
 		addr := pipeItem.GetListenerAddr()
 		c.JSON(http.StatusOK, pipeResponseItem{
-			ID:           tunId,
-			Listener:     addr,
-			IsStoppable:  pipeItem.IsStoppable(),
-			Endpoint:     pipeItem.GetEndpoint(),
-			ClientsCount: pipeItem.GetActiveClientsCount(),
+			ID:               tunId,
+			Listener:         addr,
+			IsStoppable:      pipeItem.IsStoppable(),
+			Endpoint:         pipeItem.GetEndpoint(),
+			ClientsCount:     pipeItem.GetActiveClientsCount(),
+			Throughput:       pipeItem.GetCurrentBytesPerSecond(),
+			ThroughputString: utils.ByteCountSI(pipeItem.GetCurrentBytesPerSecond()) + "/s",
 		})
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ferama/rospo/pkg/logger"
+	"github.com/ferama/rospo/pkg/rio"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/utils"
 )
@@ -36,6 +37,12 @@ type Tunnel struct {
 	clientsMapMU sync.Mutex
 
 	listenerMU sync.RWMutex
+
+	// metrics related
+	currentBytes          int64
+	currentBytesPerSecond int64
+	metricsMU             sync.RWMutex
+	metricsSamplerCloser  chan bool
 }
 
 // NewTunnel builds a Tunnel object
@@ -52,6 +59,10 @@ func NewTunnel(sshConn *sshc.SshConnection, conf *TunnelConf, stoppable bool) *T
 		stoppable:            stoppable,
 
 		clientsMap: make(map[string]net.Conn),
+
+		currentBytes:          0,
+		currentBytesPerSecond: 0,
+		metricsSamplerCloser:  make(chan bool),
 	}
 
 	return tunnel
@@ -81,6 +92,7 @@ func (t *Tunnel) waitForSshClient() bool {
 func (t *Tunnel) Start() {
 	t.registryID = TunRegistry().Add(t)
 
+	go t.metricsSampler()
 	for {
 		// waits for the ssh client to be connected to the server or for
 		// a terminate request
@@ -114,7 +126,7 @@ func (t *Tunnel) Stop() {
 	if !t.stoppable {
 		return
 	}
-
+	close(t.metricsSamplerCloser)
 	TunRegistry().Delete(t.registryID)
 	close(t.terminate)
 	go func() {
@@ -166,14 +178,49 @@ func (t *Tunnel) listenLocal() error {
 			t.clientsMap[client.RemoteAddr().String()] = client
 			t.clientsMapMU.Unlock()
 
-			utils.CopyConnWithOnClose(client, remote, func() {
-				t.clientsMapMU.Lock()
-				delete(t.clientsMap, client.RemoteAddr().String())
-				t.clientsMapMU.Unlock()
-			})
+			t.copyConn(client, remote)
 		}
 	}
 	return nil
+}
+
+func (t *Tunnel) metricsSampler() {
+	for {
+		select {
+		case <-t.metricsSamplerCloser:
+			return
+		case <-time.After(5 * time.Second):
+			t.metricsMU.Lock()
+			t.currentBytesPerSecond = t.currentBytes / 5
+			t.currentBytes = 0
+			t.metricsMU.Unlock()
+			// log.Printf("tunnel: [%d] - %s/s", t.registryID, utils.ByteCountSI(t.currentBytesPerSecond))
+		}
+	}
+}
+
+func (t *Tunnel) copyConn(c1, c2 net.Conn) {
+	byteswrittench := rio.CopyConnWithOnClose(c1, c2, true,
+		func() {
+			t.clientsMapMU.Lock()
+			delete(t.clientsMap, c1.RemoteAddr().String())
+			t.clientsMapMU.Unlock()
+		})
+
+	go func() {
+		for w := range byteswrittench {
+			t.metricsMU.Lock()
+			t.currentBytes += w
+			t.metricsMU.Unlock()
+		}
+	}()
+}
+
+// GetsCurrentBytesPerSecond return the current tunnel throughput
+func (t *Tunnel) GetCurrentBytesPerSecond() int64 {
+	t.metricsMU.RLock()
+	defer t.metricsMU.RUnlock()
+	return t.currentBytesPerSecond
 }
 
 // GetListenerAddr returns the tunnel listener network address
@@ -249,11 +296,7 @@ func (t *Tunnel) listenRemote() error {
 			t.clientsMap[client.RemoteAddr().String()] = client
 			t.clientsMapMU.Unlock()
 
-			utils.CopyConnWithOnClose(client, local, func() {
-				t.clientsMapMU.Lock()
-				delete(t.clientsMap, client.RemoteAddr().String())
-				t.clientsMapMU.Unlock()
-			})
+			t.copyConn(client, local)
 		}
 	}
 	return nil
