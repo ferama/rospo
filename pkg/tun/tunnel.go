@@ -193,11 +193,11 @@ func (t *Tunnel) metricsSampler() {
 		case <-time.After(5 * time.Second):
 
 			t.metricsMU.Lock()
-			bytesPerSecond := t.currentBytes / 5
+			t.currentBytesPerSecond = t.currentBytes / 5
 			t.currentBytes = 0
 			t.metricsMU.Unlock()
 
-			log.Printf("tunnel: [%d] - %s/s", t.registryID, utils.ByteCountSI(bytesPerSecond))
+			// log.Printf("tunnel: [%d] - %s/s", t.registryID, utils.ByteCountSI(t.currentBytesPerSecond))
 		}
 	}
 }
@@ -211,36 +211,11 @@ func (t *Tunnel) copyConn(c1, c2 net.Conn) {
 		})
 
 	go func() {
-		// closech := make(chan bool)
-		// var tbmux sync.Mutex
-		// go func() {
-		// 	for {
-		// 		select {
-		// 		case <-closech:
-		// 			log.Println("==== CLOSED ===")
-		// 			return
-		// 		case <-time.After(5 * time.Second):
-		// 			tbmux.Lock()
-
-		// 			t.currentBytesPerSecondMU.Lock()
-		// 			bytesPerSecond := t.totalBytes / 5
-		// 			t.currentBytesPerSecondMU.Unlock()
-
-		// 			t.totalBytes = 0
-		// 			tbmux.Unlock()
-		// 			log.Printf("tunnel: [%d] - %s/s", t.registryID, utils.ByteCountSI(bytesPerSecond))
-		// 		}
-		// 	}
-		// }()
-
 		for w := range byteswrittench {
-			// tbmux.Lock()
 			t.metricsMU.Lock()
 			t.currentBytes += w
 			t.metricsMU.Unlock()
-			// tbmux.Unlock()
 		}
-		// close(closech)
 	}()
 }
 

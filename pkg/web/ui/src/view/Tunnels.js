@@ -107,8 +107,13 @@ export class Tunnels extends React.Component {
                 key: '5',
             },
             {
-                title: 'Action',
+                title: 'Throughput',
+                dataIndex: 'ThroughputString',
                 key: '6',
+            },
+            {
+                title: 'Action',
+                key: '7',
                 render: (_, record) =>  (
                     <React.Fragment>
                         {record.IsStoppable?(
