@@ -188,15 +188,12 @@ func (t *Tunnel) metricsSampler() {
 	for {
 		select {
 		case <-t.metricsSamplerCloser:
-			log.Println("==== CLOSED ===")
 			return
 		case <-time.After(5 * time.Second):
-
 			t.metricsMU.Lock()
 			t.currentBytesPerSecond = t.currentBytes / 5
 			t.currentBytes = 0
 			t.metricsMU.Unlock()
-
 			// log.Printf("tunnel: [%d] - %s/s", t.registryID, utils.ByteCountSI(t.currentBytesPerSecond))
 		}
 	}

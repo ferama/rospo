@@ -88,7 +88,7 @@ export class Pipes extends React.Component {
                 title: 'Local',
                 dataIndex: 'Listener',
                 key: '2',
-                render: item => { return item ? `${item.IP} ${item.Port}` : "" }
+                render: item => { return item ? `${item.IP}:${item.Port}` : "" }
             },
             {
                 title: 'Remote',
@@ -102,8 +102,13 @@ export class Pipes extends React.Component {
                 key: '4',
             },
             {
-                title: 'Action',
+                title: 'Throughput',
+                dataIndex: 'ThroughputString',
                 key: '5',
+            },
+            {
+                title: 'Action',
+                key: '6',
                 render: (_, record) =>  (
                     <React.Fragment>
                         {record.IsStoppable?(
