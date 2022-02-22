@@ -28,7 +28,7 @@ export class Tunnels extends React.Component {
     getAll = async () => {
         let data
         try {
-            data = await http.get("tuns/")
+            data = await http.get("tuns")
         } catch {
             return
         }
