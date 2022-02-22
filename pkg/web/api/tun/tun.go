@@ -15,10 +15,10 @@ func Routes(sshConn *sshc.SshConnection, router *gin.RouterGroup) {
 	r := &tunRoutes{
 		sshConn: sshConn,
 	}
-	router.GET("/", r.get)
-	router.GET("/:tun-id", r.get)
-	router.DELETE("/:tun-id", r.delete)
-	router.POST("/", r.post)
+	router.GET("", r.get)
+	router.GET(":tun-id", r.get)
+	router.DELETE(":tun-id", r.delete)
+	router.POST("", r.post)
 }
 
 type tunRoutes struct {

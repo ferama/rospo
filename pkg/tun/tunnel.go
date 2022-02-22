@@ -185,13 +185,14 @@ func (t *Tunnel) listenLocal() error {
 }
 
 func (t *Tunnel) metricsSampler() {
+	samplingPeriod := 5 // in secs
 	for {
 		select {
 		case <-t.metricsSamplerCloser:
 			return
-		case <-time.After(5 * time.Second):
+		case <-time.After(time.Duration(samplingPeriod) * time.Second):
 			t.metricsMU.Lock()
-			t.currentBytesPerSecond = t.currentBytes / 5
+			t.currentBytesPerSecond = t.currentBytes / int64(samplingPeriod)
 			t.currentBytes = 0
 			t.metricsMU.Unlock()
 			// log.Printf("tunnel: [%d] - %s/s", t.registryID, utils.ByteCountSI(t.currentBytesPerSecond))

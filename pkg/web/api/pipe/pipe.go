@@ -13,10 +13,10 @@ import (
 func Routes(router *gin.RouterGroup) {
 	r := &pipeRoutes{}
 
-	router.GET("/", r.get)
-	router.GET("/:pipe-id", r.get)
-	router.DELETE("/:pipe-id", r.delete)
-	router.POST("/", r.post)
+	router.GET("", r.get)
+	router.GET(":pipe-id", r.get)
+	router.DELETE(":pipe-id", r.delete)
+	router.POST("", r.post)
 }
 
 type pipeRoutes struct {
