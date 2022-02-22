@@ -87,7 +87,7 @@ export class Home extends React.Component {
                         <Card title="Tunnels">
                             <Row gutter={16}>
                                 <Col span={12}>
-                                    <Statistic title="Count Tunnels" value={this.state.stats.CountTunnels} />
+                                    <Statistic title="Active Tunnels" value={this.state.stats.CountTunnels} />
                                 </Col>
                                 <Col span={12}>
                                     <Statistic title="Connected Clients" value={this.state.stats.CountTunnelsClients} />
@@ -108,7 +108,7 @@ export class Home extends React.Component {
                         <Card title="Pipes">
                             <Row gutter={16}>
                                 <Col span={12}>
-                                    <Statistic title="Count Pipes" value={this.state.stats.CountPipes} />
+                                    <Statistic title="Active Pipes" value={this.state.stats.CountPipes} />
                                 </Col>
                                 <Col span={12}>
                                     <Statistic title="Connected Clients" value={this.state.stats.CountPipesClients} />
