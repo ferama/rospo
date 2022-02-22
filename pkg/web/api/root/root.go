@@ -7,6 +7,7 @@ import (
 	"github.com/ferama/rospo/pkg/pipe"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/tun"
+	"github.com/ferama/rospo/pkg/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -34,21 +35,27 @@ func (r *rootRoutes) getInfo(c *gin.Context) {
 func (r *rootRoutes) getStats(c *gin.Context) {
 	t := tun.TunRegistry().GetAll()
 	tunnelClientsCount := 0
+	var tunnelThroughput int64
+	tunnelThroughput = 0
 	for _, val := range t {
 		tunnel := val.(*tun.Tunnel)
 		tunnelClientsCount += tunnel.GetActiveClientsCount()
+		tunnelThroughput += tunnel.GetCurrentBytesPerSecond()
 	}
 
 	p := pipe.PipeRegistry().GetAll()
 	pipeClientsCount := 0
+	var pipeThroughput int64
+	pipeThroughput = 0
 	for _, val := range p {
 		pipeI := val.(*pipe.Pipe)
 		pipeClientsCount += pipeI.GetActiveClientsCount()
+		pipeThroughput += pipeI.GetCurrentBytesPerSecond()
 	}
 
 	memStats := new(runtime.MemStats)
 	runtime.ReadMemStats(memStats)
-	var response struct {
+	response := &struct {
 		CountTunnels        int
 		CountTunnelsClients int
 
@@ -58,13 +65,24 @@ func (r *rootRoutes) getStats(c *gin.Context) {
 		// runtime stats
 		NumGoroutine int
 		MemTotal     uint64
+
+		TotalPipeThroughput         int64
+		TotalPipeThroughputString   string
+		TotalTunnelThroughput       int64
+		TotalTunnelThroughputString string
+	}{
+		CountTunnels:        len(t),
+		CountTunnelsClients: tunnelClientsCount,
+		CountPipes:          len(p),
+		CountPipesClients:   pipeClientsCount,
+		NumGoroutine:        runtime.NumGoroutine(),
+		MemTotal:            memStats.HeapInuse + memStats.StackInuse + memStats.MSpanInuse + memStats.MCacheInuse,
+
+		TotalPipeThroughput:         pipeThroughput,
+		TotalPipeThroughputString:   utils.ByteCountSI(pipeThroughput),
+		TotalTunnelThroughput:       tunnelThroughput,
+		TotalTunnelThroughputString: utils.ByteCountSI(tunnelThroughput),
 	}
-	response.CountTunnels = len(t)
-	response.CountTunnelsClients = tunnelClientsCount
-	response.CountPipes = len(p)
-	response.CountPipesClients = pipeClientsCount
-	response.NumGoroutine = runtime.NumGoroutine()
-	response.MemTotal = memStats.HeapInuse + memStats.StackInuse + memStats.MSpanInuse + memStats.MCacheInuse
 
 	c.JSON(http.StatusOK, response)
 }
