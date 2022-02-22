@@ -22,8 +22,8 @@ func Routes(info *Info, sshConn *sshc.SshConnection, router *gin.RouterGroup) {
 		sshConn: sshConn,
 	}
 
-	router.GET("/info", r.getInfo)
-	router.GET("/stats", r.getStats)
+	router.GET("info", r.getInfo)
+	router.GET("stats", r.getStats)
 }
 
 func (r *rootRoutes) getInfo(c *gin.Context) {

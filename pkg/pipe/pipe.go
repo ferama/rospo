@@ -129,13 +129,14 @@ func (p *Pipe) Start() {
 }
 
 func (p *Pipe) metricsSampler() {
+	samplingPeriod := 5 // in secs
 	for {
 		select {
 		case <-p.metricsSamplerCloser:
 			return
-		case <-time.After(5 * time.Second):
+		case <-time.After(time.Duration(samplingPeriod) * time.Second):
 			p.metricsMU.Lock()
-			p.currentBytesPerSecond = p.currentBytes / 5
+			p.currentBytesPerSecond = p.currentBytes / int64(samplingPeriod)
 			p.currentBytes = 0
 			p.metricsMU.Unlock()
 			// log.Printf("pipe: [%d] - %s/s", p.registryID, utils.ByteCountSI(p.currentBytesPerSecond))
