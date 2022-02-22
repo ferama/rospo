@@ -11,6 +11,7 @@ WORKDIR /go/src/app
 COPY . .
 COPY --from=uibuilder /src/build pkg/web/ui/build
 RUN go build \
+    -trimpath \
     -ldflags="-s -w -X 'github.com/ferama/rospo/cmd.Version=$VERSION'" \
     -o /rospo .
 
