@@ -68,7 +68,7 @@ export class Home extends React.Component {
                 />
                 <Row>
                     <Col span={12}>
-                        <Card title="Ssh Client">
+                        <Card title="SSH Client">
                             <Statistic title="Server" value={this.state.info.SshClientURI} />
                             <Statistic title="Status" value={this.state.info.SshClientConnectionStatus} />
                             {haveJH ? (
@@ -92,7 +92,7 @@ export class Home extends React.Component {
                 </Row>
                 <Row>
                     <Col span={12}>
-                        <Card title="Stats">
+                        <Card title="Global Stats">
                                 <Statistic title="GoRoutines" value={this.state.stats.NumGoroutine} />
                                 <Statistic title="Allocated Memory" value={this.formatBytes(this.state.stats.MemTotal)} />
                         </Card>
