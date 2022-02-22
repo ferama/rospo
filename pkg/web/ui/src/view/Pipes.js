@@ -29,7 +29,7 @@ export class Pipes extends React.Component {
     getAll = async () => {
         let data
         try {
-            data = await http.get("pipes/")
+            data = await http.get("pipes")
         } catch {
             return
         }

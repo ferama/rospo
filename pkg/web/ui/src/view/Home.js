@@ -85,22 +85,36 @@ export class Home extends React.Component {
                     </Col>
                     <Col span={12}>
                         <Card title="Tunnels">
-                            <Statistic title="Count" value={this.state.stats.CountTunnels} />
-                            <Statistic title="Connected Clients" value={this.state.stats.CountTunnelsClients} />
+                            <Row gutter={16}>
+                                <Col span={12}>
+                                    <Statistic title="Count Tunnels" value={this.state.stats.CountTunnels} />
+                                </Col>
+                                <Col span={12}>
+                                    <Statistic title="Connected Clients" value={this.state.stats.CountTunnelsClients} />
+                                </Col>
+                            </Row>
+                            <Statistic title="Total Throughput" value={this.state.stats.TotalTunnelThroughputString} />
                         </Card>
                     </Col>
                 </Row>
                 <Row>
                     <Col span={12}>
                         <Card title="Global Stats">
-                                <Statistic title="GoRoutines" value={this.state.stats.NumGoroutine} />
-                                <Statistic title="Allocated Memory" value={this.formatBytes(this.state.stats.MemTotal)} />
+                            <Statistic title="GoRoutines" value={this.state.stats.NumGoroutine} />
+                            <Statistic title="Allocated Memory" value={this.formatBytes(this.state.stats.MemTotal)} />
                         </Card>
                     </Col>
                     <Col span={12}>
                         <Card title="Pipes">
-                            <Statistic title="Count" value={this.state.stats.CountPipes} />
-                            <Statistic title="Connected Clients" value={this.state.stats.CountPipesClients} />
+                            <Row gutter={16}>
+                                <Col span={12}>
+                                    <Statistic title="Count Pipes" value={this.state.stats.CountPipes} />
+                                </Col>
+                                <Col span={12}>
+                                    <Statistic title="Connected Clients" value={this.state.stats.CountPipesClients} />
+                                </Col>
+                            </Row>
+                            <Statistic title="Total Throughput" value={this.state.stats.TotalPipeThroughputString} />
                         </Card>
                     </Col>
                 </Row>
