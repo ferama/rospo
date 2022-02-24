@@ -52,8 +52,6 @@ func (r *rootRoutes) getStats(c *gin.Context) {
 		NumGoroutine int
 		MemTotal     uint64
 
-		TotalPipeThroughput         int64
-		TotalPipeThroughputString   string
 		TotalTunnelThroughput       int64
 		TotalTunnelThroughputString string
 	}{
