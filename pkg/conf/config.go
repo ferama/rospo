@@ -3,7 +3,6 @@ package conf
 import (
 	"os"
 
-	"github.com/ferama/rospo/pkg/pipe"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/sshd"
 	"github.com/ferama/rospo/pkg/tun"
@@ -16,7 +15,6 @@ type Config struct {
 	SshClient *sshc.SshClientConf `yaml:"sshclient"`
 	Tunnel    []*tun.TunnelConf   `yaml:"tunnel"`
 	SshD      *sshd.SshDConf      `yaml:"sshd"`
-	Pipe      []*pipe.PipeConf    `yaml:"pipe"`
 	Web       *web.WebConf        `yaml:"web"`
 }
 
@@ -30,7 +28,6 @@ func LoadConfig(filePath string) (*Config, error) {
 	defer f.Close()
 
 	cfg := Config{
-		nil,
 		nil,
 		nil,
 		nil,

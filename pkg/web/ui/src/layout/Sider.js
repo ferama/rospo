@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 
 import { Layout, Menu } from 'antd';
 import {
-  FunnelPlotOutlined,
   FilterOutlined,
   HomeOutlined
 } from '@ant-design/icons';
@@ -53,9 +52,6 @@ class SiderLayout extends React.Component {
             </Menu.Item>
             <Menu.Item key="/tunnels" icon={<FilterOutlined />}>
                 <Link to="/tunnels">Tunnels</Link>
-            </Menu.Item>
-            <Menu.Item key="/pipes" icon={<FunnelPlotOutlined />}>
-              <Link to="/pipes">Pipes</Link>
             </Menu.Item>
           </Menu>
         </Sider>
