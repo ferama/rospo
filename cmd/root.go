@@ -7,7 +7,6 @@ import (
 
 	"github.com/ferama/rospo/pkg/conf"
 	"github.com/ferama/rospo/pkg/logger"
-	"github.com/ferama/rospo/pkg/pipe"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/sshd"
 	"github.com/ferama/rospo/pkg/tun"
@@ -47,12 +46,6 @@ var rootCmd = &cobra.Command{
 			}
 			sshConn = sshc.NewSshConnection(conf.SshClient)
 			go sshConn.Start()
-		}
-
-		if conf.Pipe != nil {
-			for _, f := range conf.Pipe {
-				go pipe.NewPipe(f, false).Start()
-			}
 		}
 
 		if conf.SshD != nil {

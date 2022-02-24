@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"runtime"
 
-	"github.com/ferama/rospo/pkg/pipe"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/tun"
 	"github.com/ferama/rospo/pkg/utils"
@@ -43,24 +42,11 @@ func (r *rootRoutes) getStats(c *gin.Context) {
 		tunnelThroughput += tunnel.GetCurrentBytesPerSecond()
 	}
 
-	p := pipe.PipeRegistry().GetAll()
-	pipeClientsCount := 0
-	var pipeThroughput int64
-	pipeThroughput = 0
-	for _, val := range p {
-		pipeI := val.(*pipe.Pipe)
-		pipeClientsCount += pipeI.GetActiveClientsCount()
-		pipeThroughput += pipeI.GetCurrentBytesPerSecond()
-	}
-
 	memStats := new(runtime.MemStats)
 	runtime.ReadMemStats(memStats)
 	response := &struct {
 		CountTunnels        int
 		CountTunnelsClients int
-
-		CountPipes        int
-		CountPipesClients int
 
 		// runtime stats
 		NumGoroutine int
@@ -73,13 +59,9 @@ func (r *rootRoutes) getStats(c *gin.Context) {
 	}{
 		CountTunnels:        len(t),
 		CountTunnelsClients: tunnelClientsCount,
-		CountPipes:          len(p),
-		CountPipesClients:   pipeClientsCount,
 		NumGoroutine:        runtime.NumGoroutine(),
 		MemTotal:            memStats.HeapInuse + memStats.StackInuse + memStats.MSpanInuse + memStats.MCacheInuse,
 
-		TotalPipeThroughput:         pipeThroughput,
-		TotalPipeThroughputString:   utils.ByteCountSI(pipeThroughput),
 		TotalTunnelThroughput:       tunnelThroughput,
 		TotalTunnelThroughputString: utils.ByteCountSI(tunnelThroughput),
 	}

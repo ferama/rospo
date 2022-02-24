@@ -41,6 +41,12 @@ tunnel:
     # this one is not a forward (copy from local to remote)
     # but a reverse (copy from remote to local)
     forward: no
+  # create a reverse tunnel that open the port 8080 into the remote server (the ssclient
+  # target). The local endpoint, points to a service reachable from the
+  # local machine (the service is hosted at my-local-reachable-service address)
+  - remote: ":8080"
+    local: "my-local-reachable-service:8080"
+    forward: false
 
 # sshd server configuration
 # Comment this section to disable the embedded ssh server
@@ -67,21 +73,6 @@ sshd:
   # any authentication form (so no keys and no passwords!). 
   # Use with caution!
   disable_auth: false
-
-# starts a pipe from local port 5432 to my_remote_postgres:5432
-# This will copy packets from local to remote endpoint
-# Think about a service only reachable from the local host that you
-# want to reverse proxy through a secured tunnel to a remote host.
-# You can do it with the following section and enabling a reverse tunnel
-# on the tunnel section.
-# Remote can also exec a subprocess and pipe to the local tcp socket stdin, 
-# stdout, sterr.
-# Example:
-#   remote: "exec://python -i -u"
-pipe:
-  - remote: "my_remote_postgres:5432"
-    local: ":5432"
-
 
 # enables and configures rest endpoints
 # Be WARNED: the endpoint is not authenticated and through the apis

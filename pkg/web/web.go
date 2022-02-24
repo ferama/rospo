@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/ferama/rospo/pkg/sshc"
-	pipeapi "github.com/ferama/rospo/pkg/web/api/pipe"
 	rootapi "github.com/ferama/rospo/pkg/web/api/root"
 	tunapi "github.com/ferama/rospo/pkg/web/api/tun"
 	"github.com/ferama/rospo/pkg/web/ui"
@@ -36,7 +35,6 @@ func StartServer(isDev bool,
 	}))
 
 	rootapi.Routes(info, sshConn, r.Group("/api"))
-	pipeapi.Routes(r.Group("/api/pipes"))
 	tunapi.Routes(sshConn, r.Group("/api/tuns"))
 
 	// static files custom middleware

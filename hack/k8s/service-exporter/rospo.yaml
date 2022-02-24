@@ -1,9 +1,7 @@
 # This is a sample config file that can be used as a base
 # to configure a kubernetes pod
 #
-# It does the following things:
-#   1. create 2 pipes from the pod to some services into the k8s cluster
-#   2. create 2 tunnels from the pod local pipes to a remote rospo or standard sshd server
+# It does creates 2 tunnels from the pod to a remote rospo or standard sshd server
 #
 # From now on, you will have two sockets listening on the remote server, one
 # on the port 8080 pointing to the k8s demo-app, and one on the port 9200
@@ -23,14 +21,8 @@ sshclient:
 
 tunnel:
   - remote: "0.0.0.0:9200"
-    local: ":9200"
+    local: "elasticsearch-master.myns:9200"
     forward: no
   - remote: "0.0.0.0:8080"
-    local: ":8080"
+    local: "demo-app.myns:8080"
     forward: no
-
-pipe:
-  - remote: "elasticsearch-master.myns:9200"
-    local: ":9200"
-  - remote: "demo-app.myns:8080"
-    local: ":8080"

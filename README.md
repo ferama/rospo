@@ -28,7 +28,6 @@ It's meant to make SSH tunnels fun and understendable again
   * Embedded sshd server
   * Forward and reverse tunnels support
   * JumpHosts support
-  * Pipes support ( socat bidirectional pipe like )
   * Command line options or `human readable` yaml config file
   * Run as a Windows Service support
   * Pty on Windows through conpty apis
@@ -65,16 +64,14 @@ $ rospo config.yaml
 Look at the [config_template.yaml](https://github.com/ferama/rospo/blob/main/configs/config_template.yaml) for all the available options.
 
 ## Rospo UI
-Rospo supports a cool ui too. The ui will let you handle tunnels and pipes configuration at runtime through the web interface.
-You can start/stop new tunnels and pipes at runtime.
+Rospo supports a cool ui too. The ui will let you handle tunnels configuration at runtime through the web interface.
+You can start/stop new tunnels at runtime.
 
-Pipes and tunnels that are configured through the rospo config file will not be administrable from the ui.
+Tunnels that are configured through the rospo config file will not be administrable from the ui.
 
 ![Image of Home](https://raw.githubusercontent.com/ferama/rospo/main/img/home.png)
 
 ![Image of tunnels](https://raw.githubusercontent.com/ferama/rospo/main/img/tunnels.png)
-
-![Image of tunnels](https://raw.githubusercontent.com/ferama/rospo/main/img/pipes.png)
 
 ## Scenarios
 
@@ -195,27 +192,20 @@ sshclient:
 
 tunnel:
   - remote: "0.0.0.0:9200"
-    local: ":9200"
+    local: "elasticsearch-master.mynamespace:9200"
     forward: no
   - remote: "0.0.0.0:8080"
-    local: ":8080"
+    local: "demo-app.mynamespace:8080"
     forward: no
 
-pipe:
-  - remote: "elasticsearch-master.mynamespace:9200"
-    local: ":9200"
-  - remote: "demo-app.mynamespace:8080"
-    local: ":8080"
 ```
 
 You need to create the keys accordingly and put them correctly on the target server. After that you can run a kubernetes pod that keeps up the tunnels and let you securely access the services from a machine inside your local network.
 Please refer to the example in [./hack/k8s](./hack/k8s) for more details.
 
-In this scenario the k8s pods act as a bridge between kubernetes services and the reverse tunnels. You are going to use `pipes` to copy the connections from the services to the rospo pod. The pipes in the example will open 2 sockets locally inside the pod:
-  1. a socket on local port **9200** for the **elasticsearch-master.mynamespace:9200** service
-  2. a socket on local port **8080** for the **demo-app.mynamespace:8080** service
+In this scenario the k8s pods act as a bridge between kubernetes services and the reverse tunnels. 
 
- Finally you are going to reverse forward the pod local ports to the desired host (my-rospo-or-standard-sshd-server:2222 in the example above)
+You are going to reverse forward the pod local reachable services ports to the desired host (my-rospo-or-standard-sshd-server:2222 in the example above)
 
 ## How to Install
 
