@@ -6,7 +6,7 @@ import (
 )
 
 // Registry is an in memory structure to hold generic map of objects
-// rospo uses registries to hold maps of active tunnels and maps of active pipes
+// rospo uses registries to hold maps of active tunnels
 type Registry struct {
 	data     map[int]interface{}
 	latestID int
