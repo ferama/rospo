@@ -9,6 +9,10 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
   docker:
     runs-on: ubuntu-latest
@@ -25,24 +29,15 @@ jobs:
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get tags
-        id: get_tags
-        run: |
-          if [ "$GITHUB_REF" = "refs/heads/main" ]
-          then 
-              TAG=${{ secrets.DOCKERHUB_USERNAME }}/rospo:dev
-              echo ::set-output name=VERSION::dev-docker
-              echo ::set-output name=TAG1::$TAG
-              echo ::set-output name=TAG2::$TAG
-          else
-              TAG=${GITHUB_REF/refs\/tags\/v/}
-              echo ::set-output name=VERSION::$TAG
-              echo ::set-output name=TAG1::${{ secrets.DOCKERHUB_USERNAME }}/rospo:latest
-              echo ::set-output name=TAG2::${{ secrets.DOCKERHUB_USERNAME }}/rospo:$TAG
-          fi
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Build and push
         uses: docker/build-push-action@v2
@@ -52,7 +47,6 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm
           push: true
           build-args: |
-            VERSION=${{ steps.get_tags.outputs.VERSION }}
-          tags: |
-            ${{ steps.get_tags.outputs.TAG1 }}
-            ${{ steps.get_tags.outputs.TAG2 }}
+            VERSION=${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
