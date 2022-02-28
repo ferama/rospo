@@ -98,8 +98,6 @@ rospo.exe revshell remote_ssh_server
 ```
 
 ### Example scenario: Windows service
-N.B. this functionality is not released yet. You need to build rospo from source code
-
 Rospo support execution as a service on windows. This means that you can create
 a persistent tunnel that can be installed as a service and started automatically with
 the machine.
