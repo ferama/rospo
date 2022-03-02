@@ -85,9 +85,12 @@ func NewSshServer(conf *SshDConf) *sshServer {
 		res := ss.loadAuthorizedKeys()
 		if len(res) == 0 && conf.AuthorizedPassword == "" {
 			log.Fatalf(`failed to load authorized_keys, err: %v
-
-	Please create ./authorized_keys file and fill in with 
-	your authorized users public keys
+	
+	You need an authorized_keys source. You can create and 
+	use an ./authorized_keys file and fill in with 
+	your authorized users public keys. You can optionally use
+	an http endpoint that serves your authorized_keys.
+	Run "rospo sshd --help" for more info
 
 `, err)
 		}

@@ -20,7 +20,11 @@ var grabpubkeyCmd = &cobra.Command{
 	Use:   "grabpubkey host:port",
 	Short: "Grab the host pubkey and put it into the known_hosts file",
 	Long:  `Grab the host pubkey and put it into the known_hosts file`,
-	Args:  cobra.MinimumNArgs(1),
+	Example: `
+ # grabs the pubkey from the server at host:port and put it into ./known file
+ $ rospo grabpubkey -k ./known host:port
+	`,
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		knownHosts, _ := cmd.Flags().GetString("known-hosts")
 		sshcConf := &sshc.SshClientConf{
