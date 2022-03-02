@@ -9,14 +9,14 @@ It's meant to make SSH tunnels fun and understendable again
 
 ### Table of Contents  
 1. [Features](#features)
-2. [Quick command line usage](#quick-command-line-usage)
-3. [Rospo UI](#rospo-ui)
-4. [Example Scenarios](#scenarios)
+2. [How to Install](#how-to-install)
+3. [Quick command line usage](#quick-command-line-usage)
+4. [Rospo UI](#rospo-ui)
+5. [Example Scenarios](#scenarios)
     * [Windows (WSL || PowerShell) reverse shell](#example-scenario-windows-reverse-shell)
     * [Windows service to reverse tunnel Remote Desktop](#example-scenario-windows-service)
     * [Multiple complex tunnels](#example-scenario-multiple-complex-tunnels)
     * [Kubernetes service exporter](#example-scenario-kubernetes-service-exporter)
-5. [How to Install](#how-to-install)
 
 
 ## Features
@@ -30,6 +30,43 @@ It's meant to make SSH tunnels fun and understendable again
   * Command line options or `human readable` yaml config file
   * Run as a Windows Service support
   * Pty on Windows through conpty apis
+
+## How to Install
+
+Rospo actually full supports *nix oses and Windows 10+
+Grab the latest binary release from here [https://github.com/ferama/rospo/releases/latest](https://github.com/ferama/rospo/releases/latest) or use the copy and paste curl below
+
+### macOS
+#### Homebrew
+Install rospo packages using [Homebrew](http://brew.sh/)
+
+```
+brew install rospo
+```
+
+### GNU/Linux
+#### Binary Download
+| Platform | Architecture | URL |
+| ---------- | -------- |------|
+|GNU/Linux|amd64|https://github.com/ferama/rospo/releases/latest/download/rospo-linux-amd64 |
+||arm64|https://github.com/ferama/rospo/releases/latest/download/rospo-linux-arm64|
+||arm|https://github.com/ferama/rospo/releases/latest/download/rospo-linux-arm|
+
+Alternatively you can use the docker ditribution where useful/needed. Look at an example on kubernetes here [./hack/k8s](./hack/k8s) 
+
+
+### Microsoft Windows
+#### Binary Download
+| Platform | Architecture | URL |
+| ---------- | -------- |------|
+|Microsoft Windows|amd64|https://github.com/ferama/rospo/releases/latest/download/rospo-windows-amd64.exe|
+
+
+### Docker Container
+```
+docker pull ghcr.io/ferama/rospo
+docker run ghcr.io/ferama/rospo rospo help
+```
 
 ## Quick command line usage
 Rospo supports keys based auth and password auth. Keys based one is always the preferred, so it is better if *identity*, *authorized_keys* etc are always correctly setup.
@@ -204,40 +241,6 @@ In this scenario the k8s pods act as a bridge between kubernetes services and th
 
 You are going to reverse forward the pod local reachable services ports to the desired host (my-rospo-or-standard-sshd-server:2222 in the example above)
 
-## How to Install
 
-Rospo actually full supports *nix oses and Windows 10
-Grab the latest binary release from here [https://github.com/ferama/rospo/releases/latest](https://github.com/ferama/rospo/releases/latest) or use the copy and paste curl below
-
-Alternatively you can use the docker ditribution where useful/needed. Look at an example on kubernetes here [./hack/k8s](./hack/k8s) 
-
-
-#### Linux amd64
-```
-curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-linux-amd64 --output rospo && chmod +x rospo
-```
-
-#### Linux arm64
-```
-curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-linux-arm64 --output rospo && chmod +x rospo
-```
-
-#### Linux arm
-```
-curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-linux-arm --output rospo && chmod +x rospo
-```
-
-#### Mac OS
-```
-curl -L https://github.com/ferama/rospo/releases/latest/download/rospo-darwin-arm64 --output rospo && chmod +x rospo
-```
-
-#### Windows
-
-You will require Windows 10
-
-```
-(New-Object System.Net.WebClient).DownloadFile("https://github.com/ferama/rospo/releases/latest/download/rospo-windows-amd64.exe", "rospo.exe")
-```
 
 
