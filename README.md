@@ -34,7 +34,6 @@ It's meant to make SSH tunnels fun and understendable again
 ## How to Install
 
 Rospo actually full supports *nix oses and Windows 10+
-Grab the latest binary release from here [https://github.com/ferama/rospo/releases/latest](https://github.com/ferama/rospo/releases/latest) or use the copy and paste curl below
 
 ### macOS
 #### Homebrew
@@ -52,8 +51,6 @@ brew install rospo
 ||arm64|https://github.com/ferama/rospo/releases/latest/download/rospo-linux-arm64|
 ||arm|https://github.com/ferama/rospo/releases/latest/download/rospo-linux-arm|
 
-Alternatively you can use the docker ditribution where useful/needed. Look at an example on kubernetes here [./hack/k8s](./hack/k8s) 
-
 
 ### Microsoft Windows
 #### Binary Download
@@ -63,6 +60,7 @@ Alternatively you can use the docker ditribution where useful/needed. Look at an
 
 
 ### Docker Container
+You can use the docker ditribution where useful/needed. Look at an example on kubernetes here [./hack/k8s](./hack/k8s) 
 ```
 docker pull ghcr.io/ferama/rospo
 docker run ghcr.io/ferama/rospo rospo help
