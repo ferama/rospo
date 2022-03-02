@@ -16,7 +16,13 @@ func init() {
 var tunForwardCmd = &cobra.Command{
 	Use:   "forward [user@][server]:port",
 	Short: "Creates a forward ssh tunnel",
-	Long:  `Creates a forward ssh tunnel`,
+	Long: `Creates a forward ssh tunnel
+
+Preliminary checks:
+  1. Your remote server pubkey should be present into known_host file (disable this behaviour using the insecure flag)
+     You can explicitly grab it with the 'grabpubkey' command
+  2. Your identity should be authorized into the remote server (you can generate a new identity with the keygen comand)
+`,
 	Example: `
   # Forwards the local 8080 port to the remote 8080 
   $ rospo tun forward -l :8080 -r :8080 user@server:port

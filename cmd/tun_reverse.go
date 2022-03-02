@@ -16,7 +16,13 @@ func init() {
 var tunReverseCmd = &cobra.Command{
 	Use:   "reverse [user@][server]:port",
 	Short: "Creates a reverse ssh tunnel",
-	Long:  `Creates a reverse ssh tunnel`,
+	Long: `Creates a reverse ssh tunnel
+
+Preliminary checks:
+  1. Your remote server pubkey should be present into known_host file (disable this behaviour using the insecure flag)
+     You can explicitly grab it with the 'grabpubkey' command
+  2. Your identity should be authorized into the remote server  (you can generate a new identity with the keygen comand)
+`,
 	Example: `
   # Start a reverse tunnel from the local port 5000 to the remote 8888
   # proxing through a jump host server

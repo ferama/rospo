@@ -168,6 +168,7 @@ func (s *SshConnection) connect() error {
 		},
 	}
 	log.Println("trying to connect to remote server...")
+	log.Printf("using identity at %s", s.identity)
 
 	if len(s.jumpHosts) != 0 {
 		client, err := s.jumpHostConnect(s.serverEndpoint, sshConfig)
@@ -201,7 +202,7 @@ func (s *SshConnection) verifyHostCallback(fail bool) ssh.HostKeyCallback {
 	return func(host string, remote net.Addr, key ssh.PublicKey) error {
 		var err error
 
-		log.Printf("known_hosts file used: %s", s.knownHosts)
+		log.Printf("using known_hosts file at %s", s.knownHosts)
 
 		clb, err := knownhosts.New(s.knownHosts)
 		if err != nil {
