@@ -190,17 +190,10 @@ func (s *sshServer) keyAuth(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.P
 func (s *sshServer) Start() {
 	bannerCb := func(conn ssh.ConnMetadata) string {
 		return `
-.-------------.
-| Rospo sshd  |
-.-------------.
-    _    _
-   (o)--(o)
-  /.______.\
-  \________/
- ./        \.
-( .        , )
- \ \_\\//_/ /
-  ~~  ~~  ~~
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
 `
 	}
 	if runtime.GOOS == "windows" {
