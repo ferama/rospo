@@ -37,7 +37,7 @@ Rospo actually full supports *nix oses and Windows 10+
 
 ### macOS
 #### Homebrew
-Install rospo packages using [Homebrew](http://brew.sh/)
+Install rospo using [Homebrew](http://brew.sh/)
 
 ```
 brew install rospo
