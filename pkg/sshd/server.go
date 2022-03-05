@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -29,6 +30,8 @@ type sshServer struct {
 
 	disableShell bool
 	disableAuth  bool
+
+	shellExecutable string
 
 	forwards   map[string]net.Listener
 	forwardsMu sync.Mutex
@@ -68,10 +71,19 @@ func NewSshServer(conf *SshDConf) *sshServer {
 		panic(err)
 	}
 
+	if conf.ShellExecutable != "" {
+		if _, err := os.Stat(conf.ShellExecutable); err == nil {
+
+		} else {
+			log.Fatalf("invalid shell executable '%s'", conf.ShellExecutable)
+		}
+	}
+
 	ss := &sshServer{
 		authorizedKeysURI:         conf.AuthorizedKeysURI,
 		password:                  conf.AuthorizedPassword,
 		hostPrivateKey:            hostPrivateKeySigner,
+		shellExecutable:           conf.ShellExecutable,
 		disableShell:              conf.DisableShell,
 		disableAuth:               conf.DisableAuth,
 		listenAddress:             &conf.ListenAddress,
@@ -383,7 +395,7 @@ func (s *sshServer) handleChannels(chans <-chan ssh.NewChannel) {
 		t := newChannel.ChannelType()
 		switch t {
 		case "session":
-			go handleChannelSession(newChannel, s.disableShell)
+			go handleChannelSession(newChannel, s.shellExecutable, s.disableShell)
 
 		case "direct-tcpip":
 			go handleChannelDirect(newChannel)

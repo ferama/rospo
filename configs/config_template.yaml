@@ -73,6 +73,9 @@ sshd:
   # any authentication form (so no keys and no passwords!). 
   # Use with caution!
   disable_auth: false
+  # OPTIONAL: if empty a shell will be auto inferred. You can
+  # set a custom value here. Example: /usr/bin/python3
+  shell_executable: "your/custom/shell/fullpath"
 
 # enables and configures rest endpoints
 # Be WARNED: the endpoint is not authenticated and through the apis

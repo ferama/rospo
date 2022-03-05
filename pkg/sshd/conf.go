@@ -13,4 +13,6 @@ type SshDConf struct {
 	// if true all auth mechanism will be disabled
 	// use with caution
 	DisableAuth bool `yaml:"disable_auth"`
+	// shell executable. Leave empty for default behaviour
+	ShellExecutable string `yaml:"shell_executable"`
 }
