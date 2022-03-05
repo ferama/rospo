@@ -53,7 +53,7 @@ func main() {
 			quit: make(chan bool),
 		}
 
-		// Call svc.Run to start your program/service.
+		// Call svc.Run to start rospo service
 		if err := svc.Run(prg); err != nil {
 			panic(err)
 		}
