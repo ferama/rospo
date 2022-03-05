@@ -72,9 +72,7 @@ func NewSshServer(conf *SshDConf) *sshServer {
 	}
 
 	if conf.ShellExecutable != "" {
-		if _, err := os.Stat(conf.ShellExecutable); err == nil {
-
-		} else {
+		if _, err := os.Stat(conf.ShellExecutable); err != nil {
 			log.Fatalf("invalid shell executable '%s'", conf.ShellExecutable)
 		}
 	}
