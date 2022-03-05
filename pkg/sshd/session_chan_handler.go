@@ -12,7 +12,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func handleChannelSession(c ssh.NewChannel, disableShell bool) {
+func handleChannelSession(c ssh.NewChannel, customShell string, disableShell bool) {
 	channel, requests, err := c.Accept()
 	if err != nil {
 		log.Printf("could not accept channel (%s)", err)
@@ -21,11 +21,15 @@ func handleChannelSession(c ssh.NewChannel, disableShell bool) {
 
 	var shell string
 
-	usr, err := user.Current()
-	if err != nil {
-		panic(err)
+	if customShell == "" {
+		usr, err := user.Current()
+		if err != nil {
+			panic(err)
+		}
+		shell = utils.GetUserDefaultShell(usr.Username)
+	} else {
+		shell = customShell
 	}
-	shell = utils.GetUserDefaultShell(usr.Username)
 
 	var pty rpty.Pty
 	env := map[string]string{}
@@ -63,7 +67,7 @@ func handleChannelSession(c ssh.NewChannel, disableShell bool) {
 			if pty != nil {
 				log.Println("running within the pty")
 				if err := pty.Run(cmd); err != nil {
-					log.Printf("%s", err)
+					log.Fatalf("%s", err)
 				}
 				sessionClientServe(channel, pty)
 
