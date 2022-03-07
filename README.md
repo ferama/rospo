@@ -95,7 +95,7 @@ For more complex use cases and more options, you can use a config file
 $ rospo config.yaml
 ```
 
-Look at the [config_template.yaml](https://github.com/ferama/rospo/blob/main/configs/config_template.yaml) for all the available options.
+Look at the [config_template.yaml](https://github.com/ferama/rospo/blob/main/cmd/configs/config_template.yaml) for all the available options.
 
 ## Rospo UI
 Rospo supports a cool ui too. The ui will let you handle tunnels configuration at runtime through the web interface.
@@ -157,7 +157,7 @@ You can then perform the following actions:
 
 ```powershell
 # create the rospo service
-sc.exe create rospo start= auto type= own DisplayName= Rospo binpath= "C:\rospo.exe C:\rospo_conf.yaml"
+sc.exe create rospo start= auto DisplayName= Rospo binpath= "C:\rospo.exe C:\conf.yaml"
 
 # start service
 sc.exe start rospo

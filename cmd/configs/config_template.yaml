@@ -1,6 +1,5 @@
-# This is a config template file
+# This is a a rospo config template example file
 # The sections below are almost all optional.
-# You need to always set at least one of the tunnel or sshd section
 
 # the ssh client configuration
 sshclient:
