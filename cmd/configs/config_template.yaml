@@ -76,9 +76,9 @@ sshd:
   # set a custom value here. Example: /usr/bin/python3
   shell_executable: "your/custom/shell/fullpath"
 
-# enables and configures rest endpoints
+# enables and configures rest endpoints and web ui
 # Be WARNED: the endpoint is not authenticated and through the apis
-# you can manage tunnels and pipes. It could be useful to bind it on 
+# you can manage the tunnels. It could be useful to bind it on 
 # localhost and tunnel it remotely adding an entry on the tunnel section
 web:
   listen_address: "127.0.0.1:8090"
