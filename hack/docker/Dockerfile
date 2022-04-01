@@ -18,3 +18,4 @@ RUN go build \
 # Final docker image
 FROM ubuntu:latest
 COPY --from=gobuilder /rospo /usr/local/bin/rospo
+ENTRYPOINT ["rospo"]
