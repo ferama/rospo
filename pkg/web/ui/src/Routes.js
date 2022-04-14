@@ -1,18 +1,14 @@
 import React from 'react';
 import {
-    Switch,
+    Routes as RouterRoutes,
     Route,
   } from "react-router-dom";
 import { Home } from './view/Home';
 import { Tunnels } from './view/Tunnels';
 
 export const Routes = () => (
-    <Switch>
-        <Route path="/tunnels">
-            <Tunnels />
-        </Route>
-        <Route path="/">
-            <Home />
-        </Route>
-    </Switch>
+    <RouterRoutes>
+        <Route path="/tunnels" element={<Tunnels />} />
+        <Route path="/" element={<Home />} />
+    </RouterRoutes>
 )

@@ -5,11 +5,11 @@ import {
   HashRouter as Router
 } from "react-router-dom";
 
-import { SiderLayoutWithRouter } from './layout/Sider'
+import { SiderLayout } from './layout/Sider'
 
 const App = () => (
   <Router>
-    <SiderLayoutWithRouter />
+    <SiderLayout />
   </Router>
 );
 
