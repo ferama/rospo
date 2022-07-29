@@ -10,6 +10,9 @@ type SshDConf struct {
 	ListenAddress string `yaml:"listen_address"`
 	// if true the exec,shell requests will be ignored
 	DisableShell bool `yaml:"disable_shell"`
+	// if true no banner will be displayed while interacting
+	// with the sshd server
+	DisableBanner bool `yaml:"disable_banner"`
 	// if true all auth mechanism will be disabled
 	// use with caution
 	DisableAuth bool `yaml:"disable_auth"`

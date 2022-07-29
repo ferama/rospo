@@ -68,6 +68,9 @@ sshd:
   # the sshd for tunnels, forwards but not to gain a remote shell or to execute
   # commands
   disable_shell: false
+  # if true no banner will be displayed while interacting
+	# with the sshd server
+  disable_banner: false
   # OPTIONAL: default false. If set to true clients can connect without
   # any authentication form (so no keys and no passwords!). 
   # Use with caution!

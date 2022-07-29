@@ -28,8 +28,9 @@ type sshServer struct {
 	password          string
 	listenAddress     *string
 
-	disableShell bool
-	disableAuth  bool
+	disableShell  bool
+	disableAuth   bool
+	disableBanner bool
 
 	shellExecutable string
 
@@ -83,6 +84,7 @@ func NewSshServer(conf *SshDConf) *sshServer {
 		hostPrivateKey:            hostPrivateKeySigner,
 		shellExecutable:           conf.ShellExecutable,
 		disableShell:              conf.DisableShell,
+		disableBanner:             conf.DisableBanner,
 		disableAuth:               conf.DisableAuth,
 		listenAddress:             &conf.ListenAddress,
 		forwards:                  make(map[string]net.Listener),
@@ -206,7 +208,7 @@ func (s *sshServer) Start() {
 
 `
 	}
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == "windows" || s.disableBanner {
 		bannerCb = nil
 	}
 
