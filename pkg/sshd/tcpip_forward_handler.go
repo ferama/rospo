@@ -16,11 +16,6 @@ func handleTcpIpForwardSession(client *ssh.ServerConn, listener net.Listener, la
 				log.Printf("Accept failed with timeout: %s", err)
 				continue
 			}
-			if neterr.Temporary() {
-				log.Printf("Accept failed with temporary: %s", err)
-				continue
-			}
-
 			break
 		}
 		log.Printf("started forward session: %s", lconn.LocalAddr())
