@@ -7,7 +7,7 @@ import (
 	"github.com/ferama/rospo/pkg/sshd"
 	"github.com/ferama/rospo/pkg/tun"
 	"github.com/ferama/rospo/pkg/web"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // Config holds all the config values
