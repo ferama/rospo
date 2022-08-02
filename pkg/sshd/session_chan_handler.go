@@ -15,6 +15,34 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+func sendStatus(channel ssh.Channel, status uint32) {
+	msg := struct {
+		Status uint32
+	}{
+		Status: status,
+	}
+	if _, err := channel.SendRequest("exit-status", false, ssh.Marshal(&msg)); err != nil {
+		log.Printf("failed to send exit-status: %s", err)
+	}
+}
+
+func sendSignal(channel ssh.Channel, signal string) {
+	sig := struct {
+		Signal     string
+		CoreDumped bool
+		Errsmg     string
+		Lang       string
+	}{
+		Signal:     signal,
+		CoreDumped: false,
+		Errsmg:     "Process terminated",
+		Lang:       "en-GB",
+	}
+	if _, err := channel.SendRequest("exit-signal", false, ssh.Marshal(&sig)); err != nil {
+		log.Printf("unable to send signal: %v", err)
+	}
+}
+
 func handleChannelSession(
 	c ssh.NewChannel,
 	customShell string,
@@ -77,7 +105,10 @@ func handleChannelSession(
 				if err := pty.Run(cmd); err != nil {
 					log.Fatalf("%s", err)
 				}
-				sessionClientServe(channel, pty)
+				ptySessionClientServe(channel, pty)
+
+				sendStatus(channel, 0)
+				sendSignal(channel, "TERM")
 
 			} else {
 				cmd.Stdout = channel
@@ -91,19 +122,12 @@ func handleChannelSession(
 				go func() {
 					status, err := cmd.Process.Wait()
 					if err != nil {
-						log.Printf("failed to exit bash (%s)", err)
+						log.Printf("failed to exit (%s)", err)
 						cmd.Process.Kill()
 					} else {
 						log.Printf("command executed with exit status %s", status)
 					}
-					msg := struct {
-						Status uint32
-					}{
-						Status: uint32(status.ExitCode()),
-					}
-					if _, err := channel.SendRequest("exit-status", false, ssh.Marshal(&msg)); err != nil {
-						log.Printf("failed to send exit-status: %s", err)
-					}
+					sendStatus(channel, uint32(status.ExitCode()))
 					channel.Close()
 					log.Printf("session closed")
 				}()
@@ -190,7 +214,7 @@ func parseDims(b []byte) (uint32, uint32) {
 	return w, h
 }
 
-func sessionClientServe(channel ssh.Channel, pty rpty.Pty) {
+func ptySessionClientServe(channel ssh.Channel, pty rpty.Pty) {
 	// Teardown session
 	var once sync.Once
 	close := func() {
