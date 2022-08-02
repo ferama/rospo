@@ -75,6 +75,8 @@ sshd:
   # any authentication form (so no keys and no passwords!). 
   # Use with caution!
   disable_auth: false
+  # OPTIONAL: if true, the sftp subsystem will be disabled server side
+  disable_sftp_subsystem: false
   # OPTIONAL: if empty a shell will be auto inferred. You can
   # set a custom value here. Example: /usr/bin/python3
   shell_executable: "your/custom/shell/fullpath"
