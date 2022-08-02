@@ -89,10 +89,20 @@ func handleChannelSession(
 				}
 
 				go func() {
-					_, err := cmd.Process.Wait()
+					status, err := cmd.Process.Wait()
 					if err != nil {
 						log.Printf("failed to exit bash (%s)", err)
 						cmd.Process.Kill()
+					} else {
+						log.Printf("command executed with exit status %s", status)
+					}
+					msg := struct {
+						Status uint32
+					}{
+						Status: uint32(status.ExitCode()),
+					}
+					if _, err := channel.SendRequest("exit-status", false, ssh.Marshal(&msg)); err != nil {
+						log.Printf("failed to send exit-status: %s", err)
 					}
 					channel.Close()
 					log.Printf("session closed")
