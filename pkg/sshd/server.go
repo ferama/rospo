@@ -28,9 +28,10 @@ type sshServer struct {
 	password          string
 	listenAddress     *string
 
-	disableShell  bool
-	disableAuth   bool
-	disableBanner bool
+	disableShell         bool
+	disableAuth          bool
+	disableBanner        bool
+	disableSftpSubsystem bool
 
 	shellExecutable string
 
@@ -47,6 +48,7 @@ type sshServer struct {
 func NewSshServer(conf *SshDConf) *sshServer {
 	keyPath, _ := utils.ExpandUserHome(conf.Key)
 	hostPrivateKey, err := ioutil.ReadFile(keyPath)
+	log.Println(conf.AuthorizedKeysURI)
 	if err != nil {
 		log.Println("server identity do not exists. Generating one...")
 		key, err := utils.GeneratePrivateKey()
@@ -85,12 +87,12 @@ func NewSshServer(conf *SshDConf) *sshServer {
 		shellExecutable:           conf.ShellExecutable,
 		disableShell:              conf.DisableShell,
 		disableBanner:             conf.DisableBanner,
+		disableSftpSubsystem:      conf.DisableSftpSubsystem,
 		disableAuth:               conf.DisableAuth,
 		listenAddress:             &conf.ListenAddress,
 		forwards:                  make(map[string]net.Listener),
 		forwardsKeepAliveInterval: 5 * time.Second,
 	}
-
 	// run here, to make sure I have a valid authorized keys
 	// file on start
 	if !conf.DisableAuth {
@@ -395,7 +397,7 @@ func (s *sshServer) handleChannels(chans <-chan ssh.NewChannel) {
 		t := newChannel.ChannelType()
 		switch t {
 		case "session":
-			go handleChannelSession(newChannel, s.shellExecutable, s.disableShell)
+			go handleChannelSession(newChannel, s.shellExecutable, s.disableShell, s.disableSftpSubsystem)
 
 		case "direct-tcpip":
 			go handleChannelDirect(newChannel)

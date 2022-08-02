@@ -39,8 +39,8 @@ func getPort(addr net.Addr) string {
 func TestTunnelReverse(t *testing.T) {
 	// start a local sshd
 	serverConf := &sshd.SshDConf{
-		Key:               "testdata/server",
-		AuthorizedKeysURI: []string{"testdata/authorized_keys"},
+		Key:               "../../testdata/server",
+		AuthorizedKeysURI: []string{"../../testdata/authorized_keys"},
 		ListenAddress:     "127.0.0.1:0",
 		DisableShell:      false,
 	}
@@ -58,7 +58,7 @@ func TestTunnelReverse(t *testing.T) {
 
 	// create an ssh client
 	clientConf := &sshc.SshClientConf{
-		Identity:  "testdata/client",
+		Identity:  "../../testdata/client",
 		Insecure:  true, // disable known_hosts check
 		JumpHosts: make([]*sshc.JumpHostConf, 0),
 		ServerURI: fmt.Sprintf("127.0.0.1:%s", sshdPort),
@@ -132,8 +132,8 @@ func TestTunnelReverse(t *testing.T) {
 func TestTunnelForward(t *testing.T) {
 	// start a local sshd
 	serverConf := &sshd.SshDConf{
-		Key:               "testdata/server",
-		AuthorizedKeysURI: []string{"testdata/authorized_keys"},
+		Key:               "../../testdata/server",
+		AuthorizedKeysURI: []string{"../../testdata/authorized_keys"},
 		ListenAddress:     "127.0.0.1:0",
 		DisableShell:      false,
 	}
@@ -151,7 +151,7 @@ func TestTunnelForward(t *testing.T) {
 
 	// create an ssh client
 	clientConf := &sshc.SshClientConf{
-		Identity:  "testdata/client",
+		Identity:  "../../testdata/client",
 		Insecure:  true, // disable known_hosts check
 		JumpHosts: make([]*sshc.JumpHostConf, 0),
 		ServerURI: fmt.Sprintf("127.0.0.1:%s", sshdPort),

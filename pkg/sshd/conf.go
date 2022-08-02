@@ -16,6 +16,9 @@ type SshDConf struct {
 	// if true all auth mechanism will be disabled
 	// use with caution
 	DisableAuth bool `yaml:"disable_auth"`
+	// If true the sftp subsystem will be disabled and no file transfer
+	// will be allowed
+	DisableSftpSubsystem bool `yaml:"disable_sftp_subsystem"`
 	// shell executable. Leave empty for default behaviour
 	ShellExecutable string `yaml:"shell_executable"`
 }
