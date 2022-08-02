@@ -3,16 +3,24 @@ package sshd
 import (
 	"encoding/binary"
 	"fmt"
+	"io"
+	"os"
 	"os/exec"
 	"os/user"
 	"sync"
 
 	"github.com/ferama/rospo/pkg/rpty"
 	"github.com/ferama/rospo/pkg/utils"
+	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 )
 
-func handleChannelSession(c ssh.NewChannel, customShell string, disableShell bool) {
+func handleChannelSession(
+	c ssh.NewChannel,
+	customShell string,
+	disableShell bool,
+	disableSftpSubsystem bool) {
+
 	channel, requests, err := c.Accept()
 	if err != nil {
 		log.Printf("could not accept channel (%s)", err)
@@ -125,6 +133,16 @@ func handleChannelSession(c ssh.NewChannel, customShell string, disableShell boo
 			}
 			env[payload.Name] = payload.Value
 			continue
+
+		case "subsystem":
+			var payload = struct{ Name string }{}
+			if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
+				log.Printf("invalid env payload: %s", req.Payload)
+			}
+			if payload.Name == "sftp" && !disableSftpSubsystem {
+				go handleSftpRequest(channel)
+				ok = true
+			}
 		}
 
 		if !ok {
@@ -132,6 +150,26 @@ func handleChannelSession(c ssh.NewChannel, customShell string, disableShell boo
 		}
 
 		req.Reply(ok, nil)
+	}
+}
+
+func handleSftpRequest(channel ssh.Channel) {
+	debugStream := os.Stderr
+	serverOptions := []sftp.ServerOption{
+		sftp.WithDebug(debugStream),
+	}
+	server, err := sftp.NewServer(
+		channel,
+		serverOptions...,
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := server.Serve(); err == io.EOF {
+		server.Close()
+		log.Print("sftp client exited session.")
+	} else if err != nil {
+		log.Printf("sftp server completed with error: %s", err)
 	}
 }
 

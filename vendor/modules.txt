@@ -44,6 +44,9 @@ github.com/json-iterator/go
 # github.com/judwhite/go-svc v1.2.1
 ## explicit; go 1.15
 github.com/judwhite/go-svc
+# github.com/kr/fs v0.1.0
+## explicit
+github.com/kr/fs
 # github.com/leodido/go-urn v1.2.1
 ## explicit; go 1.13
 github.com/leodido/go-urn
@@ -62,6 +65,10 @@ github.com/pelletier/go-toml/v2
 github.com/pelletier/go-toml/v2/internal/ast
 github.com/pelletier/go-toml/v2/internal/danger
 github.com/pelletier/go-toml/v2/internal/tracker
+# github.com/pkg/sftp v1.13.5
+## explicit; go 1.15
+github.com/pkg/sftp
+github.com/pkg/sftp/internal/encoding/ssh/filexfer
 # github.com/spf13/cobra v1.5.0
 ## explicit; go 1.15
 github.com/spf13/cobra
