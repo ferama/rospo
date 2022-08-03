@@ -49,7 +49,7 @@ Preliminary checks:
 
 		remote, _ := cmd.Flags().GetString("remote")
 
-		sshcConf := cmnflags.GetSshClientConf(cmd, args)
+		sshcConf := cmnflags.GetSshClientConf(cmd, args[0])
 		config := &conf.Config{
 			SshClient: sshcConf,
 			Tunnel: []*tun.TunnelConf{

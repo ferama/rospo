@@ -24,7 +24,7 @@ func AddSshClientFlags(fs *pflag.FlagSet) {
 }
 
 // GetSshClientConf builds an SshcConf object from cmd
-func GetSshClientConf(cmd *cobra.Command, args []string) *sshc.SshClientConf {
+func GetSshClientConf(cmd *cobra.Command, serverURI string) *sshc.SshClientConf {
 	identity, _ := cmd.Flags().GetString("user-identity")
 	knownHosts, _ := cmd.Flags().GetString("known-hosts")
 	insecure, _ := cmd.Flags().GetBool("insecure")
@@ -36,7 +36,7 @@ func GetSshClientConf(cmd *cobra.Command, args []string) *sshc.SshClientConf {
 		Identity:   identity,
 		KnownHosts: knownHosts,
 		Quiet:      disableBanner,
-		ServerURI:  args[0],
+		ServerURI:  serverURI,
 		JumpHosts:  make([]*sshc.JumpHostConf, 0),
 		Insecure:   insecure,
 	}
