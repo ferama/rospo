@@ -20,7 +20,7 @@ var shellCmd = &cobra.Command{
 	Long:  "Starts a remote shell",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		sshcConf := cmnflags.GetSshClientConf(cmd, args)
+		sshcConf := cmnflags.GetSshClientConf(cmd, args[0])
 		conn := sshc.NewSshConnection(sshcConf)
 		go conn.Start()
 
