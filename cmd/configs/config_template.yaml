@@ -69,7 +69,7 @@ sshd:
   # commands
   disable_shell: false
   # if true no banner will be displayed while interacting
-	# with the sshd server
+  # with the sshd server
   disable_banner: false
   # OPTIONAL: default false. If set to true clients can connect without
   # any authentication form (so no keys and no passwords!). 
