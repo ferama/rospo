@@ -21,7 +21,7 @@ func init() {
 	getCmd.Flags().BoolP("recursive", "r", false, "if the copy should be recursive")
 }
 
-func copyFile(client *sftp.Client, remote, local string) error {
+func getFile(client *sftp.Client, remote, local string) error {
 	remotePath, err := client.RealPath(remote)
 	if err != nil {
 		return fmt.Errorf("invalid remote path: %s", remotePath)
@@ -52,7 +52,7 @@ func copyFile(client *sftp.Client, remote, local string) error {
 	return nil
 }
 
-func copyFileRecursive(client *sftp.Client, remote, local string) error {
+func getFileRecursive(client *sftp.Client, remote, local string) error {
 	remotePath, err := client.RealPath(remote)
 	if err != nil {
 		return fmt.Errorf("invalid remote path: %s", remotePath)
@@ -68,15 +68,19 @@ func copyFileRecursive(client *sftp.Client, remote, local string) error {
 
 	info, err = client.Stat(local)
 	if err != nil {
-		return fmt.Errorf("cannot stat local path: %s", remotePath)
+		return fmt.Errorf("cannot stat local path: %s", local)
 	}
 	if !info.IsDir() {
-		return fmt.Errorf("local path is not a directory: %s", remotePath)
+		return fmt.Errorf("local path is not a directory: %s", local)
 	}
 
 	dir := filepath.Dir(remotePath)
 	walker := client.Walk(remotePath)
 	for walker.Step() {
+		if walker.Err() != nil {
+			log.Println(walker.Err())
+			continue
+		}
 		remotePath := walker.Path()
 		stat := walker.Stat()
 		part := strings.TrimPrefix(remotePath, dir)
@@ -84,11 +88,11 @@ func copyFileRecursive(client *sftp.Client, remote, local string) error {
 		if stat.IsDir() {
 			err := os.Mkdir(localPath, stat.Mode())
 			if err != nil {
-				log.Fatalf("cannot create directory %s: %s", localPath, err)
+				return fmt.Errorf("cannot create directory %s: %s", localPath, err)
 			}
 			log.Printf("making dir: %s", localPath)
 		} else {
-			err := copyFile(client, remotePath, localPath)
+			err := getFile(client, remotePath, localPath)
 			if err != nil {
 				return err
 			}
@@ -118,9 +122,9 @@ var getCmd = &cobra.Command{
 		defer client.Close()
 
 		if recursive {
-			err = copyFileRecursive(client, remote, local)
+			err = getFileRecursive(client, remote, local)
 		} else {
-			err = copyFile(client, remote, local)
+			err = getFile(client, remote, local)
 		}
 		if err != nil {
 			log.Fatalln(err)
