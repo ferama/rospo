@@ -2,13 +2,14 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
+	pb "github.com/cheggaaa/pb/v3"
 	"github.com/ferama/rospo/cmd/cmnflags"
+	"github.com/ferama/rospo/pkg/rio"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/pkg/sftp"
 	"github.com/spf13/cobra"
@@ -26,7 +27,7 @@ func getFile(client *sftp.Client, remote, local string) error {
 	if err != nil {
 		return fmt.Errorf("invalid remote path: %s", remotePath)
 	}
-	stat, err := client.Stat(remotePath)
+	remoteStat, err := client.Stat(remotePath)
 	if err != nil {
 		return fmt.Errorf("cannot stat remote path: %s", remotePath)
 	}
@@ -42,13 +43,26 @@ func getFile(client *sftp.Client, remote, local string) error {
 	}
 	defer lFile.Close()
 
-	lFile.Chmod(stat.Mode())
+	byteswrittench := make(chan int64)
+	go func() {
+		tmpl := `{{string . "target" | white}} {{with string . "prefix"}}{{.}} {{end}}{{counters . | blue }} {{bar . "|" "=" (cycle . "↖" "↗" "↘" "↙" ) "." "|" }} {{percent . | blue }} {{speed . | blue }} {{rtime . "ETA %s" | blue }}{{with string . "suffix"}} {{.}}{{end}}`
+		pbar := pb.ProgressBarTemplate(tmpl).Start(0)
+		pbar.Set(pb.Bytes, true)
+		pbar.Set(pb.SIBytesPrefix, true)
 
-	nBytes, err := io.Copy(lFile, rFile)
+		pbar.Set("target", filepath.Base(remotePath))
+		pbar.SetTotal(remoteStat.Size())
+		for w := range byteswrittench {
+			pbar.Add64(w)
+		}
+		pbar.Finish()
+	}()
+	err = rio.CopyBuffer(lFile, rFile, byteswrittench)
+	close(byteswrittench)
 	if err != nil {
 		return fmt.Errorf("error while writing local file: %s", err)
 	}
-	log.Printf("%d byte written", nBytes)
+	lFile.Chmod(remoteStat.Mode())
 	return nil
 }
 
@@ -58,19 +72,19 @@ func getFileRecursive(client *sftp.Client, remote, local string) error {
 		return fmt.Errorf("invalid remote path: %s", remotePath)
 	}
 
-	info, err := client.Stat(remotePath)
+	remoteStat, err := client.Stat(remotePath)
 	if err != nil {
 		return fmt.Errorf("cannot stat remote path: %s", remotePath)
 	}
-	if !info.IsDir() {
+	if !remoteStat.IsDir() {
 		return fmt.Errorf("remote path is not a directory: %s", remotePath)
 	}
 
-	info, err = client.Stat(local)
+	localStat, err := os.Stat(local)
 	if err != nil {
 		return fmt.Errorf("cannot stat local path: %s", local)
 	}
-	if !info.IsDir() {
+	if !localStat.IsDir() {
 		return fmt.Errorf("local path is not a directory: %s", local)
 	}
 
@@ -90,7 +104,6 @@ func getFileRecursive(client *sftp.Client, remote, local string) error {
 			if err != nil {
 				return fmt.Errorf("cannot create directory %s: %s", localPath, err)
 			}
-			log.Printf("making dir: %s", localPath)
 		} else {
 			err := getFile(client, remotePath, localPath)
 			if err != nil {
@@ -111,6 +124,7 @@ var getCmd = &cobra.Command{
 		local := args[2]
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		sshcConf := cmnflags.GetSshClientConf(cmd, args[0])
+		sshcConf.Quiet = true
 		conn := sshc.NewSshConnection(sshcConf)
 		go conn.Start()
 		conn.Connected.Wait()
