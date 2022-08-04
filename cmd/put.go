@@ -2,14 +2,15 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
+	pb "github.com/cheggaaa/pb/v3"
 	"github.com/ferama/rospo/cmd/cmnflags"
+	"github.com/ferama/rospo/pkg/rio"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/pkg/sftp"
 	"github.com/spf13/cobra"
@@ -20,23 +21,25 @@ func init() {
 
 	cmnflags.AddSshClientFlags(putCmd.Flags())
 	putCmd.Flags().BoolP("recursive", "r", false, "if the copy should be recursive")
+
 }
 
-func putFile(client *sftp.Client, remote, local string) error {
+func putFile(client *sftp.Client, remote, localPath string) error {
 	remotePath, err := client.RealPath(remote)
 	if err != nil {
 		return fmt.Errorf("invalid remote path: %s", remotePath)
 	}
 	remoteStat, err := client.Stat(remotePath)
 	if err == nil && remoteStat.IsDir() {
-		remotePath = filepath.Join(remotePath, filepath.Base(local))
+		remotePath = filepath.Join(remotePath, filepath.Base(localPath))
 	}
 
-	stat, err := os.Stat(local)
+	localStat, err := os.Stat(localPath)
 	if err != nil {
-		return fmt.Errorf("cannot stat local path: %s", local)
+		return fmt.Errorf("cannot stat local path: %s", localPath)
 	}
-	lFile, err := os.Open(local)
+
+	lFile, err := os.Open(localPath)
 	if err != nil {
 		return fmt.Errorf("cannot open local file for read: %s", err)
 	}
@@ -48,13 +51,27 @@ func putFile(client *sftp.Client, remote, local string) error {
 	}
 	defer rFile.Close()
 
-	nBytes, err := io.Copy(rFile, lFile)
+	byteswrittench := make(chan int64)
+	go func() {
+		tmpl := `{{string . "target" | white}} {{with string . "prefix"}}{{.}} {{end}}{{counters . | blue }} {{bar . "|" "=" (cycle . "↖" "↗" "↘" "↙" ) "." "|" }} {{percent . | blue }} {{speed . | blue }} {{rtime . "ETA %s" | blue }}{{with string . "suffix"}} {{.}}{{end}}`
+		pbar := pb.ProgressBarTemplate(tmpl).Start(0)
+		pbar.Set(pb.Bytes, true)
+		pbar.Set(pb.SIBytesPrefix, true)
+
+		pbar.Set("target", filepath.Base(localPath))
+		pbar.SetTotal(localStat.Size())
+		for w := range byteswrittench {
+			pbar.Add64(w)
+		}
+		pbar.Finish()
+	}()
+	err = rio.CopyBuffer(rFile, lFile, byteswrittench)
+	close(byteswrittench)
+
 	if err != nil {
 		return fmt.Errorf("error while writing remote file: %s", err)
 	}
-	log.Printf("%d byte written", nBytes)
-
-	rFile.Chmod(stat.Mode())
+	rFile.Chmod(localStat.Mode())
 	return nil
 }
 
@@ -84,14 +101,12 @@ func putFileRecursive(client *sftp.Client, remote, local string) error {
 	err = filepath.WalkDir(local, func(localPath string, d fs.DirEntry, err error) error {
 		part := strings.TrimPrefix(localPath, local)
 		targetPath := filepath.Join(remotePath, dir, part)
-		log.Println(localPath, targetPath, d.IsDir())
 		if d.IsDir() {
 			err := client.Mkdir(targetPath)
 			if err != nil {
 				return fmt.Errorf("cannot create directory %s: %s", remotePath, err)
 			}
 		} else {
-			log.Printf("copying from local: %s, to remote: %s", localPath, targetPath)
 			err := putFile(client, targetPath, localPath)
 			if err != nil {
 				return err
@@ -111,10 +126,12 @@ var putCmd = &cobra.Command{
 	Long:  "puts files from local to remote",
 	Args:  cobra.MinimumNArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
+
 		local := args[1]
 		remote := args[2]
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		sshcConf := cmnflags.GetSshClientConf(cmd, args[0])
+		sshcConf.Quiet = true
 		conn := sshc.NewSshConnection(sshcConf)
 		go conn.Start()
 		conn.Connected.Wait()
