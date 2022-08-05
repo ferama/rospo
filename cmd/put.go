@@ -123,8 +123,18 @@ func putFileRecursive(client *sftp.Client, remote, local string) error {
 var putCmd = &cobra.Command{
 	Use:   "put [user@]host[:port] local [remote]",
 	Short: "puts files from local to remote",
-	Long:  "puts files from local to remote",
-	Args:  cobra.MinimumNArgs(2),
+	Long:  `puts files from local to remote`,
+	Example: `
+  # uploads a file to the remote server
+  $ rospo put myserver:2222 ~/mylocalfolder/myfile.txt /home/myuser/
+
+  # uploads recursively all contents of mylocalfolder to remote current working directory
+  $ rospo put myserver:2222 ~/mylocalfolder -r
+
+  # uploads recursively all contents of mylocalfolder to remote target directory
+  $ rospo put myserver:2222 ~/mylocalfolder /home/myuser/myremotefolder -r
+	`,
+	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		local := args[1]
 		remote := ""

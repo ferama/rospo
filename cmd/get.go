@@ -22,7 +22,7 @@ func init() {
 	getCmd.Flags().BoolP("recursive", "r", false, "if the copy should be recursive")
 }
 
-func getFile(client *sftp.Client, remote, local string) error {
+func getFile(client *sftp.Client, remote, localPath string) error {
 	remotePath, err := client.RealPath(remote)
 	if err != nil {
 		return fmt.Errorf("invalid remote path: %s", remotePath)
@@ -37,7 +37,12 @@ func getFile(client *sftp.Client, remote, local string) error {
 	}
 	defer rFile.Close()
 
-	lFile, err := os.Create(local)
+	localStat, err := os.Stat(localPath)
+	if err == nil && localStat.IsDir() {
+		localPath = filepath.Join(localPath, filepath.Base(remotePath))
+	}
+
+	lFile, err := os.Create(localPath)
 	if err != nil {
 		return fmt.Errorf("cannot open local file for write: %s", err)
 	}
@@ -118,7 +123,17 @@ var getCmd = &cobra.Command{
 	Use:   "get [user@]host[:port] remote [local]",
 	Short: "gets a file from remote",
 	Long:  "gets a file from remote",
-	Args:  cobra.MinimumNArgs(2),
+	Example: `
+  # downloads a file from the remote server
+  $ rospo tget myserver:2222 file.txt .
+
+  # dowloads recursively all contents of myremotefolder to local current working directory
+  $ rospo get myserver:2222 /home/myuser/myremotefolder -r
+
+  # downloads recursively all contents of myremotefolder to local target directory
+  $ rospo put myserver:2222 /home/myserver/myremotefolder ~/mylocalfolder -r
+	`,
+	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		remote := args[1]
 		local := ""
