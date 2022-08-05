@@ -118,10 +118,13 @@ var getCmd = &cobra.Command{
 	Use:   "get [user@]host[:port] remote [local]",
 	Short: "gets a file from remote",
 	Long:  "gets a file from remote",
-	Args:  cobra.MinimumNArgs(3),
+	Args:  cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		remote := args[1]
-		local := args[2]
+		local := ""
+		if len(args) > 2 {
+			local = args[2]
+		}
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		sshcConf := cmnflags.GetSshClientConf(cmd, args[0])
 		sshcConf.Quiet = true
@@ -134,6 +137,13 @@ var getCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 		defer client.Close()
+
+		if local == "" {
+			local, err = os.Getwd()
+			if err != nil {
+				log.Fatalf("local is empty and I can get cwd, %s", err)
+			}
+		}
 
 		if recursive {
 			err = getFileRecursive(client, remote, local)
