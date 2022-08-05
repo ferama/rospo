@@ -53,7 +53,7 @@ func putFile(client *sftp.Client, remote, localPath string) error {
 
 	byteswrittench := make(chan int64)
 	go func() {
-		tmpl := `{{string . "target" | white}} {{with string . "prefix"}}{{.}} {{end}}{{counters . | blue }} {{bar . "|" "=" (cycle . "↖" "↗" "↘" "↙" ) "." "|" }} {{percent . | blue }} {{speed . | blue }} {{rtime . "ETA %s" | blue }}{{with string . "suffix"}} {{.}}{{end}}`
+		tmpl := `{{string . "target" | white}} {{with string . "prefix"}}{{.}} {{end}}{{counters . | blue }} {{bar . "[" "=" (cycle . "" "" "" "" ) " " "]" }} {{percent . | blue }} {{speed . | blue }} {{rtime . "ETA %s" | blue }}{{with string . "suffix"}} {{.}}{{end}}`
 		pbar := pb.ProgressBarTemplate(tmpl).Start(0)
 		pbar.Set(pb.Bytes, true)
 		pbar.Set(pb.SIBytesPrefix, true)
@@ -124,11 +124,14 @@ var putCmd = &cobra.Command{
 	Use:   "put [user@]host[:port] local [remote]",
 	Short: "puts files from local to remote",
 	Long:  "puts files from local to remote",
-	Args:  cobra.MinimumNArgs(3),
+	Args:  cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-
 		local := args[1]
-		remote := args[2]
+		remote := ""
+		if len(args) > 2 {
+			remote = args[2]
+		}
+
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		sshcConf := cmnflags.GetSshClientConf(cmd, args[0])
 		sshcConf.Quiet = true
@@ -141,6 +144,12 @@ var putCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 		defer client.Close()
+		if remote == "" {
+			remote, err = client.Getwd()
+			if err != nil {
+				log.Fatalf("remote is empty and I can get cwd, %s", err)
+			}
+		}
 
 		if recursive {
 			err = putFileRecursive(client, remote, local)
