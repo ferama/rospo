@@ -30,6 +30,8 @@ It's meant to make SSH tunnels fun and understendable again
   * Command line options or `human readable` yaml config file
   * Run as a Windows Service support
   * Pty on Windows through conpty apis
+  * Sftp subsystem support server side
+  * File transfer support client side (get and put sftp subcommands)
 
 ## How to Install
 
