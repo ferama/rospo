@@ -3,6 +3,7 @@ package sshc
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"os"
 	"os/user"
@@ -81,6 +82,9 @@ func NewSshConnection(conf *SshClientConf) *SshConnection {
 	}
 	// client is not connected on startup, so add 1 here
 	c.Connected.Add(1)
+	if c.quiet {
+		log.SetOutput(ioutil.Discard)
+	}
 
 	return c
 }
