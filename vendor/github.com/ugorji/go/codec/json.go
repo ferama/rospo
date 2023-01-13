@@ -1093,6 +1093,7 @@ func (d *jsonDecDriver) readUnescapedString() (bs []byte) {
 }
 
 func (d *jsonDecDriver) dblQuoteStringAsBytes() (buf []byte) {
+	checkUtf8 := d.h.ValidateUnicode
 	d.d.decByteState = decByteStateNone
 	// use a local buf variable, so we don't do pointer chasing within loop
 	buf = (*d.buf)[:0]
@@ -1153,7 +1154,11 @@ func (d *jsonDecDriver) dblQuoteStringAsBytes() (buf []byte) {
 		case 't':
 			buf = append(buf, '\t')
 		case 'u':
-			buf = append(buf, d.bstr[:utf8.EncodeRune(d.bstr[:], d.appendStringAsBytesSlashU())]...)
+			rr := d.appendStringAsBytesSlashU()
+			if checkUtf8 && rr == unicode.ReplacementChar {
+				d.d.errorf("invalid UTF-8 character found after: %s", buf)
+			}
+			buf = append(buf, d.bstr[:utf8.EncodeRune(d.bstr[:], rr)]...)
 		default:
 			*d.buf = buf
 			d.d.errorf("unsupported escaped value: %c", c)
@@ -1275,13 +1280,13 @@ func (d *jsonDecDriver) DecodeNaked() {
 // JsonHandle is a handle for JSON encoding format.
 //
 // Json is comprehensively supported:
-//    - decodes numbers into interface{} as int, uint or float64
-//      based on how the number looks and some config parameters e.g. PreferFloat, SignedInt, etc.
-//    - decode integers from float formatted numbers e.g. 1.27e+8
-//    - decode any json value (numbers, bool, etc) from quoted strings
-//    - configurable way to encode/decode []byte .
-//      by default, encodes and decodes []byte using base64 Std Encoding
-//    - UTF-8 support for encoding and decoding
+//   - decodes numbers into interface{} as int, uint or float64
+//     based on how the number looks and some config parameters e.g. PreferFloat, SignedInt, etc.
+//   - decode integers from float formatted numbers e.g. 1.27e+8
+//   - decode any json value (numbers, bool, etc) from quoted strings
+//   - configurable way to encode/decode []byte .
+//     by default, encodes and decodes []byte using base64 Std Encoding
+//   - UTF-8 support for encoding and decoding
 //
 // It has better performance than the json library in the standard library,
 // by leveraging the performance improvements of the codec library.

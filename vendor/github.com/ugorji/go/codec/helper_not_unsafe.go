@@ -114,8 +114,19 @@ func isEmptyValue(v reflect.Value, tinfos *TypeInfos, recursive bool) bool {
 	switch v.Kind() {
 	case reflect.Invalid:
 		return true
-	case reflect.Array, reflect.String:
+	case reflect.String:
 		return v.Len() == 0
+	case reflect.Array:
+		// zero := reflect.Zero(v.Type().Elem())
+		// can I just check if the whole value is equal to zeros? seems not.
+		// can I just check if the whole value is equal to its zero value? no.
+		// Well, then we check if each value is empty without recursive.
+		for i, vlen := 0, v.Len(); i < vlen; i++ {
+			if !isEmptyValue(v.Index(i), tinfos, false) {
+				return false
+			}
+		}
+		return true
 	case reflect.Map, reflect.Slice, reflect.Chan:
 		return v.IsNil() || v.Len() == 0
 	case reflect.Bool:
@@ -144,10 +155,10 @@ func isEmptyValue(v reflect.Value, tinfos *TypeInfos, recursive bool) bool {
 }
 
 // isEmptyStruct is only called from isEmptyValue, and checks if a struct is empty:
-//    - does it implement IsZero() bool
-//    - is it comparable, and can i compare directly using ==
-//    - if checkStruct, then walk through the encodable fields
-//      and check if they are empty or not.
+//   - does it implement IsZero() bool
+//   - is it comparable, and can i compare directly using ==
+//   - if checkStruct, then walk through the encodable fields
+//     and check if they are empty or not.
 func isEmptyStruct(v reflect.Value, tinfos *TypeInfos, recursive bool) bool {
 	// v is a struct kind - no need to check again.
 	// We only check isZero on a struct kind, to reduce the amount of times
