@@ -12,9 +12,12 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"syscall"
 
+	"github.com/ferama/rospo/pkg/cache"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // GeneratePrivateKey generate an rsa key (actually used from the sshd server)
@@ -67,6 +70,20 @@ func WriteKeyToFile(keyBytes []byte, keyPath string) error {
 	return nil
 }
 
+func isKeyEncryptedWithPassphrase(keyPath string) (bool, error) {
+	keyData, err := ioutil.ReadFile(keyPath)
+	if err != nil {
+		return false, err
+	}
+
+	_, err = ssh.ParsePrivateKey(keyData)
+	if err != nil {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 // LoadIdentityFile reads a public key file and loads the keys to
 // an ssh.PublicKeys object
 func LoadIdentityFile(file string) (ssh.AuthMethod, error) {
@@ -78,17 +95,65 @@ func LoadIdentityFile(file string) (ssh.AuthMethod, error) {
 		path = filepath.Join(usr.HomeDir, ".ssh", "id_rsa")
 	}
 
-	buffer, err := ioutil.ReadFile(path)
+	isKeyEncrypted, err := isKeyEncryptedWithPassphrase(file)
 	if err != nil {
-		return nil, fmt.Errorf("cannot read SSH idendity key file %s", path)
+		return nil, err
 	}
 
-	key, err := ssh.ParsePrivateKey(buffer)
-	if err != nil {
-		return nil, fmt.Errorf("cannot parse SSH identity key file %s", file)
-	}
+	if isKeyEncrypted {
+		password := []byte(cache.CachedKeyPw)
 
-	return ssh.PublicKeys(key), nil
+		if string(cache.CachedKeyPw) == "" {
+			fmt.Println("Enter passphrase for SSH key")
+			password, err = terminal.ReadPassword(int(syscall.Stdin))
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		for cache.CacheKeyPass != "y" && cache.CacheKeyPass != "n" {
+			fmt.Println("Cache the key password? (y/n) (insecure)")
+			cacheInput, err := terminal.ReadPassword(int(syscall.Stdin))
+			if err != nil {
+				return nil, err
+			}
+
+			if string(cacheInput) == "y" {
+				cache.CacheKeyPass = "y"
+				cache.CachedKeyPw = password
+				break
+			} else if string(cacheInput) == "n" {
+				cache.CacheKeyPass = "n"
+				cache.CachedKeyPw = []byte("")
+				break
+			}
+
+			fmt.Println("invalid option (pick y/n)")
+		}
+
+		buffer, err := ioutil.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("cannot read SSH identity key file %s", path)
+		}
+
+		key, err := ssh.ParsePrivateKeyWithPassphrase(buffer, password)
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse SSH identity key file %s", file)
+		}
+
+		return ssh.PublicKeys(key), nil
+	} else {
+		buffer, err := ioutil.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("cannot read SSH identity key file %s", path)
+		}
+
+		key, err := ssh.ParsePrivateKey(buffer)
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse SSH identity key file %s", file)
+		}
+		return ssh.PublicKeys(key), nil
+	}
 }
 
 // AddHostKeyToKnownHosts updates user known_hosts file adding the host key
