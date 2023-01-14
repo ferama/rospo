@@ -4,6 +4,7 @@ import (
 	"os/user"
 	"path/filepath"
 
+	"github.com/ferama/rospo/pkg/cache"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -21,6 +22,8 @@ func AddSshClientFlags(fs *pflag.FlagSet) {
 	fs.StringP("jump-host", "j", "", "optional jump host conf")
 	fs.StringP("user-identity", "s", defaultIdentity, "the ssh identity (private) key absolute path")
 	fs.StringP("known-hosts", "k", knownHostFile, "the known_hosts file absolute path")
+	fs.StringP("key-pass", "p", "", "optional passphrase for the private key")
+	fs.BoolP("cache-key-pass", "c", false, "cache the passphrase for the private key in memory")
 }
 
 // GetSshClientConf builds an SshcConf object from cmd
@@ -29,6 +32,14 @@ func GetSshClientConf(cmd *cobra.Command, serverURI string) *sshc.SshClientConf 
 	knownHosts, _ := cmd.Flags().GetString("known-hosts")
 	insecure, _ := cmd.Flags().GetBool("insecure")
 	jumpHost, _ := cmd.Flags().GetString("jump-host")
+	keyPass, _ := cmd.Flags().GetString("key-pass")
+	cacheKeyPass, _ := cmd.Flags().GetBool("cache-key-pass")
+
+	if cacheKeyPass {
+		cache.CacheKeyPass = "y"
+	}
+
+	cache.CachedKeyPw = []byte(keyPass)
 
 	disableBanner, _ := cmd.Flags().GetBool("disable-banner")
 
