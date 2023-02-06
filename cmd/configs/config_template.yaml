@@ -61,6 +61,7 @@ sshd:
     - https://github.com/<your_username>.keys
   # OPTIONAL: if set will permit password based authentication.
   # The keys will always take precedence
+  # There is no user, so you can use whatever you want
   authorized_password: mypass
   listen_address: ":2222"
   # OPTIONAL: default false
