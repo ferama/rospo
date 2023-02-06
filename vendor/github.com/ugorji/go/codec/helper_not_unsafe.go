@@ -22,6 +22,22 @@ const safeMode = true
 const transientSizeMax = 0
 const transientValueHasStringSlice = true
 
+func byteAt(b []byte, index uint) byte {
+	return b[index]
+}
+
+func setByteAt(b []byte, index uint, val byte) {
+	b[index] = val
+}
+
+func byteSliceOf(b []byte, start, end uint) []byte {
+	return b[start:end]
+}
+
+// func byteSliceWithLen(b []byte, length uint) []byte {
+// 	return b[:length]
+// }
+
 func stringView(v []byte) string {
 	return string(v)
 }
@@ -34,8 +50,13 @@ func byteSliceSameData(v1 []byte, v2 []byte) bool {
 	return cap(v1) != 0 && cap(v2) != 0 && &(v1[:1][0]) == &(v2[:1][0])
 }
 
-func okBytes3(b []byte) (v [4]byte) {
-	copy(v[1:], b)
+func okBytes2(b []byte) (v [2]byte) {
+	copy(v[:], b)
+	return
+}
+
+func okBytes3(b []byte) (v [3]byte) {
+	copy(v[:], b)
 	return
 }
 
@@ -164,7 +185,7 @@ func isEmptyStruct(v reflect.Value, tinfos *TypeInfos, recursive bool) bool {
 	// We only check isZero on a struct kind, to reduce the amount of times
 	// that we lookup the rtid and typeInfo for each type as we walk the tree.
 
-	vt := rvType(v)
+	vt := v.Type()
 	rtid := rt2id(vt)
 	if tinfos == nil {
 		tinfos = defTypeInfos
@@ -516,7 +537,7 @@ func rvGetArrayBytes(rv reflect.Value, scratch []byte) (bs []byte) {
 }
 
 func rvGetArray4Slice(rv reflect.Value) (v reflect.Value) {
-	v = rvZeroAddrK(reflectArrayOf(rvLenSlice(rv), rvType(rv).Elem()), reflect.Array)
+	v = rvZeroAddrK(reflectArrayOf(rvLenSlice(rv), rv.Type().Elem()), reflect.Array)
 	reflect.Copy(v, rv)
 	return
 }
@@ -626,6 +647,14 @@ func rvLenMap(rv reflect.Value) int {
 	return rv.Len()
 }
 
+// func copybytes(to, from []byte) int {
+// 	return copy(to, from)
+// }
+
+// func copybytestr(to []byte, from string) int {
+// 	return copy(to, from)
+// }
+
 // func rvLenArray(rv reflect.Value) int {	return rv.Len() }
 
 // ------------ map range and map indexing ----------
@@ -655,10 +684,6 @@ func (e *Encoder) jsondriver() *jsonEncDriver {
 }
 
 // ---------- DECODER optimized ---------------
-
-func (d *Decoder) checkBreak() bool {
-	return d.d.CheckBreak()
-}
 
 func (d *Decoder) jsondriver() *jsonDecDriver {
 	return d.d.(*jsonDecDriver)

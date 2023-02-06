@@ -1562,6 +1562,10 @@ func (z bigenHelper) writeUint16(w *encWr, v uint16) {
 }
 
 func (z bigenHelper) writeUint32(w *encWr, v uint32) {
+	// w.writeb((z.PutUint32(v))[:])
+	// x := z.PutUint32(v)
+	// w.writeb(x[:])
+	// w.writen4(x[0], x[1], x[2], x[3])
 	w.writen4(z.PutUint32(v))
 }
 
@@ -1739,7 +1743,7 @@ func (path *structFieldInfoPathNode) fieldAlloc(v reflect.Value) (rv2 reflect.Va
 		v = parent.fieldAlloc(v)
 		for j, k := uint8(0), parent.numderef; j < k; j++ {
 			if rvIsNil(v) {
-				rvSetDirect(v, reflect.New(rvType(v).Elem()))
+				rvSetDirect(v, reflect.New(v.Type().Elem()))
 			}
 			v = v.Elem()
 		}
@@ -2455,6 +2459,14 @@ func implIntf(rt, iTyp reflect.Type) (base bool, indir bool) {
 		indir = true
 	} else {
 		indir = reflect.PtrTo(rt).Implements(iTyp)
+	}
+	return
+}
+
+func bool2int(b bool) (v uint8) {
+	// MARKER: optimized to be a single instruction
+	if b {
+		v = 1
 	}
 	return
 }
