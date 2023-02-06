@@ -236,8 +236,8 @@ func (s *sshServer) Start() {
 			// one try only. I'm supporting public key auth.
 			// If it fails, there is nothing more to try
 			config.MaxAuthTries = 1
-			config.PublicKeyCallback = s.keyAuth
 		}
+		config.PublicKeyCallback = s.keyAuth
 	} else {
 		config.NoClientAuth = true
 	}
