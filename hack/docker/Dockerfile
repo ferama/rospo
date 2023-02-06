@@ -5,7 +5,7 @@ COPY pkg/web/ui .
 RUN npm install && npm run build
 
 # go backend builder
-FROM golang:1.18 as gobuilder
+FROM golang:1.19 as gobuilder
 ARG VERSION=development
 WORKDIR /go/src/app
 COPY . .
@@ -17,7 +17,9 @@ RUN go build \
 
 # Final docker image
 FROM ubuntu:latest
-RUN apt update && apt install -y ca-certificates
+RUN apt update && \
+    apt install -y ca-certificates && \
+    apt clean
 
 COPY --from=gobuilder /rospo /usr/local/bin/rospo
 ENTRYPOINT ["rospo"]
