@@ -17,5 +17,7 @@ RUN go build \
 
 # Final docker image
 FROM ubuntu:latest
+RUN apt update && apt install -y ca-certificates
+
 COPY --from=gobuilder /rospo /usr/local/bin/rospo
 ENTRYPOINT ["rospo"]
