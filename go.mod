@@ -11,9 +11,9 @@ require (
 	github.com/pkg/sftp v1.13.5
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/crypto v0.5.0
+	golang.org/x/crypto v0.6.0
 	golang.org/x/sys v0.5.0
-	golang.org/x/term v0.4.0
+	golang.org/x/term v0.5.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -37,8 +37,8 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
 	github.com/ugorji/go/codec v1.2.9 // indirect
-	golang.org/x/net v0.5.0 // indirect
-	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/net v0.6.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
