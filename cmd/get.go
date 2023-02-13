@@ -121,17 +121,17 @@ func getFileRecursive(client *sftp.Client, remote, local string) error {
 
 var getCmd = &cobra.Command{
 	Use:   "get [user@]host[:port] remote [local]",
-	Short: "gets a file from remote",
-	Long:  "gets a file from remote",
+	Short: "Gets a file from remote",
+	Long:  "Gets a file from remote",
 	Example: `
   # downloads a file from the remote server
-  $ rospo tget myserver:2222 file.txt .
+  $ rospo get myserver:2222 file.txt .
 
   # dowloads recursively all contents of myremotefolder to local current working directory
   $ rospo get myserver:2222 /home/myuser/myremotefolder -r
 
   # downloads recursively all contents of myremotefolder to local target directory
-  $ rospo put myserver:2222 /home/myserver/myremotefolder ~/mylocalfolder -r
+  $ rospo get myserver:2222 /home/myserver/myremotefolder ~/mylocalfolder -r
 	`,
 	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
