@@ -23,6 +23,7 @@ RUN set -eux; \
         ca-certificates \
         sudo \
         git \
+        curl \
         vim \
         byobu \
         psmisc \
