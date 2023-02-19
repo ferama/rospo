@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -72,12 +71,6 @@ func NewSshServer(conf *SshDConf) *sshServer {
 	hostPrivateKeySigner, err := ssh.ParsePrivateKey(hostPrivateKey)
 	if err != nil {
 		panic(err)
-	}
-
-	if conf.ShellExecutable != "" {
-		if _, err := os.Stat(conf.ShellExecutable); err != nil {
-			log.Fatalf("invalid shell executable '%s'", conf.ShellExecutable)
-		}
 	}
 
 	ss := &sshServer{
