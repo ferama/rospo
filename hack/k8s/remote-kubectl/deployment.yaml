@@ -17,7 +17,7 @@ spec:
       containers:
         - name: rospo
           image: ghcr.io/ferama/rospo:main
-          command: ["rospo", "/etc/rospo/rospo.yaml"]
+          command: ["rospo", "run", "/etc/rospo/rospo.yaml"]
           # allows super powers! Allows actions like tun device creation and stuff
           securityContext:
             privileged: true

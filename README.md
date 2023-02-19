@@ -93,7 +93,7 @@ $ rospo sshd --help
 
 For more complex use cases and more options, you can use a config file
 ```
-$ rospo config.yaml
+$ rospo run config.yaml
 ```
 
 Look at the [config_template.yaml](https://github.com/ferama/rospo/blob/main/cmd/configs/config_template.yaml) for all the available options.
@@ -158,7 +158,7 @@ You can then perform the following actions:
 
 ```powershell
 # create the rospo service
-sc.exe create rospo start= auto DisplayName= Rospo binpath= "C:\rospo.exe C:\conf.yaml"
+sc.exe create rospo start= auto DisplayName= Rospo binpath= "C:\rospo.exe run C:\conf.yaml"
 
 # start service
 sc.exe start rospo
@@ -196,7 +196,7 @@ tunnel:
 
 Launch rospo using the config file instead of the cli parameters:
 ```
-$ rospo config.yaml
+$ rospo run config.yaml
 ```
 
 What's happens here is that rospo will connect to `remote_server_address` through the `jumphost_address` server and will:
