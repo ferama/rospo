@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"strings"
 	"sync"
 
 	"github.com/ferama/rospo/pkg/rpty"
@@ -81,7 +82,12 @@ func handleChannelSession(
 			var cmd *exec.Cmd
 
 			if req.Type == "shell" {
-				cmd = exec.Command(shell)
+				if customShell != "" {
+					parts := strings.Split(customShell, " ")
+					cmd = exec.Command(parts[0], parts[1:]...)
+				} else {
+					cmd = exec.Command(shell)
+				}
 			} else {
 				var payload = struct{ Value string }{}
 				ssh.Unmarshal(req.Payload, &payload)
