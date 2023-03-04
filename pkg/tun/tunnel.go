@@ -148,7 +148,6 @@ func (t *Tunnel) Stop() {
 
 func (t *Tunnel) listenLocal() error {
 	// Listen on remote server port
-	log.Println("starting local listener")
 	listener, err := net.Listen("tcp", t.localEndpoint.String())
 	if err != nil {
 		log.Printf("dial INTO remote service error. %s\n", err)
