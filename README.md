@@ -5,7 +5,7 @@
 
 
 Rospo is a tool meant to create secure and reliable SSH tunnels. A single binary includes both client and server.
-It's meant to make SSH tunnels fun and understendable again
+It's meant to make SSH tunnels fun and understandable again
 
 ### Table of Contents  
 1. [Features](#features)
