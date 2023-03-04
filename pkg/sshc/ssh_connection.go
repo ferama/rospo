@@ -172,7 +172,14 @@ func (s *SshConnection) connect() error {
 		},
 	}
 	log.Println("trying to connect to remote server...")
-	log.Printf("using identity at %s", s.identity)
+
+	identityPath := s.identity
+	if s.identity == "" {
+		usr, _ := user.Current()
+		identityPath = filepath.Join(usr.HomeDir, ".ssh", "id_rsa")
+	}
+
+	log.Printf("using identity at %s", identityPath)
 
 	if len(s.jumpHosts) != 0 {
 		client, err := s.jumpHostConnect(s.serverEndpoint, sshConfig)
@@ -333,6 +340,6 @@ func (s *SshConnection) directConnect(
 		log.Printf("dial INTO remote server error. %s", err)
 		return nil, err
 	}
-	log.Println("connected to remote server")
+	log.Printf("connected to remote server at %s\n", server.String())
 	return client, nil
 }
