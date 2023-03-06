@@ -3,7 +3,7 @@ module github.com/ferama/rospo
 go 1.19
 
 require (
-	github.com/cheggaaa/pb/v3 v3.1.0
+	github.com/cheggaaa/pb/v3 v3.1.2
 	github.com/creack/pty v1.1.18
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.9.0
