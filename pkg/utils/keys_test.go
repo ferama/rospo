@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"testing"
@@ -21,7 +20,7 @@ func TestGenerateKeys(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	file, err := ioutil.TempFile("", "testkey")
+	file, err := os.CreateTemp("", "testkey")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -37,7 +36,7 @@ func TestGenerateKeys(t *testing.T) {
 		t.Fail()
 	}
 
-	file, err = ioutil.TempFile("", "testkey")
+	file, err = os.CreateTemp("", "testkey")
 	if err != nil {
 		log.Fatal(err)
 	}

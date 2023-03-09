@@ -2,7 +2,6 @@ package sshc
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"strings"
@@ -81,7 +80,7 @@ func TestErrors(t *testing.T) {
 func TestSshC(t *testing.T) {
 	sshdPort := startD(false)
 
-	file, err := ioutil.TempFile("", "rospo_known_hosts")
+	file, err := os.CreateTemp("", "rospo_known_hosts")
 	if err != nil {
 		log.Fatal(err)
 	}
