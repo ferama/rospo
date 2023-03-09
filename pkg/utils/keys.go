@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/user"
@@ -60,7 +59,7 @@ func GeneratePublicKey(key *rsa.PublicKey) ([]byte, error) {
 func WriteKeyToFile(keyBytes []byte, keyPath string) error {
 	path, _ := ExpandUserHome(keyPath)
 
-	if err := ioutil.WriteFile(path, keyBytes, 0600); err != nil {
+	if err := os.WriteFile(path, keyBytes, 0600); err != nil {
 		log.Println(err)
 		return err
 	}
@@ -78,7 +77,7 @@ func LoadIdentityFile(file string) (ssh.AuthMethod, error) {
 		path = filepath.Join(usr.HomeDir, ".ssh", "id_rsa")
 	}
 
-	buffer, err := ioutil.ReadFile(path)
+	buffer, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read SSH idendity key file %s", path)
 	}

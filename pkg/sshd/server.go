@@ -2,10 +2,11 @@ package sshd
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -46,7 +47,11 @@ type sshServer struct {
 // NewSshServer builds an SshServer object
 func NewSshServer(conf *SshDConf) *sshServer {
 	keyPath, _ := utils.ExpandUserHome(conf.Key)
-	hostPrivateKey, err := ioutil.ReadFile(keyPath)
+	if keyPath == "" {
+		log.Fatalln("server_key is not set")
+	}
+	log.Printf("loading server key at: '%s'", keyPath)
+	hostPrivateKey, err := os.ReadFile(keyPath)
 	log.Println(conf.AuthorizedKeysURI)
 	if err != nil {
 		log.Println("server identity do not exists. Generating one...")
@@ -70,7 +75,7 @@ func NewSshServer(conf *SshDConf) *sshServer {
 
 	hostPrivateKeySigner, err := ssh.ParsePrivateKey(hostPrivateKey)
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 
 	ss := &sshServer{
@@ -137,7 +142,7 @@ func (s *sshServer) loadAuthorizedKeys() map[string]bool {
 			if err != nil {
 				continue
 			}
-			authorizedKeysBytes, err := ioutil.ReadFile(path)
+			authorizedKeysBytes, err := os.ReadFile(path)
 			if err != nil {
 				continue
 			}
@@ -154,7 +159,7 @@ func (s *sshServer) loadAuthorizedKeys() map[string]bool {
 					continue
 				}
 
-				bytes, err := ioutil.ReadAll(res.Body)
+				bytes, err := io.ReadAll(res.Body)
 				if err != nil {
 					log.Println("failed to read http body", err)
 					continue
