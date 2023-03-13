@@ -29,12 +29,13 @@ func NewRemoteShell(sshConn *SshConnection) *RemoteShell {
 }
 
 // Start starts the remote shell
-func (rs *RemoteShell) Start(cmd string, requestPty bool) {
+func (rs *RemoteShell) Start(cmd string, requestPty bool) error {
 	rs.sshConn.Connected.Wait()
 
 	session, err := rs.sshConn.Client.NewSession()
 	if err != nil {
 		log.Fatalf("Failed to create session: " + err.Error())
+		return err
 	}
 
 	rs.sessMU.Lock()
@@ -86,19 +87,22 @@ func (rs *RemoteShell) Start(cmd string, requestPty bool) {
 		// Request pseudo terminal
 		if err := session.RequestPty(terminal, h, w, modes); err != nil {
 			log.Fatalf("request for pseudo terminal failed: %s", err)
+			return err
 		}
 	}
 	if cmd == "" {
 		// Start remote shell
 		if err := session.Shell(); err != nil {
 			log.Fatalf("failed to start shell: %s", err)
+			return err
 		}
 		session.Wait()
 
 	} else {
 		// run the cmd
-		session.Run(cmd)
+		return session.Run(cmd)
 	}
+	return nil
 }
 
 // Stop stops the remote shell

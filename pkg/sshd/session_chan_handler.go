@@ -72,13 +72,14 @@ func handleChannelSession(
 	env := map[string]string{}
 
 	for req := range requests {
-		if disableShell {
-			req.Reply(false, nil)
-			continue
-		}
 		ok := false
 		switch req.Type {
 		case "shell", "exec":
+			if disableShell {
+				log.Printf("declining %s request... ", req.Type)
+				req.Reply(false, nil)
+				continue
+			}
 			var cmd *exec.Cmd
 
 			if req.Type == "shell" {
@@ -142,6 +143,11 @@ func handleChannelSession(
 			ok = true
 
 		case "pty-req":
+			if disableShell {
+				log.Printf("declining %s request... ", req.Type)
+				req.Reply(false, nil)
+				continue
+			}
 			// Responding 'ok' here will let the client
 			// know we have a pty ready for input
 			ok = true
