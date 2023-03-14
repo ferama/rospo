@@ -52,7 +52,7 @@ func NewSshServer(conf *SshDConf) *sshServer {
 	}
 	log.Printf("loading server key at: '%s'", keyPath)
 	hostPrivateKey, err := os.ReadFile(keyPath)
-	log.Println(conf.AuthorizedKeysURI)
+	log.Printf("authorized_keys: %s", conf.AuthorizedKeysURI)
 	if err != nil {
 		log.Println("server identity do not exists. Generating one...")
 		key, err := utils.GeneratePrivateKey()
