@@ -38,14 +38,15 @@ var runCmd = &cobra.Command{
 		var sshConn *sshc.SshConnection
 		if conf.Tunnel != nil || conf.Web != nil {
 			if conf.SshClient == nil {
-				log.Fatalln("You need to configure sshclient section to support tunnels or webui")
+				log.Fatalln("you need to configure sshclient section to support tunnels or webui")
 			}
 			sshConn = sshc.NewSshConnection(conf.SshClient)
 			go sshConn.Start()
 		}
 
 		if conf.SshD != nil {
-			go sshd.NewSshServer(conf.SshD).Start()
+			sshServer := sshd.NewSshServer(conf.SshD)
+			go sshServer.Start()
 		}
 
 		if conf.Tunnel != nil && len(conf.Tunnel) > 0 {
@@ -60,13 +61,17 @@ var runCmd = &cobra.Command{
 				dev = true
 			}
 			jh := []string{}
-			for _, h := range conf.SshClient.JumpHosts {
-				jh = append(jh, h.URI)
+			info := &rootapi.Info{}
+			if conf.SshClient != nil {
+				for _, h := range conf.SshClient.JumpHosts {
+					jh = append(jh, h.URI)
+				}
+				info = &rootapi.Info{
+					SshClientURI: conf.SshClient.ServerURI,
+					JumpHosts:    jh,
+				}
 			}
-			info := &rootapi.Info{
-				SshClientURI: conf.SshClient.ServerURI,
-				JumpHosts:    jh,
-			}
+
 			go web.StartServer(dev, sshConn, conf.Web, info)
 		}
 

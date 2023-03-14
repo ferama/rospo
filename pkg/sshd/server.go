@@ -42,6 +42,9 @@ type sshServer struct {
 
 	listener   net.Listener
 	listenerMU sync.RWMutex
+
+	activeSessions  int
+	activeSessionMu sync.Mutex
 }
 
 // NewSshServer builds an SshServer object
@@ -90,6 +93,7 @@ func NewSshServer(conf *SshDConf) *sshServer {
 		listenAddress:             &conf.ListenAddress,
 		forwards:                  make(map[string]net.Listener),
 		forwardsKeepAliveInterval: 5 * time.Second,
+		activeSessions:            0,
 	}
 	// run here, to make sure I have a valid authorized keys
 	// file on start
@@ -256,6 +260,10 @@ func (s *sshServer) Start() {
 			panic(err)
 		}
 		log.Printf("connection from %s", conn.RemoteAddr())
+		s.activeSessionMu.Lock()
+		s.activeSessions++
+		s.activeSessionMu.Unlock()
+		log.Printf("active sessions: %d", s.activeSessions)
 		go func() {
 			// From a standard TCP connection to an encrypted SSH connection
 			sshConn, chans, reqs, err := ssh.NewServerConn(conn, &config)
@@ -272,7 +280,12 @@ func (s *sshServer) Start() {
 			// handle forwards and keepalive requests
 			go s.handleRequests(sshConn, reqs)
 			// Accept all channels
-			go s.handleChannels(chans)
+			s.handleChannels(chans)
+			log.Println("client session terminated")
+			s.activeSessionMu.Lock()
+			s.activeSessions--
+			s.activeSessionMu.Unlock()
+			log.Printf("active sessions: %d", s.activeSessions)
 		}()
 	}
 }
