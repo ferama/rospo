@@ -27,7 +27,12 @@ func Routes(info *Info, sshConn *sshc.SshConnection, router *gin.RouterGroup) {
 }
 
 func (r *rootRoutes) getInfo(c *gin.Context) {
-	r.info.SshClientConnectionStatus = r.sshConn.GetConnectionStatus()
+	if r.sshConn != nil {
+		r.info.SshClientConnectionStatus = r.sshConn.GetConnectionStatus()
+	} else {
+		r.info.SshClientConnectionStatus = "disconnected"
+		r.info.JumpHosts = []string{}
+	}
 	c.JSON(http.StatusOK, r.info)
 }
 

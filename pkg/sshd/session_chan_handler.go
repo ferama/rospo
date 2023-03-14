@@ -108,7 +108,6 @@ func handleChannelSession(
 			log.Printf("env %s", envVal)
 
 			if pty != nil {
-				log.Println("running within the pty")
 				if err := pty.Run(cmd); err != nil {
 					log.Fatalf("%s", err)
 				}
@@ -152,7 +151,7 @@ func handleChannelSession(
 			// know we have a pty ready for input
 			ok = true
 			// allocate a terminal for this channel
-			log.Print("creating pty...")
+			// log.Print("creating pty...")
 			// Create new pty
 			pty, err = rpty.New()
 			if err != nil {
@@ -232,7 +231,7 @@ func ptySessionClientServe(channel ssh.Channel, pty rpty.Pty) {
 	close := func() {
 		channel.Close()
 		pty.Close()
-		log.Printf("client session closed")
+		// log.Printf("client session closed")
 	}
 
 	// Pipe session to shell and vice-versa
