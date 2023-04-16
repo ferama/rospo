@@ -24,6 +24,7 @@ func (p *SocksProxy) Start(socks5Address string) error {
 	p.sshConn.Connected.Wait()
 
 	conf := &socks5.Config{
+		Logger: log,
 		Dial: func(ctx context.Context, network, addr string) (net.Conn, error) {
 			return p.sshConn.Client.Dial(network, addr)
 		},
