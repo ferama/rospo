@@ -12,10 +12,11 @@ import (
 
 // Config holds all the config values
 type Config struct {
-	SshClient *sshc.SshClientConf `yaml:"sshclient"`
-	Tunnel    []*tun.TunnelConf   `yaml:"tunnel"`
-	SshD      *sshd.SshDConf      `yaml:"sshd"`
-	Web       *web.WebConf        `yaml:"web"`
+	SshClient  *sshc.SshClientConf  `yaml:"sshclient"`
+	Tunnel     []*tun.TunnelConf    `yaml:"tunnel"`
+	SshD       *sshd.SshDConf       `yaml:"sshd"`
+	Web        *web.WebConf         `yaml:"web"`
+	SocksProxy *sshc.SocksProxyConf `yaml:"socksproxy"`
 }
 
 // LoadConfig parses the [config].yaml file and loads its values
@@ -28,6 +29,7 @@ func LoadConfig(filePath string) (*Config, error) {
 	defer f.Close()
 
 	cfg := Config{
+		nil,
 		nil,
 		nil,
 		nil,

@@ -23,6 +23,11 @@ type SshClientConf struct {
 	JumpHosts []*JumpHostConf `yaml:"jump_hosts"`
 }
 
+type SocksProxyConf struct {
+	ListenAddress string         `yaml:"listen_address"`
+	SshClientConf *SshClientConf `yaml:"sshclient"`
+}
+
 // GetServerEndpoint Builds a server endpoint object from the Server string
 func (c *SshClientConf) GetServerEndpoint() *utils.Endpoint {
 	return utils.NewEndpoint(c.ServerURI)
