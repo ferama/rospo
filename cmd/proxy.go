@@ -13,7 +13,7 @@ func init() {
 	// sshc options
 	cmnflags.AddSshClientFlags(proxyCmd.Flags())
 
-	proxyCmd.Flags().StringP("listen-address", "l", "127.0.0.1:1337", "the socks proxy listener address")
+	proxyCmd.Flags().StringP("listen-address", "l", "127.0.0.1:1080", "the socks proxy listener address")
 }
 
 var proxyCmd = &cobra.Command{
