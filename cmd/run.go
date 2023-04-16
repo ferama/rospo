@@ -51,7 +51,13 @@ var runCmd = &cobra.Command{
 
 		if conf.Tunnel != nil && len(conf.Tunnel) > 0 {
 			for _, c := range conf.Tunnel {
-				go tun.NewTunnel(sshConn, c, false).Start()
+				if c.SshClientConf != nil {
+					conn := sshc.NewSshConnection(c.SshClientConf)
+					go conn.Start()
+					go tun.NewTunnel(conn, c, false).Start()
+				} else {
+					go tun.NewTunnel(sshConn, c, false).Start()
+				}
 			}
 		}
 

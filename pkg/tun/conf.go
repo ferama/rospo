@@ -1,6 +1,9 @@
 package tun
 
-import "github.com/ferama/rospo/pkg/utils"
+import (
+	"github.com/ferama/rospo/pkg/sshc"
+	"github.com/ferama/rospo/pkg/utils"
+)
 
 // TunnelConf is a struct that holds the tunnel configuration
 type TunnelConf struct {
@@ -9,6 +12,8 @@ type TunnelConf struct {
 	Local  string `yaml:"local" json:"local"`
 	// indicates if it is a forward or reverse tunnel
 	Forward bool `yaml:"forward" json:"forward"`
+	// use a dedicated ssh client. if nil use the global one
+	SshClientConf *sshc.SshClientConf `yaml:"sshclient" json:"sshclient"`
 }
 
 // GetRemotEndpoint Builds a remote endpoint object from the Remote string
