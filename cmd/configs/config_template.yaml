@@ -25,7 +25,7 @@ sshclient:
 
 # if set, enable a socks proxy over ssh connection
 socksproxy:
-  listen_address: :1337
+  listen_address: :1080
   # OPTIONAL: if defined use a dedicated sshclient for the socksproxy
   # sshclient:
     
