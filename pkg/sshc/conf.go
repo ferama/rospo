@@ -24,7 +24,8 @@ type SshClientConf struct {
 }
 
 type SocksProxyConf struct {
-	ListenAddress string         `yaml:"listen_address"`
+	ListenAddress string `yaml:"listen_address"`
+	// use a dedicated ssh client. if nil use the global one
 	SshClientConf *SshClientConf `yaml:"sshclient"`
 }
 

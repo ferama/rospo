@@ -37,6 +37,8 @@ tunnel:
   - remote: ":8000"
     local: ":8000"
     forward: yes
+    # OPTIONAL: if defined use a dedicated sshclient for the socksproxy
+    # sshclient:
   - remote: ":2222"
     local: ":2222"
     forward: no
