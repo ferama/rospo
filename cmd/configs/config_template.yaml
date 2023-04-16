@@ -23,6 +23,13 @@ sshclient:
       # OPTIONAL: ssh connection password
       password: mypass
 
+# if set, enable a socks proxy over ssh connection
+socksproxy:
+  listen_address: :1337
+  # OPTIONAL: if defined use a dedicated sshclient for the socksproxy
+  # sshclient:
+    
+
 # List of tunnels configuration. Requires that the sshclient section
 # is configured too. We are going to use one ssh connection 
 # configured into the sshclient section to enable multiple tunnels

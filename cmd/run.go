@@ -36,7 +36,7 @@ var runCmd = &cobra.Command{
 		}
 
 		var sshConn *sshc.SshConnection
-		if conf.Tunnel != nil || conf.Web != nil {
+		if conf.Tunnel != nil || conf.Web != nil || conf.SocksProxy != nil {
 			if conf.SshClient == nil {
 				log.Fatalln("you need to configure sshclient section to support tunnels or webui")
 			}
@@ -73,6 +73,23 @@ var runCmd = &cobra.Command{
 			}
 
 			go web.StartServer(dev, sshConn, conf.Web, info)
+		}
+
+		if conf.SocksProxy != nil {
+			var sockProxy *sshc.SocksProxy
+			if conf.SocksProxy.SshClientConf == nil {
+				sockProxy = sshc.NewSockProxy(sshConn)
+			} else {
+				proxySshConn := sshc.NewSshConnection(conf.SocksProxy.SshClientConf)
+				go proxySshConn.Start()
+				sockProxy = sshc.NewSockProxy(proxySshConn)
+			}
+			go func() {
+				err := sockProxy.Start(conf.SocksProxy.ListenAddress)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}()
 		}
 
 		c := make(chan os.Signal, 1)
