@@ -3,6 +3,7 @@ module github.com/ferama/rospo
 go 1.19
 
 require (
+	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
 	github.com/cheggaaa/pb/v3 v3.1.2
 	github.com/creack/pty v1.1.18
 	github.com/gin-contrib/cors v1.4.0
