@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/armon/go-socks5"
+	"github.com/things-go/go-socks5"
 )
 
 type SocksProxy struct {
@@ -23,20 +23,15 @@ func NewSockProxy(sshConn *SshConnection) *SocksProxy {
 func (p *SocksProxy) Start(socks5Address string) error {
 	p.sshConn.Connected.Wait()
 
-	conf := &socks5.Config{
-		Logger: log,
-		Dial: func(ctx context.Context, network, addr string) (net.Conn, error) {
+	server := socks5.NewServer(
+		socks5.WithLogger(socks5.NewLogger(log)),
+		socks5.WithDial(func(ctx context.Context, network, addr string) (net.Conn, error) {
 			return p.sshConn.Client.Dial(network, addr)
-		},
-	}
-
-	serverSocks, err := socks5.New(conf)
-	if err != nil {
-		return err
-	}
+		}),
+	)
 
 	log.Printf("local sock5 proxy listening at '%s'", socks5Address)
-	if err := serverSocks.ListenAndServe("tcp", socks5Address); err != nil {
+	if err := server.ListenAndServe("tcp", socks5Address); err != nil {
 		return err
 	}
 	return nil
