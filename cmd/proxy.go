@@ -18,8 +18,8 @@ func init() {
 
 var proxyCmd = &cobra.Command{
 	Use:   "proxy [user@]host[:port]",
-	Short: "Starts a socks proxy",
-	Long:  "Starts a socks proxy",
+	Short: "Starts a SOCKS5 proxy",
+	Long:  "Starts a SOCKS5 proxy",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		sshcConf := cmnflags.GetSshClientConf(cmd, args[0])
