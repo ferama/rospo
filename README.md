@@ -11,8 +11,7 @@ It's meant to make SSH tunnels fun and understandable again
 1. [Features](#features)
 2. [How to Install](#how-to-install)
 3. [Quick command line usage](#quick-command-line-usage)
-4. [Rospo UI](#rospo-ui)
-5. [Example Scenarios](#scenarios)
+4. [Example Scenarios](#scenarios)
     * [Windows (WSL || PowerShell) reverse shell](#example-scenario-windows-reverse-shell)
     * [Windows service to reverse tunnel Remote Desktop](#example-scenario-windows-service)
     * [Multiple complex tunnels](#example-scenario-multiple-complex-tunnels)
@@ -97,16 +96,6 @@ $ rospo run config.yaml
 ```
 
 Look at the [config_template.yaml](https://github.com/ferama/rospo/blob/main/cmd/configs/config_template.yaml) for all the available options.
-
-## Rospo UI
-Rospo supports a cool ui too. The ui will let you handle tunnels configuration at runtime through the web interface.
-You can start/stop new tunnels at runtime.
-
-Tunnels that are configured through the rospo config file will not be administrable from the ui.
-
-![Image of Home](https://raw.githubusercontent.com/ferama/rospo/main/img/home.png)
-
-![Image of tunnels](https://raw.githubusercontent.com/ferama/rospo/main/img/tunnels.png)
 
 ## Scenarios
 

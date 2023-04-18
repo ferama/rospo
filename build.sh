@@ -23,13 +23,9 @@ build() {
 }
 
 ### test units
-# prevent complaining about ui build dir
-mkdir -p pkg/web/ui/build && touch pkg/web/ui/build/test 
 go clean -testcache
 go test ./... -v -cover -race || exit 1
 
-### build ui
-cd $DIR/pkg/web/ui && npm install && npm run build && cd $DIR
 
 ### multi arch binary build
 GOOS=linux GOARCH=arm build
