@@ -93,7 +93,7 @@ sshd:
   # Example2: sh -c your command here
   shell_executable: "your/custom/shell"
 
-# enables and configures rest endpoints and web ui
+# enables and configures rest endpoints
 # Be WARNED: the endpoint is not authenticated and through the apis
 # you can manage the tunnels. It could be useful to bind it on 
 # localhost and tunnel it remotely adding an entry on the tunnel section

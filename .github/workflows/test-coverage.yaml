@@ -17,7 +17,6 @@ jobs:
 
       - name: Run coverage
         run: |
-          mkdir pkg/web/ui/build && touch pkg/web/ui/build/test
           go test ./... -race -coverprofile=coverage.txt -covermode=atomic
       - name: Upload coverage to Codecov
         run: bash <(curl -s https://codecov.io/bash)
