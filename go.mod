@@ -5,13 +5,13 @@ go 1.20
 require (
 	github.com/cheggaaa/pb/v3 v3.1.2
 	github.com/creack/pty v1.1.18
+	github.com/ferama/go-socks v0.0.0-20230420074457-4b6c5006a68d
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.9.0
 	github.com/judwhite/go-svc v1.2.1
 	github.com/pkg/sftp v1.13.5
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
-	github.com/things-go/go-socks5 v0.0.3
 	golang.org/x/crypto v0.8.0
 	golang.org/x/sys v0.7.0
 	golang.org/x/term v0.7.0
