@@ -1,5 +1,16 @@
 # go-socks
 
+This is a fork of the unmaintained https://github.com/armon/go-socks5 repository.
+
+It adds support for:
+* go modules
+* socks4
+* socks4a
+
+The work was mainly done to support socks proxies in my own project https://github.com/ferama/rospo
+
+Blame on you Microsoft for not supporting socks5! or I missed something here?
+
 Provides the `socks` package that implements a [SOCKS server](http://en.wikipedia.org/wiki/SOCKS).
 SOCKS (Secure Sockets) is used to route traffic between a client and server through
 an intermediate proxy layer. This can be used to bypass firewalls or NATs.
