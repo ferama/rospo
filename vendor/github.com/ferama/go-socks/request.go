@@ -107,7 +107,7 @@ func NewRequest(bufConn io.Reader, reqVersion byte) (*Request, error) {
 		request.Command = header[1]
 		var err error
 		// Read in the destination address
-		request.DestAddr, err = readAddrSpec(bufConn)
+		request.DestAddr, err = readAddrSpecV5(bufConn)
 		if err != nil {
 			return nil, err
 		}
@@ -126,19 +126,28 @@ func NewRequest(bufConn io.Reader, reqVersion byte) (*Request, error) {
 
 		var err error
 		// Read in the destination address
-		request.DestAddr, err = readAddrSpecv4(bufConn)
+		request.DestAddr, err = readAddrSpecV4(bufConn)
 		if err != nil {
 			return nil, err
 		}
 
-		authStr := make([]byte, 256)
-		n, err := io.ReadAtLeast(bufConn, authStr, 1)
+		addr := request.DestAddr.IP
+		isSocks4a := (addr[0] == 0 && addr[1] == 0 && addr[2] == 0 && addr[3] != 0)
+
+		username, err := readUntilNull(bufConn)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get auth string: %v", err)
+			return nil, err
+		}
+		if username != "" {
+			request.AuthContext = &AuthContext{UserPassAuth, map[string]string{"Username": username}}
 		}
 
-		if n > 0 {
-			request.AuthContext = &AuthContext{UserPassAuth, map[string]string{"Username": string(authStr[:n-1])}}
+		if isSocks4a {
+			hostname, err := readUntilNull(bufConn)
+			if err != nil {
+				return nil, err
+			}
+			request.DestAddr.FQDN = hostname
 		}
 	default:
 		return nil, fmt.Errorf("unsupported socks version: %d", reqVersion)
@@ -279,9 +288,9 @@ func (s *Server) handleAssociate(ctx context.Context, conn conn, req *Request) e
 	return nil
 }
 
-// readAddrSpec is used to read AddrSpec.
+// readAddrSpecV5 is used to read AddrSpec.
 // Expects an address type byte, follwed by the address and port
-func readAddrSpec(r io.Reader) (*AddrSpec, error) {
+func readAddrSpecV5(r io.Reader) (*AddrSpec, error) {
 	d := &AddrSpec{}
 
 	// Get the address type
@@ -332,7 +341,7 @@ func readAddrSpec(r io.Reader) (*AddrSpec, error) {
 }
 
 // Expects port, follwed by the address
-func readAddrSpecv4(r io.Reader) (*AddrSpec, error) {
+func readAddrSpecV4(r io.Reader) (*AddrSpec, error) {
 	d := &AddrSpec{}
 
 	// Read the port
@@ -346,9 +355,26 @@ func readAddrSpecv4(r io.Reader) (*AddrSpec, error) {
 	if _, err := io.ReadAtLeast(r, addr, 4); err != nil {
 		return nil, err
 	}
+
 	d.IP = net.IP(addr)
 
 	return d, nil
+}
+
+func readUntilNull(r io.Reader) (string, error) {
+	var buf []byte
+	var data [1]byte
+
+	for {
+		_, err := r.Read(data[:])
+		if err != nil {
+			return "", err
+		}
+		if data[0] == 0 {
+			return string(buf), nil
+		}
+		buf = append(buf, data[0])
+	}
 }
 
 // sendReply is used to send a reply message

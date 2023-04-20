@@ -35,7 +35,7 @@ github.com/creack/pty
 # github.com/fatih/color v1.14.1
 ## explicit; go 1.17
 github.com/fatih/color
-# github.com/ferama/go-socks v0.0.0-20230420074457-4b6c5006a68d
+# github.com/ferama/go-socks v0.0.0-20230420142113-a13363654754
 ## explicit; go 1.20
 github.com/ferama/go-socks
 # github.com/gin-contrib/cors v1.4.0
