@@ -181,6 +181,17 @@ tunnel:
   - remote: ":5000"
     local: ":5000"
     forward: no
+    # use custom sshclient for this tunnel
+    sshclient:
+      server: myuser@another_server
+      identity: "~/another_identity"
+
+# starts a socks proxy ...
+socksproxy:
+  listen_address: :1080
+  # ...using a dedicated client
+  sshclient:
+    server: localhost:9999
 ```
 
 Launch rospo using the config file instead of the cli parameters:
