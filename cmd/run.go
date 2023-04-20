@@ -84,11 +84,11 @@ var runCmd = &cobra.Command{
 		if conf.SocksProxy != nil {
 			var sockProxy *sshc.SocksProxy
 			if conf.SocksProxy.SshClientConf == nil {
-				sockProxy = sshc.NewSockProxy(sshConn)
+				sockProxy = sshc.NewSocksProxy(sshConn)
 			} else {
 				proxySshConn := sshc.NewSshConnection(conf.SocksProxy.SshClientConf)
 				go proxySshConn.Start()
-				sockProxy = sshc.NewSockProxy(proxySshConn)
+				sockProxy = sshc.NewSocksProxy(proxySshConn)
 			}
 			go func() {
 				err := sockProxy.Start(conf.SocksProxy.ListenAddress)

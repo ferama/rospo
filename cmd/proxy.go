@@ -28,7 +28,7 @@ var proxyCmd = &cobra.Command{
 
 		listenAddress, _ := cmd.Flags().GetString("listen-address")
 
-		sockProxy := sshc.NewSockProxy(conn)
+		sockProxy := sshc.NewSocksProxy(conn)
 		err := sockProxy.Start(listenAddress)
 		if err != nil {
 			log.Fatalln(err)
