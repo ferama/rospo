@@ -18,9 +18,21 @@ func init() {
 
 var proxyCmd = &cobra.Command{
 	Use:   "proxy [user@]host[:port]",
-	Short: "Starts a SOCKS5 proxy",
-	Long:  "Starts a SOCKS5 proxy",
-	Args:  cobra.MinimumNArgs(1),
+	Short: "Starts a SOCKS proxy",
+	Long: `Starts a SOCKS proxy
+
+Both version 4 and 5 are supported.
+You need to configure your browser to use the SOCKS proxy.
+On windows you should put somthing like "socks=localhost" into the address field into
+the proxy configuration form.
+	
+	`,
+	Example: `
+  # start a socks proxy on 127.0.0.1:1080
+  $ rospo proxy sshhost:sshport
+
+	`,
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		sshcConf := cmnflags.GetSshClientConf(cmd, args[0])
 		conn := sshc.NewSshConnection(sshcConf)
