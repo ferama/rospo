@@ -30,7 +30,7 @@ It's meant to make SSH tunnels fun and understandable again
   * Pty on Windows through conpty apis
   * Sftp subsystem support server side
   * File transfer support client side (get and put sftp subcommands)
-  * SOCKS5 proxy server trough SSH
+  * SOCKS5/SOCKS4 proxy server trough SSH
 
 ## How to Install
 
