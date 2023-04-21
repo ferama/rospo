@@ -6,6 +6,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"golang.org/x/net/context"
 )
@@ -14,9 +15,9 @@ const (
 	ConnectCommand   = uint8(1)
 	BindCommand      = uint8(2)
 	AssociateCommand = uint8(3)
-	ipv4Address      = uint8(1)
-	fqdnAddress      = uint8(3)
-	ipv6Address      = uint8(4)
+	Ipv4Address      = uint8(1)
+	FqdnAddress      = uint8(3)
+	Ipv6Address      = uint8(4)
 )
 
 const (
@@ -78,7 +79,8 @@ type Request struct {
 	DestAddr *AddrSpec
 	// AddrSpec of the actual destination (might be affected by rewrite)
 	realDestAddr *AddrSpec
-	bufConn      io.Reader
+
+	bufConn io.Reader
 }
 
 type conn interface {
@@ -157,7 +159,7 @@ func NewRequest(bufConn io.Reader, reqVersion byte) (*Request, error) {
 }
 
 // handleRequest is used for request processing after authentication
-func (s *Server) handleRequest(req *Request, conn conn) error {
+func (s *Server) handleRequest(req *Request, conn net.Conn) error {
 	ctx := context.Background()
 
 	// Resolve the address if we have a FQDN
@@ -272,19 +274,39 @@ func (s *Server) handleBind(ctx context.Context, conn conn, req *Request) error 
 }
 
 // handleAssociate is used to handle a connect command
-func (s *Server) handleAssociate(ctx context.Context, conn conn, req *Request) error {
+func (s *Server) handleAssociate(ctx context.Context, conn net.Conn, req *Request) error {
 	// Check if this is allowed
 	if _, ok := s.config.Rules.Allow(ctx, req); !ok {
 		if err := sendReply(conn, ruleFailure, nil, req.Version); err != nil {
 			return fmt.Errorf("failed to send reply: %v", err)
 		}
-		return fmt.Errorf("associate to %v blocked by rules", req.DestAddr)
+		return fmt.Errorf("connect to %v blocked by rules", req.DestAddr)
+	}
+	// check bindIP 1st
+	if len(s.config.BindIP) == 0 || s.config.BindIP.IsUnspecified() {
+		s.config.BindIP = net.ParseIP("127.0.0.1")
 	}
 
-	// TODO: Support associate
-	if err := sendReply(conn, commandNotSupported, nil, req.Version); err != nil {
+	bindAddr := AddrSpec{IP: s.config.BindIP, Port: s.config.BindPort}
+
+	if err := sendReply(conn, successReply, &bindAddr, req.Version); err != nil {
 		return fmt.Errorf("failed to send reply: %v", err)
 	}
+
+	// wait here till the client close the connection
+	// check every 10 secs
+	tmp := []byte{}
+	var neverTimeout time.Time
+	for {
+		conn.SetReadDeadline(time.Now())
+		if _, err := conn.Read(tmp); err == io.EOF {
+			break
+		} else {
+			conn.SetReadDeadline(neverTimeout)
+		}
+		time.Sleep(10 * time.Second)
+	}
+
 	return nil
 }
 
@@ -301,21 +323,21 @@ func readAddrSpecV5(r io.Reader) (*AddrSpec, error) {
 
 	// Handle on a per type basis
 	switch addrType[0] {
-	case ipv4Address:
+	case Ipv4Address:
 		addr := make([]byte, 4)
 		if _, err := io.ReadAtLeast(r, addr, len(addr)); err != nil {
 			return nil, err
 		}
 		d.IP = net.IP(addr)
 
-	case ipv6Address:
+	case Ipv6Address:
 		addr := make([]byte, 16)
 		if _, err := io.ReadAtLeast(r, addr, len(addr)); err != nil {
 			return nil, err
 		}
 		d.IP = net.IP(addr)
 
-	case fqdnAddress:
+	case FqdnAddress:
 		if _, err := r.Read(addrType); err != nil {
 			return nil, err
 		}
@@ -388,22 +410,22 @@ func sendReply(w io.Writer, resp uint8, addr *AddrSpec, version byte) error {
 		var addrPort uint16
 		switch {
 		case addr == nil:
-			addrType = ipv4Address
+			addrType = Ipv4Address
 			addrBody = []byte{0, 0, 0, 0}
 			addrPort = 0
 
 		case addr.FQDN != "":
-			addrType = fqdnAddress
+			addrType = FqdnAddress
 			addrBody = append([]byte{byte(len(addr.FQDN))}, addr.FQDN...)
 			addrPort = uint16(addr.Port)
 
 		case addr.IP.To4() != nil:
-			addrType = ipv4Address
+			addrType = Ipv4Address
 			addrBody = []byte(addr.IP.To4())
 			addrPort = uint16(addr.Port)
 
 		case addr.IP.To16() != nil:
-			addrType = ipv6Address
+			addrType = Ipv6Address
 			addrBody = []byte(addr.IP.To16())
 			addrPort = uint16(addr.Port)
 
