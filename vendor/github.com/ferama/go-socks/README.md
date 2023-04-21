@@ -29,8 +29,6 @@ The package has the following features:
 
 The package still needs the following:
 * Support for the BIND command
-* Support for the ASSOCIATE command
-
 
 ## Example
 

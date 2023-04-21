@@ -43,6 +43,9 @@ type Config struct {
 	// BindIP is used for bind or udp associate
 	BindIP net.IP
 
+	// BindIP is used for bind or udp associate
+	BindPort int
+
 	// Logger can be used to provide a custom log target.
 	// Defaults to stdout.
 	Logger *log.Logger
@@ -178,7 +181,6 @@ func (s *Server) ServeConn(conn net.Conn) error {
 	// Process the client request
 	if err := s.handleRequest(request, conn); err != nil {
 		err = fmt.Errorf("failed to handle request: %v", err)
-		s.config.Logger.Printf("[ERR] socks: %v", err)
 		return err
 	}
 
