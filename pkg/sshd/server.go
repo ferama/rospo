@@ -191,6 +191,45 @@ func (s *sshServer) keyAuth(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.P
 	return nil, fmt.Errorf("unknown public key for %q", conn.User())
 }
 
+// serve sshd client connection
+func (s *sshServer) serveConnection(conn net.Conn, config ssh.ServerConfig) {
+	log.Printf("connection from %s", conn.RemoteAddr())
+	s.activeSessionMu.Lock()
+	s.activeSessions++
+	s.activeSessionMu.Unlock()
+	log.Printf("active sessions: %d", s.activeSessions)
+
+	// From a standard TCP connection to an encrypted SSH connection
+	sshConn, chans, reqs, err := ssh.NewServerConn(conn, &config)
+	if err != nil {
+		log.Printf("client connection error %s", err)
+		return
+	}
+	if !s.disableAuth {
+		log.Printf("logged in %s", sshConn.Permissions.Extensions["pubkey-fp"])
+	} else {
+		log.Println("logged in WITHOUT authentication")
+	}
+
+	requestHandler := newRequestHandler(sshConn, reqs)
+	go requestHandler.handleRequests()
+
+	channelHandler := newChannelHandler(sshConn,
+		chans,
+		s.disableShell,
+		s.shellExecutable,
+		s.disableSftpSubsystem)
+
+	// blocks until chans is closed (session terminates)
+	channelHandler.handleChannels()
+	// Accept all channels
+	log.Println("client session terminated")
+	s.activeSessionMu.Lock()
+	s.activeSessions--
+	s.activeSessionMu.Unlock()
+	log.Printf("active sessions: %d", s.activeSessions)
+}
+
 // Start the sshServer actually listening for incoming connections
 // and handling requests and ssh channels
 func (s *sshServer) Start() {
@@ -207,11 +246,6 @@ func (s *sshServer) Start() {
 	}
 
 	config := ssh.ServerConfig{
-		AuthLogCallback: func(conn ssh.ConnMetadata, method string, err error) {
-			if err != nil {
-				log.Printf("auth error: %s", err)
-			}
-		},
 		BannerCallback: bannerCb,
 	}
 	config.AddHostKey(s.hostPrivateKey)
@@ -249,41 +283,7 @@ func (s *sshServer) Start() {
 		if err != nil {
 			panic(err)
 		}
-		log.Printf("connection from %s", conn.RemoteAddr())
-		s.activeSessionMu.Lock()
-		s.activeSessions++
-		s.activeSessionMu.Unlock()
-		log.Printf("active sessions: %d", s.activeSessions)
-		go func() {
-			// From a standard TCP connection to an encrypted SSH connection
-			sshConn, chans, reqs, err := ssh.NewServerConn(conn, &config)
-			if err != nil {
-				log.Printf("client connection error %s", err)
-				return
-			}
-			if !s.disableAuth {
-				log.Printf("logged in %s", sshConn.Permissions.Extensions["pubkey-fp"])
-			} else {
-				log.Println("logged in WITHOUT authentication")
-			}
-
-			requestHandler := newRequestHandler(sshConn, reqs)
-			go requestHandler.handleRequests()
-
-			channelHandler := newChannelHandler(sshConn,
-				chans,
-				s.disableShell,
-				s.shellExecutable,
-				s.disableSftpSubsystem)
-
-			channelHandler.handleChannels()
-			// Accept all channels
-			log.Println("client session terminated")
-			s.activeSessionMu.Lock()
-			s.activeSessions--
-			s.activeSessionMu.Unlock()
-			log.Printf("active sessions: %d", s.activeSessions)
-		}()
+		go s.serveConnection(conn, config)
 	}
 }
 

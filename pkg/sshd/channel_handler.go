@@ -53,12 +53,11 @@ func newChannelHandler(
 
 }
 
-func (s *channelHandler) handleChannelSession(c ssh.NewChannel) {
-	channel, requests, err := c.Accept()
-	if err != nil {
-		log.Printf("could not accept channel (%s)", err)
-		return
-	}
+func (s *channelHandler) handleShellExectRequest(
+	pty rpty.Pty,
+	env map[string]string,
+	channel ssh.Channel,
+	req *ssh.Request) bool {
 
 	var shell string
 
@@ -72,6 +71,108 @@ func (s *channelHandler) handleChannelSession(c ssh.NewChannel) {
 		shell = s.shellExecutable
 	}
 
+	if s.disableShell {
+		log.Printf("declining %s request... ", req.Type)
+		req.Reply(false, nil)
+		return false
+	}
+	var cmd *exec.Cmd
+
+	if req.Type == "shell" {
+		if s.shellExecutable != "" {
+			parts := strings.Split(s.shellExecutable, " ")
+			cmd = exec.Command(parts[0], parts[1:]...)
+		} else {
+			cmd = exec.Command(shell)
+		}
+	} else {
+		var payload = struct{ Value string }{}
+		ssh.Unmarshal(req.Payload, &payload)
+		command := payload.Value
+		cmd = exec.Command(shell, []string{"-c", command}...)
+	}
+
+	envVal := make([]string, 0, len(env))
+	for k, v := range env {
+		envVal = append(envVal, fmt.Sprintf("%s=%s", k, v))
+	}
+	envVal = append(envVal, "TERM=xterm")
+
+	usr, _ := user.Current()
+	envVal = append(envVal, fmt.Sprintf("HOME=%s", usr.HomeDir))
+	cmd.Env = envVal
+
+	if pty != nil {
+		if err := pty.Run(cmd); err != nil {
+			log.Fatalf("%s", err)
+		}
+		s.ptySessionClientServe(channel, pty)
+
+		s.sendStatus(channel, 0)
+		s.sendSignal(channel, "TERM")
+
+	} else {
+		cmd.Stdout = channel
+		cmd.Stderr = channel
+		cmd.Stdin = channel
+		err := cmd.Start()
+		if err != nil {
+			log.Printf("%s", err)
+		}
+
+		go func() {
+			status, err := cmd.Process.Wait()
+			if err != nil {
+				log.Printf("failed to exit (%s)", err)
+				cmd.Process.Kill()
+			} else {
+				log.Printf("command executed with exit status %s", status)
+			}
+			s.sendStatus(channel, uint32(status.ExitCode()))
+			channel.Close()
+			log.Printf("session closed")
+		}()
+	}
+
+	req.Reply(true, nil)
+	return true
+}
+
+func (s *channelHandler) handlePtyRequest(req *ssh.Request) (rpty.Pty, error) {
+	if s.disableShell {
+		log.Printf("declining %s request... ", req.Type)
+		req.Reply(false, nil)
+		return nil, nil
+	}
+
+	// allocate a terminal for this channel
+	// log.Print("creating pty...")
+	// Create new pty
+	pty, err := rpty.New()
+	if err != nil {
+		return nil, err
+	}
+
+	// Responding 'ok' here will let the client
+	// know we have a pty ready for input
+	req.Reply(true, nil)
+	// Parse body...
+	termLen := req.Payload[3]
+	termEnv := string(req.Payload[4 : termLen+4])
+	w, h := parseDims(req.Payload[termLen+4:])
+	pty.Resize(uint16(w), uint16(h))
+
+	log.Printf("pty-req '%s'", termEnv)
+	return pty, nil
+}
+
+func (s *channelHandler) serveChannelSession(c ssh.NewChannel) {
+	channel, requests, err := c.Accept()
+	if err != nil {
+		log.Printf("could not accept channel (%s)", err)
+		return
+	}
+
 	var pty rpty.Pty
 	env := map[string]string{}
 
@@ -79,100 +180,22 @@ func (s *channelHandler) handleChannelSession(c ssh.NewChannel) {
 		ok := false
 		switch req.Type {
 		case "shell", "exec":
-			if s.disableShell {
-				log.Printf("declining %s request... ", req.Type)
-				req.Reply(false, nil)
-				continue
-			}
-			var cmd *exec.Cmd
-
-			if req.Type == "shell" {
-				if s.shellExecutable != "" {
-					parts := strings.Split(s.shellExecutable, " ")
-					cmd = exec.Command(parts[0], parts[1:]...)
-				} else {
-					cmd = exec.Command(shell)
-				}
-			} else {
-				var payload = struct{ Value string }{}
-				ssh.Unmarshal(req.Payload, &payload)
-				command := payload.Value
-				cmd = exec.Command(shell, []string{"-c", command}...)
-			}
-
-			envVal := make([]string, 0, len(env))
-			for k, v := range env {
-				envVal = append(envVal, fmt.Sprintf("%s=%s", k, v))
-			}
-			envVal = append(envVal, "TERM=xterm")
-
-			usr, _ := user.Current()
-			envVal = append(envVal, fmt.Sprintf("HOME=%s", usr.HomeDir))
-			cmd.Env = envVal
-			log.Printf("env %s", envVal)
-
-			if pty != nil {
-				if err := pty.Run(cmd); err != nil {
-					log.Fatalf("%s", err)
-				}
-				s.ptySessionClientServe(channel, pty)
-
-				s.sendStatus(channel, 0)
-				s.sendSignal(channel, "TERM")
-
-			} else {
-				cmd.Stdout = channel
-				cmd.Stderr = channel
-				cmd.Stdin = channel
-				err := cmd.Start()
-				if err != nil {
-					log.Printf("%s", err)
-				}
-
-				go func() {
-					status, err := cmd.Process.Wait()
-					if err != nil {
-						log.Printf("failed to exit (%s)", err)
-						cmd.Process.Kill()
-					} else {
-						log.Printf("command executed with exit status %s", status)
-					}
-					s.sendStatus(channel, uint32(status.ExitCode()))
-					channel.Close()
-					log.Printf("session closed")
-				}()
-			}
-
-			ok = true
+			ok = s.handleShellExectRequest(pty, env, channel, req)
 
 		case "pty-req":
-			if s.disableShell {
-				log.Printf("declining %s request... ", req.Type)
-				req.Reply(false, nil)
-				continue
-			}
-			// Responding 'ok' here will let the client
-			// know we have a pty ready for input
-			ok = true
-			// allocate a terminal for this channel
-			// log.Print("creating pty...")
-			// Create new pty
-			pty, err = rpty.New()
+			pty, err = s.handlePtyRequest(req)
 			if err != nil {
 				log.Printf("could not start pty (%s)", err)
 				return
 			}
-			// Parse body...
-			termLen := req.Payload[3]
-			termEnv := string(req.Payload[4 : termLen+4])
-			w, h := parseDims(req.Payload[termLen+4:])
-			pty.Resize(uint16(w), uint16(h))
-			log.Printf("pty-req '%s'", termEnv)
+			if pty != nil {
+				ok = true
+			}
 
 		case "window-change":
 			w, h := parseDims(req.Payload)
 			pty.Resize(uint16(w), uint16(h))
-			continue //no response
+			ok = true
 
 		case "env":
 			var payload = struct{ Name, Value string }{}
@@ -180,13 +203,15 @@ func (s *channelHandler) handleChannelSession(c ssh.NewChannel) {
 			if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
 				log.Printf("invalid env payload: %s", req.Payload)
 			}
+			log.Printf("setenv: %s=%s", payload.Name, payload.Value)
+
 			env[payload.Name] = payload.Value
-			continue
+			ok = true
 
 		case "subsystem":
 			var payload = struct{ Name string }{}
 			if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
-				log.Printf("invalid env payload: %s", req.Payload)
+				log.Printf("invalid payload: %s", req.Payload)
 			}
 			if payload.Name == "sftp" && !s.disableSftpSubsystem {
 				go s.handleSftpRequest(channel)
@@ -197,8 +222,6 @@ func (s *channelHandler) handleChannelSession(c ssh.NewChannel) {
 		if !ok {
 			log.Printf("declining %s request... ", req.Type)
 		}
-
-		req.Reply(ok, nil)
 	}
 }
 
@@ -219,7 +242,6 @@ func (s *channelHandler) ptySessionClientServe(channel ssh.Channel, pty rpty.Pty
 	close := func() {
 		channel.Close()
 		pty.Close()
-		// log.Printf("client session closed")
 	}
 
 	// Pipe session to shell and vice-versa
@@ -309,8 +331,10 @@ func (s *channelHandler) handleChannels() {
 		t := newChannel.ChannelType()
 		switch t {
 		case "session":
-			go s.handleChannelSession(newChannel)
+			// shell, exec and sft subsystem
+			go s.serveChannelSession(newChannel)
 		case "direct-tcpip":
+			// used by forward requests
 			go s.handleChannelDirect(newChannel)
 		default:
 			newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
