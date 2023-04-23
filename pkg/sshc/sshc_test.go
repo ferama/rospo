@@ -2,13 +2,17 @@ package sshc
 
 import (
 	"fmt"
+	"io"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/ferama/rospo/pkg/sshd"
+	"golang.org/x/net/proxy"
 )
 
 func getPort(addr net.Addr) string {
@@ -195,4 +199,54 @@ func TestShellDisabled(t *testing.T) {
 	}
 	remoteShell.Stop()
 	client.Stop()
+}
+
+func TestSocksProxy(t *testing.T) {
+	sshdPort := startD(false, false)
+	clientConf := &SshClientConf{
+		ServerURI: fmt.Sprintf("127.0.0.1:%s", sshdPort),
+		Identity:  "../../testdata/client",
+		JumpHosts: make([]*JumpHostConf, 0),
+		Insecure:  true,
+	}
+	client := NewSshConnection(clientConf)
+	go client.Start()
+	defer client.Stop()
+
+	sockProxy := NewSocksProxy(client)
+	go sockProxy.Start("127.0.0.1:10800")
+
+	time.Sleep(2 * time.Second)
+
+	const testResponse = "socks-test"
+	httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, testResponse)
+	}))
+	defer httpServer.Close()
+
+	t.Log("starting socks client...")
+	socksClient, err := proxy.SOCKS5("tcp", "127.0.0.1:10800", nil, proxy.Direct)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tr := &http.Transport{Dial: socksClient.Dial}
+
+	// Create client
+	httpClient := &http.Client{
+		Transport: tr,
+	}
+
+	t.Log("do http req...")
+	resp, err := httpClient.Get(httpServer.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(bytes) != testResponse {
+		t.Logf("expected: %s, have: %s", testResponse, string(bytes))
+		t.Fail()
+	}
 }
