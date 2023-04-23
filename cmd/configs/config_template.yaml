@@ -60,7 +60,7 @@ tunnel:
 # Comment this section to disable the embedded ssh server
 sshd:
   server_key: "./server_key"
-  # REQUIRED
+  # OPTIONAL
   # This is the authorized_keys file paths. It can be also an http resource
   # so you can use paths like https://github.com/<your_username>.keys
   # Github exposes all users public_keys by default on that url
