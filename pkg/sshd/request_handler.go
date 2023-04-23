@@ -45,7 +45,7 @@ func (r *requestHandler) tcpipForwardHandler(req *ssh.Request) {
 	lport := payload.Port
 	addr := fmt.Sprintf("[%s]:%d", laddr, lport)
 
-	ln, err := net.Listen("tcp", addr)
+	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Printf("listen failed for %s %s", addr, err)
 		req.Reply(false, []byte{})
@@ -56,7 +56,7 @@ func (r *requestHandler) tcpipForwardHandler(req *ssh.Request) {
 	// and use that as lport var. The lport value will be sent as reply
 	// to the client
 	if lport == 0 {
-		_, port, err := net.SplitHostPort(ln.Addr().String())
+		_, port, err := net.SplitHostPort(listener.Addr().String())
 		if err != nil {
 			panic(err)
 		}
@@ -70,16 +70,19 @@ func (r *requestHandler) tcpipForwardHandler(req *ssh.Request) {
 	}
 	log.Printf("tcpip-forward listening for %s", addr)
 	var replyPayload = struct{ Port uint32 }{lport}
+
 	// Tell client everything is OK
 	req.Reply(true, ssh.Marshal(replyPayload))
-	// go handleTcpIpForwardSession(r.sshConn, ln, laddr, lport)
-	forwardSessionHandler := newSessionHandler(r.sshConn, ln, laddr, lport)
+
+	// handle session
+	forwardSessionHandler := newSessionHandler(r.sshConn, listener, laddr, lport)
 	go forwardSessionHandler.handleSession()
 
-	go r.checkAlive(r.sshConn, ln, addr)
+	// run checkAlive
+	go r.checkAlive(r.sshConn, listener, addr)
 
 	r.forwardsMu.Lock()
-	r.forwards[addr] = ln
+	r.forwards[addr] = listener
 	r.forwardsMu.Unlock()
 }
 
