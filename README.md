@@ -61,7 +61,7 @@ brew install rospo
 
 
 ### Docker Container
-You can use the docker ditribution where useful/needed. Look at an example on kubernetes here [./hack/k8s](./hack/k8s) 
+You can use the docker ditribution where useful/needed
 ```
 docker run ghcr.io/ferama/rospo --help
 ```
