@@ -8,10 +8,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
-	"strconv"
-	"strings"
 	"sync"
-	"time"
 
 	"github.com/ferama/rospo/pkg/logger"
 	"github.com/ferama/rospo/pkg/utils"
@@ -34,11 +31,6 @@ type sshServer struct {
 	disableSftpSubsystem bool
 
 	shellExecutable string
-
-	forwards   map[string]net.Listener
-	forwardsMu sync.Mutex
-
-	forwardsKeepAliveInterval time.Duration
 
 	listener   net.Listener
 	listenerMU sync.RWMutex
@@ -82,18 +74,16 @@ func NewSshServer(conf *SshDConf) *sshServer {
 	}
 
 	ss := &sshServer{
-		authorizedKeysURI:         conf.AuthorizedKeysURI,
-		password:                  conf.AuthorizedPassword,
-		hostPrivateKey:            hostPrivateKeySigner,
-		shellExecutable:           conf.ShellExecutable,
-		disableShell:              conf.DisableShell,
-		disableBanner:             conf.DisableBanner,
-		disableSftpSubsystem:      conf.DisableSftpSubsystem,
-		disableAuth:               conf.DisableAuth,
-		listenAddress:             &conf.ListenAddress,
-		forwards:                  make(map[string]net.Listener),
-		forwardsKeepAliveInterval: 5 * time.Second,
-		activeSessions:            0,
+		authorizedKeysURI:    conf.AuthorizedKeysURI,
+		password:             conf.AuthorizedPassword,
+		hostPrivateKey:       hostPrivateKeySigner,
+		shellExecutable:      conf.ShellExecutable,
+		disableShell:         conf.DisableShell,
+		disableBanner:        conf.DisableBanner,
+		disableSftpSubsystem: conf.DisableSftpSubsystem,
+		disableAuth:          conf.DisableAuth,
+		listenAddress:        &conf.ListenAddress,
+		activeSessions:       0,
 	}
 	// run here, to make sure I have a valid authorized keys
 	// file on start
@@ -277,10 +267,17 @@ func (s *sshServer) Start() {
 				log.Println("logged in WITHOUT authentication")
 			}
 
-			// handle forwards and keepalive requests
-			go s.handleRequests(sshConn, reqs)
+			requestHandler := newRequestHandler(sshConn, reqs)
+			go requestHandler.handleRequests()
+
+			channelHandler := newChannelHandler(sshConn,
+				chans,
+				s.disableShell,
+				s.shellExecutable,
+				s.disableSftpSubsystem)
+
+			channelHandler.handleChannels()
 			// Accept all channels
-			s.handleChannels(chans)
 			log.Println("client session terminated")
 			s.activeSessionMu.Lock()
 			s.activeSessions--
@@ -299,121 +296,4 @@ func (s *sshServer) GetListenerAddr() net.Addr {
 		return s.listener.Addr()
 	}
 	return nil
-}
-
-func (s *sshServer) handleRequests(sshConn *ssh.ServerConn, reqs <-chan *ssh.Request) {
-	for req := range reqs {
-		switch req.Type {
-		case "tcpip-forward":
-			var payload = struct {
-				Addr string
-				Port uint32
-			}{}
-			if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
-				log.Printf("Unable to unmarshal payload")
-				req.Reply(false, []byte{})
-				continue
-			}
-			laddr := payload.Addr
-			lport := payload.Port
-			addr := fmt.Sprintf("[%s]:%d", laddr, lport)
-
-			ln, err := net.Listen("tcp", addr)
-			if err != nil {
-				log.Printf("listen failed for %s %s", addr, err)
-				req.Reply(false, []byte{})
-				continue
-			}
-
-			// if a random port was requested, extract it from the listener
-			// and use that as lport var. The lport value will be sent as reply
-			// to the client
-			if lport == 0 {
-				_, port, err := net.SplitHostPort(ln.Addr().String())
-				if err != nil {
-					panic(err)
-				}
-				u64, err := strconv.ParseUint(port, 10, 32)
-				if err != nil {
-					panic(err)
-				}
-				lport = uint32(u64)
-				// fix the addr value too
-				addr = fmt.Sprintf("[%s]:%d", laddr, lport)
-			}
-			log.Printf("tcpip-forward listening for %s", addr)
-			var replyPayload = struct{ Port uint32 }{lport}
-			// Tell client everything is OK
-			req.Reply(true, ssh.Marshal(replyPayload))
-			go handleTcpIpForwardSession(sshConn, ln, laddr, lport)
-
-			go s.checkAlive(sshConn, ln, addr)
-
-			s.forwardsMu.Lock()
-			s.forwards[addr] = ln
-			s.forwardsMu.Unlock()
-
-		case "cancel-tcpip-forward":
-			var payload = struct {
-				Addr string
-				Port uint32
-			}{}
-			if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
-				log.Printf("Unable to unmarshal payload")
-				req.Reply(false, []byte{})
-				continue
-			}
-			// TODO: what happens here if the original port was 0 (random port)?
-			laddr := payload.Addr
-			lport := payload.Port
-			addr := fmt.Sprintf("[%s]:%d", laddr, lport)
-			s.forwardsMu.Lock()
-			ln, ok := s.forwards[addr]
-			s.forwardsMu.Unlock()
-			if ok {
-				ln.Close()
-			}
-			req.Reply(true, nil)
-		default:
-			if strings.Contains(req.Type, "keepalive") {
-				req.Reply(true, nil)
-				continue
-			}
-			log.Printf("received out-of-band request: %+v", req)
-		}
-	}
-}
-
-func (s *sshServer) checkAlive(sshConn *ssh.ServerConn, ln net.Listener, addr string) {
-	ticker := time.NewTicker(s.forwardsKeepAliveInterval)
-
-	log.Println("starting check for forward availability")
-	for {
-		<-ticker.C
-		_, _, err := sshConn.SendRequest("checkalive@rospo", true, nil)
-		if err != nil {
-			log.Printf("forward endpoint not available anymore. Closing socket %s", ln.Addr())
-			ln.Close()
-			s.forwardsMu.Lock()
-			delete(s.forwards, addr)
-			s.forwardsMu.Unlock()
-			return
-		}
-	}
-}
-
-func (s *sshServer) handleChannels(chans <-chan ssh.NewChannel) {
-	// Service the incoming Channel channel.
-	for newChannel := range chans {
-		t := newChannel.ChannelType()
-		switch t {
-		case "session":
-			go handleChannelSession(newChannel, s.shellExecutable, s.disableShell, s.disableSftpSubsystem)
-
-		case "direct-tcpip":
-			go handleChannelDirect(newChannel)
-		default:
-			newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
-		}
-	}
 }
