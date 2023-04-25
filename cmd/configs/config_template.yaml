@@ -81,6 +81,8 @@ sshd:
   # if true no banner will be displayed while interacting
   # with the sshd server
   disable_banner: false
+  # if disabled, server will not allow forward and reverse tunnels
+  disable_tunnelling: false
   # OPTIONAL: default false. If set to true clients can connect without
   # any authentication form (so no keys and no passwords!). 
   # Use with caution!

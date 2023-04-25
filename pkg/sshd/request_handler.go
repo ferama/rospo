@@ -12,6 +12,7 @@ import (
 )
 
 type requestHandler struct {
+	server  *sshServer
 	sshConn *ssh.ServerConn
 
 	reqs <-chan *ssh.Request
@@ -22,8 +23,9 @@ type requestHandler struct {
 	forwardsKeepAliveInterval time.Duration
 }
 
-func newRequestHandler(sshConn *ssh.ServerConn, reqs <-chan *ssh.Request) *requestHandler {
+func newRequestHandler(server *sshServer, sshConn *ssh.ServerConn, reqs <-chan *ssh.Request) *requestHandler {
 	return &requestHandler{
+		server:                    server,
 		sshConn:                   sshConn,
 		reqs:                      reqs,
 		forwards:                  make(map[string]net.Listener),
@@ -113,9 +115,17 @@ func (r *requestHandler) handleRequests() {
 	for req := range r.reqs {
 		switch req.Type {
 		case "tcpip-forward":
+			if r.server.disableTunnelling {
+				req.Reply(false, nil)
+				continue
+			}
 			r.tcpipForwardHandler(req)
 
 		case "cancel-tcpip-forward":
+			if r.server.disableTunnelling {
+				req.Reply(false, nil)
+				continue
+			}
 			r.cancelTcpIpForwardHandler(req)
 		default:
 			if strings.Contains(req.Type, "keepalive") {

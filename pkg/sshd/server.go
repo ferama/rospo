@@ -29,6 +29,7 @@ type sshServer struct {
 	disableAuth          bool
 	disableBanner        bool
 	disableSftpSubsystem bool
+	disableTunnelling    bool
 
 	shellExecutable string
 
@@ -82,8 +83,10 @@ func NewSshServer(conf *SshDConf) *sshServer {
 		disableBanner:        conf.DisableBanner,
 		disableSftpSubsystem: conf.DisableSftpSubsystem,
 		disableAuth:          conf.DisableAuth,
-		listenAddress:        &conf.ListenAddress,
-		activeSessions:       0,
+		disableTunnelling:    conf.DisableTunnelling,
+
+		listenAddress:  &conf.ListenAddress,
+		activeSessions: 0,
 	}
 	// run here, to make sure I have a valid authorized keys
 	// file on start
@@ -211,7 +214,7 @@ func (s *sshServer) serveConnection(conn net.Conn, config ssh.ServerConfig) {
 		log.Println("logged in WITHOUT authentication")
 	}
 
-	requestHandler := newRequestHandler(sshConn, reqs)
+	requestHandler := newRequestHandler(s, sshConn, reqs)
 	go requestHandler.handleRequests()
 
 	channelHandler := newChannelHandler(
