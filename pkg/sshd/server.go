@@ -214,11 +214,11 @@ func (s *sshServer) serveConnection(conn net.Conn, config ssh.ServerConfig) {
 	requestHandler := newRequestHandler(sshConn, reqs)
 	go requestHandler.handleRequests()
 
-	channelHandler := newChannelHandler(sshConn,
+	channelHandler := newChannelHandler(
+		s,
+		sshConn,
 		chans,
-		s.disableShell,
-		s.shellExecutable,
-		s.disableSftpSubsystem)
+	)
 
 	// blocks until chans is closed (session terminates)
 	channelHandler.handleChannels()
