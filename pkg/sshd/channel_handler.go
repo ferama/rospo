@@ -26,29 +26,22 @@ func parseDims(b []byte) (uint32, uint32) {
 }
 
 type channelHandler struct {
+	server  *sshServer
 	sshConn *ssh.ServerConn
 
 	chans <-chan ssh.NewChannel
-
-	disableShell         bool
-	shellExecutable      string
-	disableSftpSubsystem bool
 }
 
 func newChannelHandler(
+	server *sshServer,
 	sshConn *ssh.ServerConn,
 	chans <-chan ssh.NewChannel,
-	disableShell bool,
-	shellExecutable string,
-	disableSftpSubsystem bool,
 ) *channelHandler {
 
 	return &channelHandler{
-		sshConn:              sshConn,
-		chans:                chans,
-		disableShell:         disableShell,
-		shellExecutable:      shellExecutable,
-		disableSftpSubsystem: disableSftpSubsystem,
+		server:  server,
+		sshConn: sshConn,
+		chans:   chans,
 	}
 
 }
@@ -61,17 +54,17 @@ func (s *channelHandler) handleShellExectRequest(
 
 	var shell string
 
-	if s.shellExecutable == "" {
+	if s.server.shellExecutable == "" {
 		usr, err := user.Current()
 		if err != nil {
 			panic(err)
 		}
 		shell = utils.GetUserDefaultShell(usr.Username)
 	} else {
-		shell = s.shellExecutable
+		shell = s.server.shellExecutable
 	}
 
-	if s.disableShell {
+	if s.server.disableShell {
 		log.Printf("declining %s request... ", req.Type)
 		req.Reply(false, nil)
 		return false
@@ -79,8 +72,8 @@ func (s *channelHandler) handleShellExectRequest(
 	var cmd *exec.Cmd
 
 	if req.Type == "shell" {
-		if s.shellExecutable != "" {
-			parts := strings.Split(s.shellExecutable, " ")
+		if s.server.shellExecutable != "" {
+			parts := strings.Split(s.server.shellExecutable, " ")
 			cmd = exec.Command(parts[0], parts[1:]...)
 		} else {
 			cmd = exec.Command(shell)
@@ -139,7 +132,7 @@ func (s *channelHandler) handleShellExectRequest(
 }
 
 func (s *channelHandler) handlePtyRequest(req *ssh.Request) (rpty.Pty, error) {
-	if s.disableShell {
+	if s.server.disableShell {
 		log.Printf("declining %s request... ", req.Type)
 		req.Reply(false, nil)
 		return nil, nil
@@ -213,7 +206,7 @@ func (s *channelHandler) serveChannelSession(c ssh.NewChannel) {
 			if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
 				log.Printf("invalid payload: %s", req.Payload)
 			}
-			if payload.Name == "sftp" && !s.disableSftpSubsystem {
+			if payload.Name == "sftp" && !s.server.disableSftpSubsystem {
 				go s.handleSftpRequest(channel)
 				ok = true
 			}
