@@ -19,6 +19,9 @@ type SshDConf struct {
 	// If true the sftp subsystem will be disabled and no file transfer
 	// will be allowed
 	DisableSftpSubsystem bool `yaml:"disable_sftp_subsystem"`
+	// if disabled, forward and reverse tunnelling will be not allowed
+	// on this server
+	DisableTunnelling bool `yaml:"disable_tunnelling"`
 	// shell executable. Leave empty for default behaviour
 	ShellExecutable string `yaml:"shell_executable"`
 }

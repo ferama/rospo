@@ -327,6 +327,10 @@ func (s *channelHandler) handleChannels() {
 			// shell, exec and sft subsystem
 			go s.serveChannelSession(newChannel)
 		case "direct-tcpip":
+			if s.server.disableTunnelling {
+				newChannel.Reject(ssh.Prohibited, "tunnelling is disabled")
+				continue
+			}
 			// used by forward requests
 			go s.handleChannelDirect(newChannel)
 		default:
