@@ -89,10 +89,23 @@ func (s *channelHandler) handleShellExectRequest(
 	for k, v := range env {
 		envVal = append(envVal, fmt.Sprintf("%s=%s", k, v))
 	}
-	envVal = append(envVal, "TERM=xterm")
 
 	usr, _ := user.Current()
+
+	// export TERM
+	term := os.Getenv("TERM")
+	if term == "" {
+		term = "xterm"
+	}
+	envVal = append(envVal, fmt.Sprintf("XTERM=%s", term))
+
+	// export HOME
 	envVal = append(envVal, fmt.Sprintf("HOME=%s", usr.HomeDir))
+
+	// export USER
+	envVal = append(envVal, fmt.Sprintf("USER=%s", usr.Username))
+	envVal = append(envVal, fmt.Sprintf("LOGNAME=%s", usr.Username))
+
 	cmd.Env = envVal
 
 	if pty != nil {
