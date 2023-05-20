@@ -97,7 +97,7 @@ func (s *channelHandler) handleShellExectRequest(
 	if term == "" {
 		term = "xterm"
 	}
-	envVal = append(envVal, fmt.Sprintf("XTERM=%s", term))
+	envVal = append(envVal, fmt.Sprintf("TERM=%s", term))
 
 	// export HOME
 	envVal = append(envVal, fmt.Sprintf("HOME=%s", usr.HomeDir))
