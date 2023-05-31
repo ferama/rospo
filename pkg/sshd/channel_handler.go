@@ -228,6 +228,8 @@ func (s *channelHandler) serveChannelSession(c ssh.NewChannel) {
 		if !ok {
 			log.Printf("declining %s request... ", req.Type)
 		}
+
+		req.Reply(ok, nil)
 	}
 }
 
