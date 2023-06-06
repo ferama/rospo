@@ -103,7 +103,7 @@ func TestSshC(t *testing.T) {
 	client.GrabPubKey()
 	go client.Start()
 
-	client.Connected.Wait()
+	client.ReadyWait()
 }
 
 func TestJumpHosts(t *testing.T) {
@@ -129,7 +129,7 @@ func TestJumpHosts(t *testing.T) {
 	}
 	client := NewSshConnection(clientConf)
 	go client.Start()
-	client.Connected.Wait()
+	client.ReadyWait()
 	client.Stop()
 }
 
@@ -143,7 +143,7 @@ func TestWithPassword(t *testing.T) {
 	}
 	client := NewSshConnection(clientConf)
 	go client.Start()
-	client.Connected.Wait()
+	client.ReadyWait()
 	client.Stop()
 }
 
@@ -191,7 +191,7 @@ func TestShellDisabled(t *testing.T) {
 	}
 	client := NewSshConnection(clientConf)
 	go client.Start()
-	client.Connected.Wait()
+	client.ReadyWait()
 	remoteShell := NewRemoteShell(client)
 	err := remoteShell.Start("ls", false)
 	if err == nil {

@@ -45,9 +45,9 @@ type SshConnection struct {
 
 	Client *ssh.Client
 	// used to inform the tunnels if this sshClient
-	// is Connected. Tunnels will wait on this waitGroup to
-	// know if the ssh client is Connected or not
-	Connected sync.WaitGroup
+	// is connected. Tunnels will wait on this waitGroup to
+	// know if the ssh client is connected or not
+	connected sync.WaitGroup
 
 	connectionStatus   string
 	connectionStatusMU sync.Mutex
@@ -81,12 +81,17 @@ func NewSshConnection(conf *SshClientConf) *SshConnection {
 		connectionStatus:     STATUS_CONNECTING,
 	}
 	// client is not connected on startup, so add 1 here
-	c.Connected.Add(1)
+	c.connected.Add(1)
 	if c.quiet {
 		log.SetOutput(io.Discard)
 	}
 
 	return c
+}
+
+// Waits until the connection is estabilished with the server
+func (s *SshConnection) ReadyWait() {
+	s.connected.Wait()
 }
 
 // Stop closes the ssh conn instance client connection
@@ -117,7 +122,7 @@ func (s *SshConnection) Start() {
 			continue
 		}
 		// client connected. Free the wait group
-		s.Connected.Done()
+		s.connected.Done()
 
 		s.connectionStatusMU.Lock()
 		s.connectionStatus = STATUS_CONNECTED
@@ -125,7 +130,7 @@ func (s *SshConnection) Start() {
 
 		s.keepAlive()
 		s.Stop()
-		s.Connected.Add(1)
+		s.connected.Add(1)
 	}
 }
 

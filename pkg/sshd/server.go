@@ -194,13 +194,20 @@ func (s *sshServer) keyAuth(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.P
 	return nil, fmt.Errorf("unknown public key for %q", conn.User())
 }
 
+func (s *sshServer) GetActiveSessionsCount() int {
+	s.activeSessionMu.Lock()
+	defer s.activeSessionMu.Unlock()
+
+	return s.activeSessions
+}
+
 // serve sshd client connection
 func (s *sshServer) serveConnection(conn net.Conn, config ssh.ServerConfig) {
 	log.Printf("connection from %s", conn.RemoteAddr())
 	s.activeSessionMu.Lock()
 	s.activeSessions++
-	s.activeSessionMu.Unlock()
 	log.Printf("active sessions: %d", s.activeSessions)
+	s.activeSessionMu.Unlock()
 
 	// From a standard TCP connection to an encrypted SSH connection
 	sshConn, chans, reqs, err := ssh.NewServerConn(conn, &config)
@@ -229,8 +236,8 @@ func (s *sshServer) serveConnection(conn net.Conn, config ssh.ServerConfig) {
 	log.Println("client session terminated")
 	s.activeSessionMu.Lock()
 	s.activeSessions--
-	s.activeSessionMu.Unlock()
 	log.Printf("active sessions: %d", s.activeSessions)
+	s.activeSessionMu.Unlock()
 }
 
 // Start the sshServer actually listening for incoming connections

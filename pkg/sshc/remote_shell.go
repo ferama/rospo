@@ -30,7 +30,7 @@ func NewRemoteShell(sshConn *SshConnection) *RemoteShell {
 
 // Start starts the remote shell
 func (rs *RemoteShell) Start(cmd string, requestPty bool) error {
-	rs.sshConn.Connected.Wait()
+	rs.sshConn.ReadyWait()
 
 	session, err := rs.sshConn.Client.NewSession()
 	if err != nil {

@@ -21,7 +21,7 @@ func NewSocksProxy(sshConn *SshConnection) *SocksProxy {
 
 // Start starts the local socks proxy
 func (p *SocksProxy) Start(socksAddress string) error {
-	p.sshConn.Connected.Wait()
+	p.sshConn.ReadyWait()
 
 	server, _ := socks.New(&socks.Config{
 		Logger: log,
