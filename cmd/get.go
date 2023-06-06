@@ -127,7 +127,7 @@ var getCmd = &cobra.Command{
   # downloads a file from the remote server
   $ rospo get myserver:2222 file.txt .
 
-  # dowloads recursively all contents of myremotefolder to local current working directory
+  # downloads recursively all contents of myremotefolder to local current working directory
   $ rospo get myserver:2222 /home/myuser/myremotefolder -r
 
   # downloads recursively all contents of myremotefolder to local target directory
