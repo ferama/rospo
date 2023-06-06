@@ -7,7 +7,7 @@ import (
 )
 
 // borrowed from the official go io package with some changes to support
-// throughtput metrics
+// throughput metrics
 func CopyBuffer(dst io.Writer, src io.Reader, wch chan int64) (err error) {
 	var buf []byte
 	size := 32 * 1024
