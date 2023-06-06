@@ -145,7 +145,7 @@ var getCmd = &cobra.Command{
 		sshcConf.Quiet = true
 		conn := sshc.NewSshConnection(sshcConf)
 		go conn.Start()
-		conn.Connected.Wait()
+		conn.ReadyWait()
 
 		client, err := sftp.NewClient(conn.Client)
 		if err != nil {

@@ -73,7 +73,7 @@ func (t *Tunnel) waitForSshClient() bool {
 	go func() {
 		defer close(c)
 		// WARN: if I have issues with sshConn this will wait forever
-		t.sshConn.Connected.Wait()
+		t.sshConn.ReadyWait()
 	}()
 	select {
 	case <-t.terminate:
