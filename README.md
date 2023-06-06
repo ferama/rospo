@@ -1,8 +1,6 @@
 # [Rospo](https://github.com/ferama/rospo)
 [![Go Reference](https://pkg.go.dev/badge/github.com/ferama/rospo.svg)](https://pkg.go.dev/github.com/ferama/rospo)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ferama/rospo)](https://goreportcard.com/report/github.com/ferama/rospo)
-[![codecov](https://codecov.io/gh/ferama/rospo/branch/main/graph/badge.svg)](https://codecov.io/gh/ferama/rospo)
-
 
 Rospo is a tool meant to create secure and reliable SSH tunnels. A single binary includes both client and server.
 It's meant to make SSH tunnels fun and understandable again
