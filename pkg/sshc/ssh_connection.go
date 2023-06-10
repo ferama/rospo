@@ -9,6 +9,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ferama/rospo/pkg/logger"
@@ -52,6 +53,8 @@ type SshConnection struct {
 	connectionStatus   string
 	connectionStatusMU sync.Mutex
 	clientMU           sync.Mutex
+	// indicates the connection status request
+	isStopped atomic.Bool
 }
 
 // NewSshConnection creates a new SshConnection instance
@@ -79,7 +82,10 @@ func NewSshConnection(conf *SshClientConf) *SshConnection {
 		keepAliveInterval:    5 * time.Second,
 		reconnectionInterval: 5 * time.Second,
 		connectionStatus:     STATUS_CONNECTING,
+		isStopped:            atomic.Bool{},
 	}
+
+	c.isStopped.Store(true)
 	// client is not connected on startup, so add 1 here
 	c.connected.Add(1)
 	if c.quiet {
@@ -96,6 +102,12 @@ func (s *SshConnection) ReadyWait() {
 
 // Stop closes the ssh conn instance client connection
 func (s *SshConnection) Stop() {
+	s.isStopped.Store(true)
+	s.resetConn()
+}
+
+// resets the connection after a stop request or if it fails
+func (s *SshConnection) resetConn() {
 	s.clientMU.Lock()
 	if s.Client != nil {
 		s.Client.Close()
@@ -111,7 +123,12 @@ func (s *SshConnection) Stop() {
 // and keeps it connected sending keep alive packet
 // and reconnecting in the event of network failures
 func (s *SshConnection) Start() {
+	s.isStopped.Store(false)
 	for {
+		// this becomes true if Stop() was called in the meantime
+		if s.isStopped.Load() {
+			break
+		}
 		s.connectionStatusMU.Lock()
 		s.connectionStatus = STATUS_CONNECTING
 		s.connectionStatusMU.Unlock()
@@ -128,8 +145,10 @@ func (s *SshConnection) Start() {
 		s.connectionStatus = STATUS_CONNECTED
 		s.connectionStatusMU.Unlock()
 
+		// this call will block until the connection fails
 		s.keepAlive()
-		s.Stop()
+
+		s.resetConn()
 		s.connected.Add(1)
 	}
 }
