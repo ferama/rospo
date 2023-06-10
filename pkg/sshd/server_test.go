@@ -2,7 +2,6 @@ package sshd
 
 import (
 	"fmt"
-	"math/rand"
 	"net"
 	"strings"
 	"testing"
@@ -54,22 +53,35 @@ func getSSHConn(sshdPort string) *sshc.SshConnection {
 	return client
 }
 
-func generateClients(n int, sshdPort string) {
+func generateClients(n int, sshdPort string) []*sshc.SshConnection {
+	clients := make([]*sshc.SshConnection, 0)
 	for i := 0; i < n; i++ {
-		getSSHConn(sshdPort)
+		c := getSSHConn(sshdPort)
+		clients = append(clients, c)
 	}
+	return clients
 }
 
 func TestActiveSessions(t *testing.T) {
 	sd, sshdPort := startD(false)
 
-	nClients := rand.Intn(10) + 1
-	generateClients(nClients, sshdPort)
+	nClients := 60
+	clients := generateClients(nClients, sshdPort)
 	if sd.GetActiveSessionsCount() != nClients {
 		t.Fatalf("has '%d' sessions, expected '%d", sd.GetActiveSessionsCount(), nClients)
 	}
 
 	t.Logf("==== generated '%d' clients", nClients)
+	for _, c := range clients {
+		c.Stop()
+	}
+
+	// give time to handle disconnects
+	time.Sleep(2 * time.Second)
+
+	if sd.GetActiveSessionsCount() != 0 {
+		t.Fatalf("has '%d' sessions, expected '%d", sd.GetActiveSessionsCount(), 0)
+	}
 }
 
 func TestSftpEnabled(t *testing.T) {
