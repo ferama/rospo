@@ -36,3 +36,6 @@ GOOS=darwin GOARCH=arm64 build
 GOOS=darwin GOARCH=amd64 build
 
 GOOS=windows GOARCH=amd64 build
+
+GOOS=linux GOMIPS=softfloat GOARCH=mips build
+GOOS=linux GOMIPS=softfloat GOARCH=mipsle build
