@@ -31,11 +31,10 @@ go test ./... -v -cover -race || exit 1
 GOOS=linux GOARCH=arm build
 GOOS=linux GOARCH=arm64 build
 GOOS=linux GOARCH=amd64 build
+GOOS=linux GOARCH=mips GOMIPS=softfloat build
+GOOS=linux GOARCH=mipsle GOMIPS=softfloat build
 
 GOOS=darwin GOARCH=arm64 build
 GOOS=darwin GOARCH=amd64 build
 
 GOOS=windows GOARCH=amd64 build
-
-GOOS=linux GOMIPS=softfloat GOARCH=mips build
-GOOS=linux GOMIPS=softfloat GOARCH=mipsle build
