@@ -3,7 +3,7 @@ module github.com/ferama/rospo
 go 1.20
 
 require (
-	github.com/cheggaaa/pb/v3 v3.1.2
+	github.com/cheggaaa/pb/v3 v3.1.4
 	github.com/creack/pty v1.1.18
 	github.com/ferama/go-socks v0.0.0-20230421211114-383b18c55940
 	github.com/gin-contrib/cors v1.4.0
@@ -23,7 +23,7 @@ require (
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
-	github.com/fatih/color v1.14.1 // indirect
+	github.com/fatih/color v1.15.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
