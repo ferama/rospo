@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/cheggaaa/pb/v3 v3.1.4
-	github.com/creack/pty v1.1.18
+	github.com/creack/pty v1.1.20
 	github.com/ferama/go-socks v0.0.0-20230421211114-383b18c55940
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.9.1
