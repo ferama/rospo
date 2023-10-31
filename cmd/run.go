@@ -9,8 +9,6 @@ import (
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/sshd"
 	"github.com/ferama/rospo/pkg/tun"
-	"github.com/ferama/rospo/pkg/web"
-	rootapi "github.com/ferama/rospo/pkg/web/api/root"
 	"github.com/spf13/cobra"
 )
 
@@ -67,28 +65,6 @@ var runCmd = &cobra.Command{
 					go tun.NewTunnel(sshConn, c, false).Start()
 				}
 			}
-		}
-
-		if conf.Web != nil {
-			failIfNoClient("web api")
-
-			dev := false
-			if Version == "development" {
-				dev = true
-			}
-			jh := []string{}
-			info := &rootapi.Info{}
-			if conf.SshClient != nil {
-				for _, h := range conf.SshClient.JumpHosts {
-					jh = append(jh, h.URI)
-				}
-				info = &rootapi.Info{
-					SshClientURI: conf.SshClient.ServerURI,
-					JumpHosts:    jh,
-				}
-			}
-
-			go web.StartServer(dev, sshConn, conf.Web, info)
 		}
 
 		if conf.SocksProxy != nil {

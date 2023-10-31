@@ -209,6 +209,14 @@ func (s *sshServer) serveConnection(conn net.Conn, config ssh.ServerConfig) {
 	log.Printf("active sessions: %d", s.activeSessions)
 	s.activeSessionMu.Unlock()
 
+	defer func() {
+		log.Println("client session terminated")
+		s.activeSessionMu.Lock()
+		s.activeSessions--
+		log.Printf("active sessions: %d", s.activeSessions)
+		s.activeSessionMu.Unlock()
+	}()
+
 	// From a standard TCP connection to an encrypted SSH connection
 	sshConn, chans, reqs, err := ssh.NewServerConn(conn, &config)
 	if err != nil {
@@ -232,12 +240,7 @@ func (s *sshServer) serveConnection(conn net.Conn, config ssh.ServerConfig) {
 
 	// blocks until chans is closed (session terminates)
 	channelHandler.handleChannels()
-	// Accept all channels
-	log.Println("client session terminated")
-	s.activeSessionMu.Lock()
-	s.activeSessions--
-	log.Printf("active sessions: %d", s.activeSessions)
-	s.activeSessionMu.Unlock()
+
 }
 
 // Start the sshServer actually listening for incoming connections
