@@ -6,7 +6,6 @@ import (
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/sshd"
 	"github.com/ferama/rospo/pkg/tun"
-	"github.com/ferama/rospo/pkg/web"
 	"gopkg.in/yaml.v3"
 )
 
@@ -15,7 +14,6 @@ type Config struct {
 	SshClient  *sshc.SshClientConf  `yaml:"sshclient"`
 	Tunnel     []*tun.TunnelConf    `yaml:"tunnel"`
 	SshD       *sshd.SshDConf       `yaml:"sshd"`
-	Web        *web.WebConf         `yaml:"web"`
 	SocksProxy *sshc.SocksProxyConf `yaml:"socksproxy"`
 }
 
@@ -29,7 +27,6 @@ func LoadConfig(filePath string) (*Config, error) {
 	defer f.Close()
 
 	cfg := Config{
-		nil,
 		nil,
 		nil,
 		nil,
