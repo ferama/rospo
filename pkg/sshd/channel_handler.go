@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -83,6 +84,11 @@ func (s *channelHandler) handleShellExectRequest(
 		ssh.Unmarshal(req.Payload, &payload)
 		command := payload.Value
 		cmd = exec.Command(shell, []string{"-c", command}...)
+		if runtime.GOOS == "windows" {
+			command = strings.Replace(command, "powershell.exe", "", 1)
+			command = strings.Replace(command, "powershell", "", 1)
+			cmd = exec.Command(shell, command)
+		}
 	}
 
 	envVal := make([]string, 0, len(env))
