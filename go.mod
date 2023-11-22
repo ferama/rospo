@@ -1,6 +1,6 @@
 module github.com/ferama/rospo
 
-go 1.20
+go 1.21
 
 require (
 	github.com/cheggaaa/pb/v3 v3.1.4
