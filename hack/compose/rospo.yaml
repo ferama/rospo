@@ -1,0 +1,11 @@
+# sshd server configuration
+sshd:
+  server_key: "/server_key"
+  authorized_keys:
+    - /authorized_keys
+    - https://github.com/ferama.keys
+  listen_address: ":2222"
+  disable_shell: false
+  disable_banner: false
+  disable_auth: false
+  disable_sftp_subsystem: false
