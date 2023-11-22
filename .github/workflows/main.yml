@@ -22,23 +22,12 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@v4
         with:
-          go-version: '^1.20.0'
+          go-version: '^1.21.0'
 
-      - name: Get tag
-        id: get_tag
-        run: |
-          if [ "$GITHUB_REF" = "refs/heads/main" ]
-          then 
-              echo "TAG=development" >> $GITHUB_STATE
-          else
-              TAG=${GITHUB_REF/refs\/tags\/v/}
-              echo "TAG=$TAG" >> $GITHUB_STATE
-          fi
-      
       # Runs a set of commands using the runners shell
       - name: Build the binary
         run: |
-          VERSION=${{ steps.get_tag.outputs.TAG }} ./build.sh
+          VERSION=${{ github.ref_name }} ./build.sh
 
       - uses: ncipollo/release-action@v1
         with:
