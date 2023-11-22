@@ -9,31 +9,20 @@ RUN go build \
     -o /rospo .
 
 # Final docker image
-FROM ubuntu:latest
+FROM debian:stable-slim
 RUN set -eux; \
     apt update && \
     apt install -y \
         ca-certificates \
-        sudo \
-        git \
         curl \
-        vim \
-        byobu \
         psmisc \
+        procps \
         iputils-ping \
-        netcat \
+        netcat-openbsd \
         dnsutils \
-        bash-completion \
     && \
     apt clean
 
-RUN \
-    sed -i 's/^#force_color_prompt=yes/force_color_prompt=yes/' /etc/skel/.bashrc \
-    && adduser --gecos "" --disabled-password rospo \
-    && echo "rospo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers \
-    && addgroup rospo sudo
-
 COPY --from=gobuilder /rospo /usr/local/bin/rospo
 
-COPY ./hack/docker/entrypoint.sh /
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/rospo"]
