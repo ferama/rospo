@@ -1,0 +1,28 @@
+services:
+  rospo:
+    restart: unless-stopped
+    image: ghcr.io/ferama/rospo:main
+    container_name: rospo
+    command:
+      - run
+      - /rospo.yaml
+    networks:
+      - rosponet
+    logging:
+      driver: json-file
+      options:
+        max-size: "8m"
+    ports:
+      - "2222:2222"
+    volumes:
+      - ./rospo.yaml:/rospo.yaml
+      - ./server_key:/server_key
+      - ./authorized_keys:/authorized_keys
+      - ./server_key.pub:/server_key.pub
+
+networks:
+  rosponet:
+    # enable_ipv6: true
+    # ipam:
+    #   config:
+    #     - subnet: 2001:0DB9::/112
