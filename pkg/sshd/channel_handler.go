@@ -282,12 +282,13 @@ func (s *channelHandler) handleSftpRequest(channel ssh.Channel) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := server.Serve(); err == io.EOF {
-		server.Close()
-		log.Print("sftp client exited session.")
-	} else if err != nil {
-		log.Printf("sftp server completed with error: %s", err)
+	if err := server.Serve(); err != nil {
+		if err != io.EOF {
+			log.Fatal("sftp server completed with error:", err)
+		}
 	}
+	server.Close()
+	log.Print("sftp client exited session.")
 }
 
 func (s *channelHandler) sendSignal(channel ssh.Channel, signal string) {
