@@ -1,0 +1,20 @@
+# put this in /etc/systemd/system/rospo.service
+# sudo systemctl daemon-reload
+# sudo systemctl start rospo
+
+[Unit]
+Description=Rospo
+After=network.target auditd.service
+
+[Service]
+WorkingDirectory=/home/<rospo_user>
+ExecStart=/home/linuxbrew/.linuxbrew/bin/rospo run /etc/rospo/rospo.yaml
+KillMode=process
+User=<rospo_user>
+Group=<rospo_user>
+Restart=on-failure
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
+Alias=rospo.service
