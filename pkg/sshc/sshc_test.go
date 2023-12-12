@@ -20,14 +20,18 @@ func getPort(addr net.Addr) string {
 	return parts[1]
 }
 
-func startD(withPass bool, disableShell bool) string {
+func startD(withPass bool, disableShell bool, usekeys2 bool) string {
 	serverConf := &sshd.SshDConf{
 		Key:           "../../testdata/server",
 		ListenAddress: "127.0.0.1:0",
 		DisableShell:  disableShell,
 	}
 	if !withPass {
-		serverConf.AuthorizedKeysURI = []string{"../../testdata/authorized_keys"}
+		if usekeys2 {
+			serverConf.AuthorizedKeysURI = []string{"../../testdata/authorized_keys2"}
+		} else {
+			serverConf.AuthorizedKeysURI = []string{"../../testdata/authorized_keys"}
+		}
 	} else {
 		serverConf.AuthorizedPassword = "password"
 	}
@@ -61,7 +65,7 @@ func TestErrors(t *testing.T) {
 	}
 
 	// invalid tunnel hop
-	sshd1Port := startD(false, false)
+	sshd1Port := startD(false, false, false)
 	clientConf = &SshClientConf{
 		Identity: "testdata/client",
 		Insecure: true, // disables known_hosts check
@@ -82,7 +86,7 @@ func TestErrors(t *testing.T) {
 }
 
 func TestSshC(t *testing.T) {
-	sshdPort := startD(false, false)
+	sshdPort := startD(false, false, false)
 
 	file, err := os.CreateTemp("", "rospo_known_hosts")
 	if err != nil {
@@ -107,9 +111,9 @@ func TestSshC(t *testing.T) {
 }
 
 func TestJumpHosts(t *testing.T) {
-	sshd1Port := startD(false, false)
-	sshd2Port := startD(false, false)
-	sshd3Port := startD(false, false)
+	sshd1Port := startD(false, false, false)
+	sshd2Port := startD(false, false, false)
+	sshd3Port := startD(false, false, true)
 
 	// create an ssh client
 	clientConf := &SshClientConf{
@@ -122,7 +126,7 @@ func TestJumpHosts(t *testing.T) {
 			},
 			{
 				URI:      fmt.Sprintf("127.0.0.1:%s", sshd3Port),
-				Identity: "../../testdata/client",
+				Identity: "../../testdata/client2",
 			},
 		},
 		ServerURI: fmt.Sprintf("127.0.0.1:%s", sshd1Port),
@@ -134,7 +138,7 @@ func TestJumpHosts(t *testing.T) {
 }
 
 func TestWithPassword(t *testing.T) {
-	sshdPort := startD(true, false)
+	sshdPort := startD(true, false, false)
 	clientConf := &SshClientConf{
 		ServerURI: fmt.Sprintf("127.0.0.1:%s", sshdPort),
 		JumpHosts: make([]*JumpHostConf, 0),
@@ -148,7 +152,7 @@ func TestWithPassword(t *testing.T) {
 }
 
 func TestRemoteShell(t *testing.T) {
-	sshdPort := startD(false, false)
+	sshdPort := startD(false, false, false)
 	clientConf := &SshClientConf{
 		ServerURI: fmt.Sprintf("127.0.0.1:%s", sshdPort),
 		Identity:  "../../testdata/client",
@@ -165,7 +169,7 @@ func TestRemoteShell(t *testing.T) {
 }
 
 func TestRemoteShellCmd(t *testing.T) {
-	sshdPort := startD(false, false)
+	sshdPort := startD(false, false, false)
 	clientConf := &SshClientConf{
 		ServerURI: fmt.Sprintf("127.0.0.1:%s", sshdPort),
 		Identity:  "../../testdata/client",
@@ -182,7 +186,7 @@ func TestRemoteShellCmd(t *testing.T) {
 }
 
 func TestShellDisabled(t *testing.T) {
-	sshdPort := startD(false, true)
+	sshdPort := startD(false, true, false)
 	clientConf := &SshClientConf{
 		ServerURI: fmt.Sprintf("127.0.0.1:%s", sshdPort),
 		Identity:  "../../testdata/client",
@@ -202,7 +206,7 @@ func TestShellDisabled(t *testing.T) {
 }
 
 func TestSocksProxy(t *testing.T) {
-	sshdPort := startD(false, false)
+	sshdPort := startD(false, false, false)
 	clientConf := &SshClientConf{
 		ServerURI: fmt.Sprintf("127.0.0.1:%s", sshdPort),
 		Identity:  "../../testdata/client",
