@@ -186,7 +186,7 @@ func (s *SshConnection) connect() error {
 	sshConfig := &ssh.ClientConfig{
 		// SSH connection username
 		User:            s.username,
-		Auth:            s.getAuthMethods(),
+		Auth:            s.getAuthMethods(s.identity, s.password),
 		HostKeyCallback: s.verifyHostCallback(true),
 		BannerCallback: func(message string) error {
 			if !s.quiet {
@@ -270,15 +270,15 @@ func (s *SshConnection) verifyHostCallback(fail bool) ssh.HostKeyCallback {
 	}
 }
 
-func (s *SshConnection) getAuthMethods() []ssh.AuthMethod {
+func (s *SshConnection) getAuthMethods(identity string, password string) []ssh.AuthMethod {
 	authMethods := []ssh.AuthMethod{}
 
-	keysAuth, err := utils.LoadIdentityFile(s.identity)
+	keysAuth, err := utils.LoadIdentityFile(identity)
 	if err == nil {
 		authMethods = append(authMethods, keysAuth)
 	}
-	if s.password != "" {
-		authMethods = append(authMethods, ssh.Password(s.password))
+	if password != "" {
+		authMethods = append(authMethods, ssh.Password(password))
 	}
 
 	authMethods = append(authMethods, ssh.PasswordCallback(func() (secret string, err error) {
@@ -312,7 +312,7 @@ func (s *SshConnection) jumpHostConnect(
 
 		config := &ssh.ClientConfig{
 			User:            parsed.Username,
-			Auth:            s.getAuthMethods(),
+			Auth:            s.getAuthMethods(jh.Identity, jh.Password),
 			HostKeyCallback: s.verifyHostCallback(true),
 		}
 		log.Printf("connecting to hop %s@%s", parsed.Username, hop.String())
