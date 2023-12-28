@@ -20,27 +20,36 @@ func TestSSHUrlParser(t *testing.T) {
 
 	list := []string{
 		"user@192.168.0.1:22",
+		"user@[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:2222",
 		"192.168.0.1",
 		"192.168.0.1:2222",
 		":22",
 		"user-name@192.168.0.1:2222",
 		"user@dm1.dm2.dm3.com",
 		"user@dm1.dm2.dm3.com:2222",
+		"[2001:0db8:85a3:0000:0000:8a2e:0370:7334]",
+		"[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:2222",
+		"user@[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:2222",
 	}
 
 	expected := []sshUrl{
 		{Username: "user", Host: "192.168.0.1", Port: 22},
+		{Username: "user", Host: "[2001:0db8:85a3:0000:0000:8a2e:0370:7334]", Port: 2222},
 		{Username: currentUser.Username, Host: "192.168.0.1", Port: 22},
 		{Username: currentUser.Username, Host: "192.168.0.1", Port: 2222},
 		{Username: currentUser.Username, Host: "127.0.0.1", Port: 22},
 		{Username: "user-name", Host: "192.168.0.1", Port: 2222},
 		{Username: "user", Host: "dm1.dm2.dm3.com", Port: 22},
 		{Username: "user", Host: "dm1.dm2.dm3.com", Port: 2222},
+		{Username: currentUser.Username, Host: "[2001:0db8:85a3:0000:0000:8a2e:0370:7334]", Port: 22},
+		{Username: currentUser.Username, Host: "[2001:0db8:85a3:0000:0000:8a2e:0370:7334]", Port: 2222},
+		{Username: "user", Host: "[2001:0db8:85a3:0000:0000:8a2e:0370:7334]", Port: 2222},
 	}
 	for idx, s := range list {
 		parsed := ParseSSHUrl(s)
+		t.Logf("%+v", parsed)
 		if !compare(parsed, &expected[idx]) {
-			t.Fatalf("+%v", &expected[idx])
+			t.Fatalf("%+v", &expected[idx])
 		}
 	}
 }

@@ -4,12 +4,18 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/user"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
+)
+
+const (
+	defaultPort = 22
+	defaultHost = "127.0.0.1"
 )
 
 type sshUrl struct {
@@ -25,32 +31,44 @@ func ParseSSHUrl(url string) *sshUrl {
 	usr, _ := user.Current()
 	conf := &sshUrl{}
 
-	var host string
+	var hostPort string
 
 	if len(parts) == 2 {
 		conf.Username = parts[0]
-		host = parts[1]
+		hostPort = parts[1]
 	} else {
 		conf.Username = usr.Username
-		host = parts[0]
+		hostPort = parts[0]
 	}
 
-	hostParts := strings.Split(host, ":")
-	if len(hostParts) == 2 {
-		port, err := strconv.Atoi(hostParts[1])
+	host, port, err := net.SplitHostPort(hostPort)
+	if err != nil {
+		// error could be "missing port in address" so try again appending defaultPort
+		host, port, err = net.SplitHostPort(fmt.Sprintf("%s:%d", hostPort, defaultPort))
 		if err != nil {
 			log.Fatalln(err)
 		}
-		if hostParts[0] == "" {
-			conf.Host = "127.0.0.1"
-		} else {
-			conf.Host = hostParts[0]
+	}
 
+	conf.Host = defaultHost
+	if host != "" {
+		conf.Host = host
+
+		ip := net.ParseIP(host)
+		if ip != nil { // it could be a domain name
+			if ip.To4() == nil {
+				conf.Host = fmt.Sprintf("[%s]", host)
+			}
+		}
+	}
+
+	conf.Port = defaultPort
+	if port != "" {
+		port, err := strconv.Atoi(port)
+		if err != nil {
+			log.Fatalln(err)
 		}
 		conf.Port = port
-	} else {
-		conf.Host = host
-		conf.Port = 22
 	}
 
 	return conf

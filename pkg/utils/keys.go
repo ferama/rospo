@@ -8,12 +8,12 @@ import (
 	"encoding/pem"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/user"
 	"path/filepath"
 
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/knownhosts"
 )
 
 // GeneratePrivateKey generate an rsa key (actually used from the sshd server)
@@ -90,6 +90,10 @@ func LoadIdentityFile(file string) (ssh.AuthMethod, error) {
 	return ssh.PublicKeys(key), nil
 }
 
+func serializeKey(k ssh.PublicKey) string {
+	return k.Type() + " " + base64.StdEncoding.EncodeToString(k.Marshal())
+}
+
 // AddHostKeyToKnownHosts updates user known_hosts file adding the host key
 func AddHostKeyToKnownHosts(host string, key ssh.PublicKey, knownHostsPath string) error {
 	// add host key if host is not found in known_hosts, error object is return, if nil then connection proceeds,
@@ -101,8 +105,21 @@ func AddHostKeyToKnownHosts(host string, key ssh.PublicKey, knownHostsPath strin
 	}
 	defer f.Close()
 
-	knownHosts := knownhosts.Normalize(host)
-	out := fmt.Sprintf("%s\n", knownhosts.Line([]string{knownHosts}, key))
+	host, port, err := net.SplitHostPort(host)
+	if err != nil {
+		port = fmt.Sprintf("%d", defaultPort)
+	}
+
+	entry := fmt.Sprintf("[%s]:%s", host, port)
+	if ip := net.ParseIP(host); ip != nil {
+		if ip.To4() != nil {
+			if port == fmt.Sprintf("%d", defaultPort) {
+				entry = host
+			}
+		}
+	}
+
+	out := fmt.Sprintf("%s %s\n", entry, serializeKey(key))
 	_, fileErr := f.WriteString(out)
 	return fileErr
 }
