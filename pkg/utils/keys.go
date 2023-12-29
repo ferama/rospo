@@ -90,10 +90,6 @@ func LoadIdentityFile(file string) (ssh.AuthMethod, error) {
 	return ssh.PublicKeys(key), nil
 }
 
-func serializeKey(k ssh.PublicKey) string {
-	return k.Type() + " " + base64.StdEncoding.EncodeToString(k.Marshal())
-}
-
 // AddHostKeyToKnownHosts updates user known_hosts file adding the host key
 func AddHostKeyToKnownHosts(host string, key ssh.PublicKey, knownHostsPath string) error {
 	// add host key if host is not found in known_hosts, error object is return, if nil then connection proceeds,
@@ -119,7 +115,7 @@ func AddHostKeyToKnownHosts(host string, key ssh.PublicKey, knownHostsPath strin
 		}
 	}
 
-	out := fmt.Sprintf("%s %s\n", entry, serializeKey(key))
+	out := fmt.Sprintf("%s %s\n", entry, SerializePublicKey(key))
 	_, fileErr := f.WriteString(out)
 	return fileErr
 }
