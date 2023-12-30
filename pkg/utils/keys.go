@@ -1,8 +1,9 @@
 package utils
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
@@ -17,25 +18,22 @@ import (
 )
 
 // GeneratePrivateKey generate an rsa key (actually used from the sshd server)
-func GeneratePrivateKey() (*rsa.PrivateKey, error) {
-	bitSize := 4096
-	privateKey, _ := rsa.GenerateKey(rand.Reader, bitSize)
+func GeneratePrivateKey() (*ecdsa.PrivateKey, error) {
+	privateKey, _ := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
 
-	// Validate Private Key
-	privateKey.Validate()
 	// log.Println("private key generated")
 	return privateKey, nil
 }
 
 // EncodePrivateKeyToPEM converts a private key object to PEM
-func EncodePrivateKeyToPEM(privateKey *rsa.PrivateKey) []byte {
-	privDER := x509.MarshalPKCS1PrivateKey(privateKey)
+func EncodePrivateKeyToPEM(privateKey *ecdsa.PrivateKey) []byte {
+	encoded, _ := x509.MarshalECPrivateKey(privateKey)
 
 	// pem.Block
 	privBlock := pem.Block{
-		Type:    "RSA PRIVATE KEY",
+		Type:    "EC PRIVATE KEY",
 		Headers: nil,
-		Bytes:   privDER,
+		Bytes:   encoded,
 	}
 
 	// Private key in PEM format
@@ -44,7 +42,7 @@ func EncodePrivateKeyToPEM(privateKey *rsa.PrivateKey) []byte {
 }
 
 // GeneratePublicKey generates a public key from a private one
-func GeneratePublicKey(key *rsa.PublicKey) ([]byte, error) {
+func GeneratePublicKey(key *ecdsa.PublicKey) ([]byte, error) {
 	publicRsaKey, err := ssh.NewPublicKey(key)
 	if err != nil {
 		return nil, err
