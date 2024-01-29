@@ -3,7 +3,7 @@ module github.com/ferama/rospo
 go 1.21
 
 require (
-	github.com/cheggaaa/pb/v3 v3.1.4
+	github.com/cheggaaa/pb/v3 v3.1.5
 	github.com/creack/pty v1.1.21
 	github.com/ferama/go-socks v0.0.0-20230421211114-383b18c55940
 	github.com/judwhite/go-svc v1.2.1
@@ -25,7 +25,7 @@ require (
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
-	github.com/mattn/go-runewidth v0.0.14 // indirect
+	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/stretchr/testify v1.8.3 // indirect
