@@ -47,7 +47,7 @@ func newChannelHandler(
 
 }
 
-func (s *channelHandler) handleShellExectRequest(
+func (s *channelHandler) handleShellExecRequest(
 	pty rpty.Pty,
 	env map[string]string,
 	channel ssh.Channel,
@@ -192,7 +192,7 @@ func (s *channelHandler) serveChannelSession(c ssh.NewChannel) {
 		ok := false
 		switch req.Type {
 		case "shell", "exec":
-			ok = s.handleShellExectRequest(pty, env, channel, req)
+			ok = s.handleShellExecRequest(pty, env, channel, req)
 
 		case "pty-req":
 			pty, err = s.handlePtyRequest(req)
