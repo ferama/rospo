@@ -168,8 +168,8 @@ func CurrentUser() *user.User {
 				return "/"
 			}()
 			u := &user.User{
-				Uid:      "0",
-				Gid:      "0",
+				Uid:      "?",
+				Gid:      "?",
 				Username: userName,
 				Name:     userName,
 				HomeDir:  homeDir,
