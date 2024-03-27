@@ -1,17 +1,17 @@
 package cmd
 
 import (
-	"os/user"
 	"path/filepath"
 
 	"github.com/ferama/rospo/pkg/sshc"
+	"github.com/ferama/rospo/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
 func init() {
 	rootCmd.AddCommand(grabpubkeyCmd)
 
-	usr, _ := user.Current()
+	usr := utils.CurrentUser()
 	knownHostFile := filepath.Join(usr.HomeDir, ".ssh", "known_hosts")
 	grabpubkeyCmd.PersistentFlags().StringP("known-hosts", "k", knownHostFile, "the known_hosts file absolute path")
 }
