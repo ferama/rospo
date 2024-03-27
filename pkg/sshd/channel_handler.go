@@ -7,7 +7,6 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"os/user"
 	"runtime"
 	"strings"
 	"sync"
@@ -56,10 +55,7 @@ func (s *channelHandler) handleShellExecRequest(
 	var shell string
 
 	if s.server.shellExecutable == "" {
-		usr, err := user.Current()
-		if err != nil {
-			panic(err)
-		}
+		usr := utils.CurrentUser()
 		shell = utils.GetUserDefaultShell(usr.Username)
 	} else {
 		shell = s.server.shellExecutable
@@ -96,7 +92,7 @@ func (s *channelHandler) handleShellExecRequest(
 		envVal = append(envVal, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	usr, _ := user.Current()
+	usr := utils.CurrentUser()
 
 	// export TERM
 	term := os.Getenv("TERM")

@@ -11,7 +11,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"os/user"
 	"path/filepath"
 
 	"golang.org/x/crypto/ssh"
@@ -69,7 +68,7 @@ func WriteKeyToFile(keyBytes []byte, keyPath string) error {
 func LoadIdentityFile(file string) (ssh.AuthMethod, error) {
 	path, _ := ExpandUserHome(file)
 
-	usr, _ := user.Current()
+	usr := CurrentUser()
 	// no path is set, try with a reasonable default
 	if path == "" {
 		path = filepath.Join(usr.HomeDir, ".ssh", "id_rsa")
