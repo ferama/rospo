@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 const (
@@ -28,7 +29,7 @@ type sshUrl struct {
 func ParseSSHUrl(url string) *sshUrl {
 	parts := strings.Split(url, "@")
 
-	usr, _ := user.Current()
+	usr := CurrentUser()
 	conf := &sshUrl{}
 
 	var hostPort string
@@ -76,10 +77,7 @@ func ParseSSHUrl(url string) *sshUrl {
 
 // ExpandUserHome resolve paths like "~/.ssh/id_rsa"
 func ExpandUserHome(path string) (string, error) {
-	usr, err := user.Current()
-	if err != nil {
-		return "", err
-	}
+	usr := CurrentUser()
 	ret := path
 
 	// supports paths like "~/.ssh/id_rsa"
@@ -134,4 +132,50 @@ func ByteCountSI(b int64) string {
 	}
 	return fmt.Sprintf("%.1f %cB",
 		float64(b)/float64(div), "kMGTPE"[exp])
+}
+
+var currentUserCache struct {
+	sync.Once
+	u *user.User
+}
+
+func CurrentUser() *user.User {
+	currentUserCache.Do(func() {
+		currentUserCache.u = func() *user.User {
+			if cu, err := user.Current(); err == nil {
+				return cu
+			}
+			// error fallback
+			userName := func() string {
+				if runtime.GOOS == "windows" {
+					if user, ok := os.LookupEnv("USERNAME"); ok {
+						return user
+					}
+				} else {
+					if user, ok := os.LookupEnv("USER"); ok {
+						return user
+					}
+				}
+				return "root"
+			}()
+			homeDir := func() string {
+				if home, err := os.UserHomeDir(); err == nil {
+					return home
+				}
+				if wd, err := os.Getwd(); err == nil {
+					return wd
+				}
+				return "/"
+			}()
+			u := &user.User{
+				Uid:      "?",
+				Gid:      "?",
+				Username: userName,
+				Name:     userName,
+				HomeDir:  homeDir,
+			}
+			return u
+		}()
+	})
+	return currentUserCache.u
 }

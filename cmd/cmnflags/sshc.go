@@ -1,10 +1,10 @@
 package cmnflags
 
 import (
-	"os/user"
 	"path/filepath"
 
 	"github.com/ferama/rospo/pkg/sshc"
+	"github.com/ferama/rospo/pkg/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -12,7 +12,7 @@ import (
 // AddSshClientFlags adds sshc common flags to FlagSet
 func AddSshClientFlags(fs *pflag.FlagSet) {
 
-	usr, _ := user.Current()
+	usr := utils.CurrentUser()
 	defaultIdentity := filepath.Join(usr.HomeDir, ".ssh", "id_rsa")
 	knownHostFile := filepath.Join(usr.HomeDir, ".ssh", "known_hosts")
 

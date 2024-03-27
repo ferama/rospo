@@ -6,7 +6,6 @@ import (
 	"io"
 	"net"
 	"os"
-	"os/user"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
@@ -63,7 +62,7 @@ func NewSshConnection(conf *SshClientConf) *SshConnection {
 	parsed := utils.ParseSSHUrl(conf.ServerURI)
 	var knownHostsPath string
 	if conf.KnownHosts == "" {
-		usr, _ := user.Current()
+		usr := utils.CurrentUser()
 		knownHostsPath = filepath.Join(usr.HomeDir, ".ssh", "known_hosts")
 	} else {
 		knownHostsPath, _ = utils.ExpandUserHome(conf.KnownHosts)
@@ -199,7 +198,7 @@ func (s *SshConnection) connect() error {
 
 	identityPath := s.identity
 	if s.identity == "" {
-		usr, _ := user.Current()
+		usr := utils.CurrentUser()
 		identityPath = filepath.Join(usr.HomeDir, ".ssh", "id_rsa")
 	}
 
