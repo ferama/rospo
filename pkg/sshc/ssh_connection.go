@@ -198,7 +198,7 @@ func (s *SshConnection) connect() error {
 
 	identityPath := s.identity
 	if s.identity == "" {
-		usr:= utils.CurrentUser()
+		usr := utils.CurrentUser()
 		identityPath = filepath.Join(usr.HomeDir, ".ssh", "id_rsa")
 	}
 
