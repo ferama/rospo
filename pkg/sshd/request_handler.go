@@ -140,17 +140,20 @@ func (r *requestHandler) handleRequests() {
 func (r *requestHandler) checkAlive(sshConn *ssh.ServerConn, ln net.Listener, addr string) {
 	ticker := time.NewTicker(r.forwardsKeepAliveInterval)
 
+	defer func() {
+		ln.Close()
+		r.forwardsMu.Lock()
+		delete(r.forwards, addr)
+		r.forwardsMu.Unlock()
+	}()
+
 	log.Println("starting check for forward availability")
 	for {
 		<-ticker.C
 		_, _, err := sshConn.SendRequest("checkalive@rospo", true, nil)
 		if err != nil {
 			log.Printf("forward endpoint not available anymore. Closing socket %s", ln.Addr())
-			ln.Close()
-			r.forwardsMu.Lock()
-			delete(r.forwards, addr)
-			r.forwardsMu.Unlock()
-			return
+			break
 		}
 	}
 }
