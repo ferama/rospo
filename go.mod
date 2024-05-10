@@ -5,13 +5,13 @@ go 1.21
 require (
 	github.com/cheggaaa/pb/v3 v3.1.5
 	github.com/creack/pty v1.1.21
-	github.com/ferama/go-socks v0.0.0-20230421211114-383b18c55940
+	github.com/ferama/go-socks v0.0.0-20240510140443-0400c78f7018
 	github.com/judwhite/go-svc v1.2.1
 	github.com/pkg/sftp v1.13.6
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/crypto v0.22.0
-	golang.org/x/net v0.24.0
+	golang.org/x/crypto v0.23.0
+	golang.org/x/net v0.25.0
 	golang.org/x/sys v0.20.0
 	golang.org/x/term v0.20.0
 	gopkg.in/yaml.v3 v3.0.1
