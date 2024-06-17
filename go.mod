@@ -8,7 +8,7 @@ require (
 	github.com/ferama/go-socks v0.0.0-20240510140443-0400c78f7018
 	github.com/judwhite/go-svc v1.2.1
 	github.com/pkg/sftp v1.13.6
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/crypto v0.24.0
 	golang.org/x/net v0.26.0
