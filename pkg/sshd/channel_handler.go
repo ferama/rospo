@@ -109,6 +109,7 @@ func (s *channelHandler) handleShellExecRequest(
 	envVal = append(envVal, fmt.Sprintf("LOGNAME=%s", usr.Username))
 
 	cmd.Env = envVal
+	cmd.Dir = usr.HomeDir
 
 	if pty != nil {
 		if err := pty.Run(cmd); err != nil {
