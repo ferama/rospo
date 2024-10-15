@@ -28,7 +28,14 @@ socksproxy:
   listen_address: :1080
   # OPTIONAL: if defined use a dedicated sshclient for the socksproxy
   # sshclient:
-    
+
+# if set, enable a dns proxy over ssh connection
+# the remote dns must accept tcp connections
+dnsproxy:
+  listen_address: :53
+  remote_dns_address: 8.8.8.8:53    
+  # OPTIONAL: if defined use a dedicated sshclient for the socksproxy
+  # sshclient:
 
 # List of tunnels configuration. Requires that the sshclient section
 # is configured too. We are going to use one ssh connection 

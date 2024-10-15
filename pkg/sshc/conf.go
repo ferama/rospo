@@ -29,6 +29,13 @@ type SocksProxyConf struct {
 	SshClientConf *SshClientConf `yaml:"sshclient"`
 }
 
+type DnsProxyConf struct {
+	ListenAddress    string  `yaml:"listen_address"`
+	RemoteDnsAddress *string `yaml:"remote_dns_address"`
+	// use a dedicated ssh client. if nil use the global one
+	SshClientConf *SshClientConf `yaml:"sshclient"`
+}
+
 // GetServerEndpoint Builds a server endpoint object from the Server string
 func (c *SshClientConf) GetServerEndpoint() *utils.Endpoint {
 	return utils.NewEndpoint(c.ServerURI)
