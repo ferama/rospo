@@ -54,7 +54,7 @@ var runCmd = &cobra.Command{
 			somethingRun = true
 		}
 
-		if conf.Tunnel != nil && len(conf.Tunnel) > 0 {
+		if len(conf.Tunnel) > 0 {
 			for _, c := range conf.Tunnel {
 				if c.SshClientConf != nil {
 					conn := sshc.NewSshConnection(c.SshClientConf)
@@ -85,6 +85,27 @@ var runCmd = &cobra.Command{
 					log.Fatal(err)
 				}
 			}()
+		}
+
+		if conf.DnsProxy != nil {
+			var dnsProxy *sshc.DnsProxy
+			if conf.DnsProxy.SshClientConf == nil {
+				failIfNoClient("dns proxy")
+				dnsProxy = sshc.NewDnsProxy(sshConn, conf.DnsProxy)
+			} else {
+				proxySshConn := sshc.NewSshConnection(conf.SocksProxy.SshClientConf)
+				go proxySshConn.Start()
+				dnsProxy = sshc.NewDnsProxy(proxySshConn, conf.DnsProxy)
+			}
+			somethingRun = true
+
+			go func() {
+				err := dnsProxy.Start()
+				if err != nil {
+					log.Fatal(err)
+				}
+			}()
+
 		}
 
 		if somethingRun {

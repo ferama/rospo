@@ -15,6 +15,7 @@ type Config struct {
 	Tunnel     []*tun.TunnelConf    `yaml:"tunnel"`
 	SshD       *sshd.SshDConf       `yaml:"sshd"`
 	SocksProxy *sshc.SocksProxyConf `yaml:"socksproxy"`
+	DnsProxy   *sshc.DnsProxyConf   `yaml:"dnsproxy"`
 }
 
 // LoadConfig parses the [config].yaml file and loads its values
@@ -27,6 +28,7 @@ func LoadConfig(filePath string) (*Config, error) {
 	defer f.Close()
 
 	cfg := Config{
+		nil,
 		nil,
 		nil,
 		nil,
