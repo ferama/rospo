@@ -19,9 +19,10 @@ func init() {
 
 var dnsProxyCmd = &cobra.Command{
 	Use:   "dns-proxy [user@]host[:port]",
-	Short: "Starts a dns proxy",
-	Long: `Starts a local dns server that sends its request through the ssh tunnel
+	Short: "Starts a DNS over tcp proxy",
+	Long: `Starts a local DNS server that sends its request through the ssh tunnel
 to the configured DNS server.
+It uses dns over TCP so the remote DNS serve must support TCP.
 	`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
