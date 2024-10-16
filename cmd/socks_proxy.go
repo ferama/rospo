@@ -9,15 +9,15 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(proxyCmd)
+	rootCmd.AddCommand(socksProxyCmd)
 	// sshc options
-	cmnflags.AddSshClientFlags(proxyCmd.Flags())
+	cmnflags.AddSshClientFlags(socksProxyCmd.Flags())
 
-	proxyCmd.Flags().StringP("listen-address", "l", "127.0.0.1:1080", "the socks proxy listener address")
+	socksProxyCmd.Flags().StringP("listen-address", "l", "127.0.0.1:1080", "the socks proxy listener address")
 }
 
-var proxyCmd = &cobra.Command{
-	Use:   "proxy [user@]host[:port]",
+var socksProxyCmd = &cobra.Command{
+	Use:   "socks-proxy [user@]host[:port]",
 	Short: "Starts a SOCKS proxy",
 	Long: `Starts a SOCKS proxy
 

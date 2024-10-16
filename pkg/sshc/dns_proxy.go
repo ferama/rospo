@@ -38,6 +38,8 @@ func (p *DnsProxy) resolveDomain(conn net.Conn, msg *dns.Msg) ([]byte, error) {
 		return nil, fmt.Errorf("failed to pack DNS message: %v", err)
 	}
 
+	// dns over TCP requires the queryLength info to be written
+	// before the query
 	queryLength := make([]byte, 2)
 	binary.BigEndian.PutUint16(queryLength, uint16(len(query)))
 
