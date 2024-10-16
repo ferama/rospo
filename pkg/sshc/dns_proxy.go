@@ -129,7 +129,7 @@ func (p *DnsProxy) Start() error {
 	log.Printf("dns-proxy listening on UDP: %s. Using remote dns: %s", p.proxyListenAddr, p.remoteDnsServer)
 
 	// Handle incoming DNS queries
-	buf := make([]byte, 4096)
+	buf := make([]byte, 8192)
 	for {
 		n, clientAddr, err := udpConn.ReadFromUDP(buf)
 		if err != nil {
