@@ -29,6 +29,7 @@ It's meant to make SSH tunnels fun and understandable again
   * Sftp subsystem support server side
   * File transfer support client side (get and put sftp subcommands)
   * SOCKS5/SOCKS4 proxy server trough SSH
+  * DNS over SSH proxy
 
 ## How to Install
 
