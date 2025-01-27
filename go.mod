@@ -7,7 +7,7 @@ require (
 	github.com/creack/pty v1.1.24
 	github.com/ferama/go-socks v0.0.0-20240510140443-0400c78f7018
 	github.com/judwhite/go-svc v1.2.1
-	github.com/miekg/dns v1.1.62
+	github.com/miekg/dns v1.1.63
 	github.com/pkg/sftp v1.13.7
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
