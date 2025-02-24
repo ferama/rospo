@@ -22,7 +22,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@v5
         with:
-          go-version: '^1.21.0'
+          go-version: '^1.24.0'
 
       # Runs a set of commands using the runners shell
       - name: Build the binary

@@ -1,5 +1,5 @@
 # go backend builder
-FROM golang:1.21 as gobuilder
+FROM golang:1.24 as gobuilder
 ARG VERSION=development
 WORKDIR /go/src/app
 COPY . .
