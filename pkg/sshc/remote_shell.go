@@ -34,7 +34,7 @@ func (rs *RemoteShell) Start(cmd string, requestPty bool) error {
 
 	session, err := rs.sshConn.Client.NewSession()
 	if err != nil {
-		log.Fatalf("Failed to create session: " + err.Error())
+		log.Fatalf("Failed to create session: %s", err.Error())
 		return err
 	}
 
