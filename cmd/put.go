@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	pb "github.com/cheggaaa/pb/v3"
 	"github.com/ferama/rospo/cmd/cmnflags"
@@ -45,11 +47,37 @@ func putFile(client *sftp.Client, remote, localPath string) error {
 	}
 	defer lFile.Close()
 
-	rFile, err := client.Create(remotePath)
+	var offset int64
+	rFile, err := client.OpenFile(remotePath, os.O_WRONLY|os.O_CREATE)
+	if err == nil {
+		// Check if the remote file already exists and get its size
+		offset, err = rFile.Seek(0, io.SeekEnd)
+		if err != nil {
+			return fmt.Errorf("cannot seek remote file: %s", err)
+		}
+		rFile.Close()
+	} else {
+		offset = 0
+	}
+
+	// Reopen the remote file for writing from the offset
+	rFile, err = client.OpenFile(remotePath, os.O_WRONLY|os.O_CREATE)
 	if err != nil {
 		return fmt.Errorf("cannot open remote file for write: %s", err)
 	}
 	defer rFile.Close()
+
+	// Seek the remote file to the offset
+	_, err = rFile.Seek(offset, io.SeekStart)
+	if err != nil {
+		return fmt.Errorf("cannot seek remote file: %s", err)
+	}
+
+	// Seek the local file to the offset
+	_, err = lFile.Seek(offset, io.SeekStart)
+	if err != nil {
+		return fmt.Errorf("cannot seek local file: %s", err)
+	}
 
 	byteswrittench := make(chan int64)
 	go func() {
@@ -65,6 +93,7 @@ func putFile(client *sftp.Client, remote, localPath string) error {
 		}
 		pbar.Finish()
 	}()
+	byteswrittench <- offset
 	err = rio.CopyBuffer(rFile, lFile, byteswrittench)
 	close(byteswrittench)
 
@@ -75,7 +104,47 @@ func putFile(client *sftp.Client, remote, localPath string) error {
 	return nil
 }
 
-func putFileRecursive(client *sftp.Client, remote, local string) error {
+func retryPutFile(conn *sshc.SshConnection, remote, local string) {
+	var err error = nil
+	var client *sftp.Client
+	for {
+		if err != nil {
+			time.Sleep(1 * time.Second)
+		}
+
+		client, err = sftp.NewClient(conn.Client)
+		if err != nil {
+			log.Printf("err while connecting: %s", err)
+			continue
+
+		}
+		defer client.Close()
+		if remote == "" {
+			remote, err = client.Getwd()
+			if err != nil {
+				log.Printf("remote is empty and I can get cwd, %s", err)
+				continue
+			}
+		}
+
+		err = putFile(client, remote, local)
+		if err != nil {
+			log.Printf("error while copying file: %s", err)
+			continue
+		} else {
+			break
+		}
+	}
+}
+
+func putFileRecursive(conn *sshc.SshConnection, remote, local string) error {
+	client, err := sftp.NewClient(conn.Client)
+	if err != nil {
+		log.Printf("err while connecting: %s", err)
+		return err
+
+	}
+	defer client.Close()
 	remotePath, err := client.RealPath(remote)
 	if err != nil {
 		return fmt.Errorf("invalid remote path: %s", remotePath)
@@ -107,10 +176,7 @@ func putFileRecursive(client *sftp.Client, remote, local string) error {
 				return fmt.Errorf("cannot create directory %s: %s", remotePath, err)
 			}
 		} else {
-			err := putFile(client, targetPath, localPath)
-			if err != nil {
-				return err
-			}
+			retryPutFile(conn, targetPath, localPath)
 		}
 		return nil
 	})
@@ -149,25 +215,13 @@ var putCmd = &cobra.Command{
 		go conn.Start()
 		conn.ReadyWait()
 
-		client, err := sftp.NewClient(conn.Client)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer client.Close()
-		if remote == "" {
-			remote, err = client.Getwd()
-			if err != nil {
-				log.Fatalf("remote is empty and I can get cwd, %s", err)
-			}
-		}
-
 		if recursive {
-			err = putFileRecursive(client, remote, local)
+			err := putFileRecursive(conn, remote, local)
+			if err != nil {
+				log.Printf("error while copying file: %s", err)
+			}
 		} else {
-			err = putFile(client, remote, local)
-		}
-		if err != nil {
-			log.Fatalln(err)
+			retryPutFile(conn, remote, local)
 		}
 
 	},
