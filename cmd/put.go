@@ -30,7 +30,6 @@ func init() {
 }
 
 func putFile(sftpConn *sshc.SftpConnection, remote, localPath string) error {
-
 	sftpConn.ReadyWait()
 
 	remotePath, err := sftpConn.Client.RealPath(remote)
@@ -153,6 +152,7 @@ func isConnectionError(err error) bool {
 }
 
 func putFileRecursive(sftpConn *sshc.SftpConnection, remote, local string) error {
+	sftpConn.ReadyWait()
 
 	remotePath, err := sftpConn.Client.RealPath(remote)
 	if err != nil {

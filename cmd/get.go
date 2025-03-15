@@ -177,6 +177,8 @@ func downloadChunk(sftpConn *sshc.SftpConnection, remotePath string, lFile *os.F
 }
 
 func getFileRecursive(sftpConn *sshc.SftpConnection, remote, local string) error {
+	sftpConn.ReadyWait()
+
 	remotePath, err := sftpConn.Client.RealPath(remote)
 	if err != nil {
 		return fmt.Errorf("invalid remote path: %s", remotePath)
