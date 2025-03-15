@@ -218,7 +218,6 @@ var putCmd = &cobra.Command{
 		// sshcConf.Quiet = true
 		conn := sshc.NewSshConnection(sshcConf)
 		go conn.Start()
-		// conn.ReadyWait()
 
 		sftpConn := sshc.NewSftpConnection(conn)
 		go sftpConn.Start()
