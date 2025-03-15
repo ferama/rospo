@@ -24,7 +24,7 @@ func init() {
 
 func getFile(sftpConn *sshc.SftpConnection, remote, localPath string) error {
 	const chunkSize = 128 * 1024 // 128KB per chunk
-	const maxWorkers = 8         // Number of parallel workers
+	const maxWorkers = 16        // Number of parallel workers
 
 	sftpConn.ReadyWait()
 

@@ -16,11 +16,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	chunkSize  = 128 * 1024 // 128KB per chunk
-	maxWorkers = 8          // Number of parallel workers
-)
-
 func init() {
 	rootCmd.AddCommand(putCmd)
 
@@ -30,6 +25,9 @@ func init() {
 }
 
 func putFile(sftpConn *sshc.SftpConnection, remote, localPath string) error {
+	const chunkSize = 128 * 1024 // 128KB per chunk
+	const maxWorkers = 16        // Number of parallel workers
+
 	sftpConn.ReadyWait()
 
 	remotePath, err := sftpConn.Client.RealPath(remote)
