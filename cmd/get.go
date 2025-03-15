@@ -141,12 +141,19 @@ func downloadChunk(sftpConn *sshc.SftpConnection, remotePath string, lFile *os.F
 	}
 
 	// Read chunk
-	n, err := rFile.Read(buf)
-	if err != nil && err != io.EOF {
-		if isConnectionError(err) {
-			return fmt.Errorf("connection lost")
+	totalRead := 0
+	for totalRead < len(buf) {
+		n, err := rFile.Read(buf[totalRead:])
+		if err != nil && err != io.EOF {
+			if isConnectionError(err) {
+				return fmt.Errorf("connection lost")
+			}
+			return fmt.Errorf("error reading remote file: %s", err)
 		}
-		return fmt.Errorf("error reading remote file: %s", err)
+		if n == 0 {
+			break
+		}
+		totalRead += n
 	}
 
 	// Seek to correct position in local file
@@ -155,13 +162,17 @@ func downloadChunk(sftpConn *sshc.SftpConnection, remotePath string, lFile *os.F
 	}
 
 	// Write chunk to local file
-	written, err := lFile.Write(buf[:n])
-	if err != nil {
-		return fmt.Errorf("error writing local file: %s", err)
+	totalWritten := 0
+	for totalWritten < totalRead {
+		written, err := lFile.Write(buf[totalWritten:totalRead])
+		if err != nil {
+			return fmt.Errorf("error writing local file: %s", err)
+		}
+		totalWritten += written
 	}
 
 	// Update progress
-	progressCh <- int64(written)
+	progressCh <- int64(totalWritten)
 	return nil
 }
 

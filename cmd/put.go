@@ -130,15 +130,19 @@ func uploadChunk(sftpConn *sshc.SftpConnection, remotePath string, lFile *os.Fil
 	}
 
 	// Write chunk
-	written, err := rFile.Write(buf[:n])
-	if err != nil {
-		if isConnectionError(err) {
-			return fmt.Errorf("connection lost")
+	totalWritten := 0
+	for totalWritten < n {
+		written, err := rFile.Write(buf[totalWritten:n])
+		if err != nil {
+			if isConnectionError(err) {
+				return fmt.Errorf("connection lost")
+			}
+			return fmt.Errorf("error writing remote file: %s", err)
 		}
-		return fmt.Errorf("error writing remote file: %s", err)
+		totalWritten += written
 	}
 
-	progressCh <- int64(written)
+	progressCh <- int64(totalWritten)
 	return nil
 }
 
