@@ -7,11 +7,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	pb "github.com/cheggaaa/pb/v3"
 	"github.com/ferama/rospo/cmd/cmnflags"
 	"github.com/ferama/rospo/pkg/sshc"
+	"github.com/ferama/rospo/pkg/worker"
 	"github.com/spf13/cobra"
 )
 
@@ -89,42 +89,31 @@ func getFile(sftpConn *sshc.SftpConnection, remote, localPath string) error {
 		pbar.Finish()
 	}()
 
-	// Job queue and worker synchronization
-	var wg sync.WaitGroup
-	jobs := make(chan int64, maxWorkers)
-
-	// Worker Goroutines
-	for i := range maxWorkers {
-		wg.Add(1)
-		go func(workerID int) {
-			defer wg.Done()
-			for chunkOffset := range jobs {
-				for {
-					sftpConn.ReadyWait()
-					err := downloadChunk(sftpConn, remotePath, lFile, chunkOffset, chunkSize, progressCh)
-					if err == nil {
-						break // Success, move to next chunk
-					}
-				}
-			}
-		}(i)
-	}
+	workerPool := worker.NewPool(maxWorkers)
+	defer workerPool.Stop()
 
 	// Enqueue only the remaining chunks for workers
 	for chunkOffset := offset; chunkOffset < fileSize; chunkOffset += chunkSize {
-		jobs <- chunkOffset
+		workerPool.Enqueue(func() {
+			for {
+				err := downloadChunk(sftpConn, remotePath, localPath, chunkOffset, chunkSize, progressCh)
+				if err == nil {
+					break // Success, move to next chunk
+				}
+			}
+		})
 	}
-	close(jobs)
 
-	// Wait for all workers to complete
-	wg.Wait()
+	workerPool.Wait()
 	close(progressCh)
 
 	// Set final file permissions
 	return lFile.Chmod(remoteStat.Mode())
 }
 
-func downloadChunk(sftpConn *sshc.SftpConnection, remotePath string, lFile *os.File, offset, chunkSize int64, progressCh chan<- int64) error {
+func downloadChunk(sftpConn *sshc.SftpConnection, remotePath string, localPath string, offset, chunkSize int64, progressCh chan<- int64) error {
+	sftpConn.ReadyWait()
+
 	buf := make([]byte, chunkSize)
 
 	// Open remote file
@@ -145,9 +134,6 @@ func downloadChunk(sftpConn *sshc.SftpConnection, remotePath string, lFile *os.F
 	for totalRead < len(buf) {
 		n, err := rFile.Read(buf[totalRead:])
 		if err != nil && err != io.EOF {
-			if isConnectionError(err) {
-				return fmt.Errorf("connection lost")
-			}
 			return fmt.Errorf("error reading remote file: %s", err)
 		}
 		if n == 0 {
@@ -155,6 +141,12 @@ func downloadChunk(sftpConn *sshc.SftpConnection, remotePath string, lFile *os.F
 		}
 		totalRead += n
 	}
+
+	lFile, err := os.OpenFile(localPath, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("cannot open local file for write: %s", err)
+	}
+	defer lFile.Close()
 
 	// Seek to correct position in local file
 	if _, err := lFile.Seek(offset, io.SeekStart); err != nil {

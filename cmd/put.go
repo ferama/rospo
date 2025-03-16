@@ -8,11 +8,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	pb "github.com/cheggaaa/pb/v3"
 	"github.com/ferama/rospo/cmd/cmnflags"
 	"github.com/ferama/rospo/pkg/sshc"
+	"github.com/ferama/rospo/pkg/worker"
 	"github.com/spf13/cobra"
 )
 
@@ -25,8 +25,10 @@ func init() {
 }
 
 func putFile(sftpConn *sshc.SftpConnection, remote, localPath string) error {
-	const chunkSize = 128 * 1024 // 128KB per chunk
-	const maxWorkers = 16        // Number of parallel workers
+	const (
+		chunkSize  = 128 * 1024 // 128KB per chunk
+		maxWorkers = 16         // Number of parallel workers
+	)
 
 	sftpConn.ReadyWait()
 
@@ -58,8 +60,8 @@ func putFile(sftpConn *sshc.SftpConnection, remote, localPath string) error {
 		return nil
 	}
 
-	var wg sync.WaitGroup
-	jobs := make(chan int64, maxWorkers)
+	// var wg sync.WaitGroup
+	// jobs := make(chan int64, putMaxWorkers)
 	progressCh := make(chan int64, maxWorkers)
 
 	go func() {
@@ -75,30 +77,22 @@ func putFile(sftpConn *sshc.SftpConnection, remote, localPath string) error {
 		pbar.Finish()
 	}()
 
-	// Worker Goroutines
-	for range maxWorkers {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for chunkOffset := range jobs {
-				for {
-					sftpConn.ReadyWait()
-					err := uploadChunk(sftpConn, remotePath, lFile, chunkOffset, chunkSize, progressCh)
-					if err == nil {
-						break // Success, move to next chunk
-					}
-				}
-			}
-		}()
-	}
+	workerPool := worker.NewPool(maxWorkers)
+	defer workerPool.Stop()
 
 	// Enqueue only the remaining chunks for workers
 	for chunkOffset := offset; chunkOffset < fileSize; chunkOffset += chunkSize {
-		jobs <- chunkOffset
+		workerPool.Enqueue(func() {
+			for {
+				err := uploadChunk(sftpConn, remotePath, lFile, chunkOffset, chunkSize, progressCh)
+				if err == nil {
+					break // Success, move to next chunk
+				}
+			}
+		})
 	}
-	close(jobs)
 
-	wg.Wait()
+	workerPool.Wait()
 	close(progressCh)
 
 	return sftpConn.Client.Chmod(remotePath, localStat.Mode())
@@ -106,6 +100,8 @@ func putFile(sftpConn *sshc.SftpConnection, remote, localPath string) error {
 
 // Upload Chunk
 func uploadChunk(sftpConn *sshc.SftpConnection, remotePath string, lFile *os.File, offset, chunkSize int64, progressCh chan<- int64) error {
+	sftpConn.ReadyWait()
+
 	buf := make([]byte, chunkSize)
 
 	// Read chunk from local file
@@ -131,9 +127,6 @@ func uploadChunk(sftpConn *sshc.SftpConnection, remotePath string, lFile *os.Fil
 	for totalWritten < n {
 		written, err := rFile.Write(buf[totalWritten:n])
 		if err != nil {
-			if isConnectionError(err) {
-				return fmt.Errorf("connection lost")
-			}
 			return fmt.Errorf("error writing remote file: %s", err)
 		}
 		totalWritten += written
@@ -141,12 +134,6 @@ func uploadChunk(sftpConn *sshc.SftpConnection, remotePath string, lFile *os.Fil
 
 	progressCh <- int64(totalWritten)
 	return nil
-}
-
-// Helper function to detect connection loss
-func isConnectionError(err error) bool {
-	errMsg := err.Error()
-	return strings.Contains(errMsg, "EOF") || strings.Contains(errMsg, "connection reset") || strings.Contains(errMsg, "broken pipe")
 }
 
 func putFileRecursive(sftpConn *sshc.SftpConnection, remote, local string) error {
@@ -232,6 +219,5 @@ var putCmd = &cobra.Command{
 		} else {
 			putFile(sftpConn, remote, local)
 		}
-
 	},
 }
