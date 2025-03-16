@@ -11,24 +11,25 @@ import (
 
 	pb "github.com/cheggaaa/pb/v3"
 	"github.com/ferama/rospo/cmd/cmnflags"
+	"github.com/ferama/rospo/pkg/logger"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/worker"
 	"github.com/spf13/cobra"
 )
 
+var putLog = logger.NewLogger("[PUT ] ", logger.Magenta)
+
 func init() {
 	rootCmd.AddCommand(putCmd)
 
 	cmnflags.AddSshClientFlags(putCmd.Flags())
+	putCmd.Flags().IntP("max-workers", "w", 16, "nmber of parallel workers")
 	putCmd.Flags().BoolP("recursive", "r", false, "if the copy should be recursive")
 
 }
 
-func putFile(sftpConn *sshc.SftpConnection, remote, localPath string) error {
-	const (
-		chunkSize  = 128 * 1024 // 128KB per chunk
-		maxWorkers = 16         // Number of parallel workers
-	)
+func putFile(sftpConn *sshc.SftpConnection, remote, localPath string, maxWorkers int) error {
+	const chunkSize = 128 * 1024 // 128KB per chunk
 
 	sftpConn.ReadyWait()
 
@@ -36,6 +37,7 @@ func putFile(sftpConn *sshc.SftpConnection, remote, localPath string) error {
 	if err != nil {
 		return fmt.Errorf("invalid remote path: %s", remotePath)
 	}
+	putLog.Println("remotePath", remotePath)
 
 	localStat, err := os.Stat(localPath)
 	if err != nil {
@@ -56,12 +58,10 @@ func putFile(sftpConn *sshc.SftpConnection, remote, localPath string) error {
 	}
 
 	if offset >= fileSize {
-		fmt.Println("File already fully uploaded.")
+		putLog.Println("File already fully uploaded.")
 		return nil
 	}
 
-	// var wg sync.WaitGroup
-	// jobs := make(chan int64, putMaxWorkers)
 	progressCh := make(chan int64, maxWorkers)
 
 	go func() {
@@ -77,6 +77,7 @@ func putFile(sftpConn *sshc.SftpConnection, remote, localPath string) error {
 		pbar.Finish()
 	}()
 
+	putLog.Printf("Using %d workers", maxWorkers)
 	workerPool := worker.NewPool(maxWorkers)
 	defer workerPool.Stop()
 
@@ -136,7 +137,7 @@ func uploadChunk(sftpConn *sshc.SftpConnection, remotePath string, lFile *os.Fil
 	return nil
 }
 
-func putFileRecursive(sftpConn *sshc.SftpConnection, remote, local string) error {
+func putFileRecursive(sftpConn *sshc.SftpConnection, remote, local string, maxWorkers int) error {
 	sftpConn.ReadyWait()
 
 	remotePath, err := sftpConn.Client.RealPath(remote)
@@ -170,7 +171,7 @@ func putFileRecursive(sftpConn *sshc.SftpConnection, remote, local string) error
 				return fmt.Errorf("cannot create directory %s: %s", remotePath, err)
 			}
 		} else {
-			putFile(sftpConn, targetPath, localPath)
+			putFile(sftpConn, targetPath, localPath, maxWorkers)
 		}
 		return nil
 	})
@@ -203,6 +204,7 @@ var putCmd = &cobra.Command{
 		}
 
 		recursive, _ := cmd.Flags().GetBool("recursive")
+		maxWorkers, _ := cmd.Flags().GetInt("max-workers")
 		sshcConf := cmnflags.GetSshClientConf(cmd, args[0])
 		// sshcConf.Quiet = true
 		conn := sshc.NewSshConnection(sshcConf)
@@ -212,12 +214,15 @@ var putCmd = &cobra.Command{
 		go sftpConn.Start()
 
 		if recursive {
-			err := putFileRecursive(sftpConn, remote, local)
+			err := putFileRecursive(sftpConn, remote, local, maxWorkers)
 			if err != nil {
-				log.Printf("error while copying file: %s", err)
+				putLog.Printf("error while copying file: %s", err)
 			}
 		} else {
-			putFile(sftpConn, remote, local)
+			err := putFile(sftpConn, remote, local, maxWorkers)
+			if err != nil {
+				putLog.Printf("error while copying file: %s", err)
+			}
 		}
 	},
 }

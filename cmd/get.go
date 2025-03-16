@@ -10,21 +10,24 @@ import (
 
 	pb "github.com/cheggaaa/pb/v3"
 	"github.com/ferama/rospo/cmd/cmnflags"
+	"github.com/ferama/rospo/pkg/logger"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/worker"
 	"github.com/spf13/cobra"
 )
 
+var getLog = logger.NewLogger("[GET ] ", logger.Magenta)
+
 func init() {
 	rootCmd.AddCommand(getCmd)
 
 	cmnflags.AddSshClientFlags(getCmd.Flags())
+	getCmd.Flags().IntP("max-workers", "w", 16, "nmber of parallel workers")
 	getCmd.Flags().BoolP("recursive", "r", false, "if the copy should be recursive")
 }
 
-func getFile(sftpConn *sshc.SftpConnection, remote, localPath string) error {
+func getFile(sftpConn *sshc.SftpConnection, remote, localPath string, maxWorkers int) error {
 	const chunkSize = 128 * 1024 // 128KB per chunk
-	const maxWorkers = 16        // Number of parallel workers
 
 	sftpConn.ReadyWait()
 
@@ -168,7 +171,7 @@ func downloadChunk(sftpConn *sshc.SftpConnection, remotePath string, localPath s
 	return nil
 }
 
-func getFileRecursive(sftpConn *sshc.SftpConnection, remote, local string) error {
+func getFileRecursive(sftpConn *sshc.SftpConnection, remote, local string, maxWorkers int) error {
 	sftpConn.ReadyWait()
 
 	remotePath, err := sftpConn.Client.RealPath(remote)
@@ -209,7 +212,7 @@ func getFileRecursive(sftpConn *sshc.SftpConnection, remote, local string) error
 				return fmt.Errorf("cannot create directory %s: %s", localPath, err)
 			}
 		} else {
-			getFile(sftpConn, remotePath, localPath)
+			getFile(sftpConn, remotePath, localPath, maxWorkers)
 		}
 	}
 	return nil
@@ -237,6 +240,7 @@ var getCmd = &cobra.Command{
 			local = args[2]
 		}
 		recursive, _ := cmd.Flags().GetBool("recursive")
+		maxWorkers, _ := cmd.Flags().GetInt("max-workers")
 		sshcConf := cmnflags.GetSshClientConf(cmd, args[0])
 		// sshcConf.Quiet = true
 		conn := sshc.NewSshConnection(sshcConf)
@@ -246,12 +250,15 @@ var getCmd = &cobra.Command{
 		go sftpConn.Start()
 
 		if recursive {
-			err := getFileRecursive(sftpConn, remote, local)
+			err := getFileRecursive(sftpConn, remote, local, maxWorkers)
 			if err != nil {
-				log.Printf("error while copying file: %s", err)
+				getLog.Printf("error while copying file: %s", err)
 			}
 		} else {
-			getFile(sftpConn, remote, local)
+			err := getFile(sftpConn, remote, local, maxWorkers)
+			if err != nil {
+				getLog.Printf("error while copying file: %s", err)
+			}
 		}
 
 	},
