@@ -1,14 +1,13 @@
 module github.com/ferama/rospo
 
 go 1.24.0
-
 require (
 	github.com/cheggaaa/pb/v3 v3.1.7
 	github.com/creack/pty v1.1.24
 	github.com/ferama/go-socks v0.0.0-20240510140443-0400c78f7018
 	github.com/judwhite/go-svc v1.2.1
 	github.com/miekg/dns v1.1.63
-	github.com/pkg/sftp v1.13.7
+	github.com/pkg/sftp v1.13.8
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	golang.org/x/crypto v0.36.0
@@ -30,7 +29,7 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	golang.org/x/mod v0.18.0 // indirect
-	golang.org/x/sync v0.7.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/tools v0.22.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
