@@ -2,17 +2,14 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
-	pb "github.com/cheggaaa/pb/v3"
 	"github.com/ferama/rospo/cmd/cmnflags"
 	"github.com/ferama/rospo/pkg/logger"
 	"github.com/ferama/rospo/pkg/sshc"
-	"github.com/ferama/rospo/pkg/worker"
 	"github.com/spf13/cobra"
 )
 
@@ -26,152 +23,7 @@ func init() {
 	getCmd.Flags().BoolP("recursive", "r", false, "if the copy should be recursive")
 }
 
-func getFile(sftpConn *sshc.SftpConnection, remote, localPath string, maxWorkers int) error {
-	const chunkSize = 128 * 1024 // 128KB per chunk
-
-	sftpConn.ReadyWait()
-
-	client := sftpConn.Client
-	remotePath, err := client.RealPath(remote)
-	if err != nil {
-		return fmt.Errorf("invalid remote path: %s", remotePath)
-	}
-	remoteStat, err := client.Stat(remotePath)
-	if err != nil {
-		return fmt.Errorf("cannot stat remote path: %s", remotePath)
-	}
-	fileSize := remoteStat.Size()
-
-	rFile, err := client.Open(remotePath)
-	if err != nil {
-		return fmt.Errorf("cannot open remote file for read: %s", err)
-	}
-	defer rFile.Close()
-
-	// Handle directory case
-	localStat, err := os.Stat(localPath)
-	if err == nil && localStat.IsDir() {
-		localPath = filepath.Join(localPath, filepath.Base(remotePath))
-	}
-
-	// Determine offset for resuming
-	var offset int64
-	lFile, err := os.OpenFile(localPath, os.O_CREATE|os.O_WRONLY, 0644)
-	if err == nil {
-		offset, _ = lFile.Seek(0, io.SeekEnd)
-		lFile.Close()
-	} else {
-		offset = 0
-	}
-
-	// If the file is already fully downloaded, return early
-	if offset >= fileSize {
-		fmt.Println("File already fully downloaded.")
-		return nil
-	}
-
-	// Reopen local file for writing
-	lFile, err = os.OpenFile(localPath, os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return fmt.Errorf("cannot open local file for write: %s", err)
-	}
-	defer lFile.Close()
-
-	// Start progress bar
-	progressCh := make(chan int64, maxWorkers)
-	go func() {
-		tmpl := `{{string . "target" | white}} {{counters . | blue }} {{bar . "|" "=" ">" "." "|" }} {{percent . | blue }} {{speed . | blue }} {{rtime . "ETA %s" | blue }}`
-		pbar := pb.ProgressBarTemplate(tmpl).Start64(fileSize)
-		pbar.Set(pb.Bytes, true)
-		pbar.Set(pb.SIBytesPrefix, true)
-		pbar.Set("target", filepath.Base(remotePath))
-		pbar.Add64(offset)
-		for w := range progressCh {
-			pbar.Add64(w)
-		}
-		pbar.Finish()
-	}()
-
-	workerPool := worker.NewPool(maxWorkers)
-	defer workerPool.Stop()
-
-	// Enqueue only the remaining chunks for workers
-	for chunkOffset := offset; chunkOffset < fileSize; chunkOffset += chunkSize {
-		workerPool.Enqueue(func() {
-			for {
-				err := downloadChunk(sftpConn, remotePath, localPath, chunkOffset, chunkSize, progressCh)
-				if err == nil {
-					break // Success, move to next chunk
-				}
-			}
-		})
-	}
-
-	workerPool.Wait()
-	close(progressCh)
-
-	// Set final file permissions
-	return lFile.Chmod(remoteStat.Mode())
-}
-
-func downloadChunk(sftpConn *sshc.SftpConnection, remotePath string, localPath string, offset, chunkSize int64, progressCh chan<- int64) error {
-	sftpConn.ReadyWait()
-
-	buf := make([]byte, chunkSize)
-
-	// Open remote file
-	client := sftpConn.Client
-	rFile, err := client.Open(remotePath)
-	if err != nil {
-		return fmt.Errorf("cannot open remote file for read: %s", err)
-	}
-	defer rFile.Close()
-
-	// Seek to correct position in remote file
-	if _, err := rFile.Seek(offset, io.SeekStart); err != nil {
-		return fmt.Errorf("cannot seek remote file: %s", err)
-	}
-
-	// Read chunk
-	totalRead := 0
-	for totalRead < len(buf) {
-		n, err := rFile.Read(buf[totalRead:])
-		if err != nil && err != io.EOF {
-			return fmt.Errorf("error reading remote file: %s", err)
-		}
-		if n == 0 {
-			break
-		}
-		totalRead += n
-	}
-
-	lFile, err := os.OpenFile(localPath, os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return fmt.Errorf("cannot open local file for write: %s", err)
-	}
-	defer lFile.Close()
-
-	// Seek to correct position in local file
-	if _, err := lFile.Seek(offset, io.SeekStart); err != nil {
-		return fmt.Errorf("cannot seek local file: %s", err)
-	}
-
-	// Write chunk to local file
-	totalWritten := 0
-	for totalWritten < totalRead {
-		written, err := lFile.Write(buf[totalWritten:totalRead])
-		if err != nil {
-			return fmt.Errorf("error writing local file: %s", err)
-		}
-		totalWritten += written
-	}
-
-	// Update progress
-	progressCh <- int64(totalWritten)
-	return nil
-}
-
-func getFileRecursive(sftpConn *sshc.SftpConnection, remote, local string, maxWorkers int) error {
+func getFileRecursive(sftpConn *sshc.SftpClient, remote, local string, maxWorkers int) error {
 	sftpConn.ReadyWait()
 
 	remotePath, err := sftpConn.Client.RealPath(remote)
@@ -212,7 +64,7 @@ func getFileRecursive(sftpConn *sshc.SftpConnection, remote, local string, maxWo
 				return fmt.Errorf("cannot create directory %s: %s", localPath, err)
 			}
 		} else {
-			getFile(sftpConn, remotePath, localPath, maxWorkers)
+			sftpConn.GetFile(remotePath, localPath, maxWorkers)
 		}
 	}
 	return nil
@@ -246,7 +98,7 @@ var getCmd = &cobra.Command{
 		conn := sshc.NewSshConnection(sshcConf)
 		go conn.Start()
 
-		sftpConn := sshc.NewSftpConnection(conn)
+		sftpConn := sshc.NewSftpClient(conn)
 		go sftpConn.Start()
 
 		if recursive {
@@ -255,7 +107,7 @@ var getCmd = &cobra.Command{
 				getLog.Printf("error while copying file: %s", err)
 			}
 		} else {
-			err := getFile(sftpConn, remote, local, maxWorkers)
+			err := sftpConn.GetFile(remote, local, maxWorkers)
 			if err != nil {
 				getLog.Printf("error while copying file: %s", err)
 			}
