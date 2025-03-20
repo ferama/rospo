@@ -124,7 +124,7 @@ func (s *SftpClient) GetFile(remote, localPath string, maxWorkers int, progressF
 
 	// If the file is already fully downloaded, return early
 	if offset >= fileSize {
-		fmt.Println("File already fully downloaded.")
+		log.Println("File already fully downloaded.")
 		return nil
 	}
 

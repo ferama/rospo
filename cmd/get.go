@@ -6,40 +6,60 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
-	"github.com/cheggaaa/pb/v3"
+	"github.com/fatih/color"
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
+
 	"github.com/ferama/rospo/cmd/cmnflags"
 	"github.com/ferama/rospo/pkg/logger"
 	"github.com/ferama/rospo/pkg/sshc"
+	"github.com/ferama/rospo/pkg/worker"
 	"github.com/spf13/cobra"
 )
 
 var getLog = logger.NewLogger("[GET ] ", logger.Magenta)
 
+var getWG sync.WaitGroup
+var getProgress = mpb.New(mpb.WithWidth(60), mpb.WithWaitGroup(&getWG))
+
 func init() {
 	rootCmd.AddCommand(getCmd)
 
 	cmnflags.AddSshClientFlags(getCmd.Flags())
-	getCmd.Flags().IntP("max-workers", "w", 16, "nmber of parallel workers")
+	getCmd.Flags().IntP("max-workers", "w", 12, "parallel workers per file")
+	getCmd.Flags().IntP("concurrent-downloads", "c", 4, "concurrent downloads (recursive only)")
 	getCmd.Flags().BoolP("recursive", "r", false, "if the copy should be recursive")
 }
 
-var getProgressFunc sshc.ProgressFunc = func(fileSize int64, offset int64, remotePath string, progressCh chan int64) {
-	tmpl := `{{string . "target" | white}} {{counters . | blue }} {{bar . "|" "=" ">" "." "|" }} {{percent . | blue }} {{speed . | blue }} {{rtime . "ETA %s" | blue }}`
-	pbar := pb.ProgressBarTemplate(tmpl).Start64(fileSize)
-	pbar.Set(pb.Bytes, true)
-	pbar.Set(pb.SIBytesPrefix, true)
-	pbar.Set("target", filepath.Base(remotePath))
-	pbar.Add64(offset)
+var getProgressFunc sshc.ProgressFunc = func(fileSize int64, offset int64, fileName string, progressCh chan int64) {
+	getWG.Add(1)
+	defer getWG.Done()
+
+	var val int64
+	val = offset
+
+	pbar := getProgress.AddBar(fileSize,
+		mpb.PrependDecorators(
+			decor.Name(color.BlueString("⬇ %s ", fileName)),
+		),
+		mpb.AppendDecorators(
+			decor.CountersKibiByte("% .2f / % .2f "), // Human-readable size
+			decor.Percentage(decor.WC{W: 5}),         // Percentage with fixed width
+		),
+		mpb.BarFillerClearOnComplete(),
+	)
 
 	for w := range progressCh {
-		pbar.Add64(w)
+		val += w
+		pbar.SetCurrent(val)
 	}
 
-	pbar.Finish()
+	pbar.Completed()
 }
 
-func getFileRecursive(sftpConn *sshc.SftpClient, remote, local string, maxWorkers int) error {
+func getFileRecursive(sftpConn *sshc.SftpClient, remote, local string, maxWorkers int, concurrent int) error {
 	sftpConn.ReadyWait()
 
 	remotePath, err := sftpConn.Client.RealPath(remote)
@@ -63,6 +83,8 @@ func getFileRecursive(sftpConn *sshc.SftpClient, remote, local string, maxWorker
 		return fmt.Errorf("local path is not a directory: %s", local)
 	}
 
+	pool := worker.NewPool(concurrent)
+
 	dir := filepath.Dir(remotePath)
 	walker := sftpConn.Client.Walk(remotePath)
 	for walker.Step() {
@@ -80,9 +102,14 @@ func getFileRecursive(sftpConn *sshc.SftpClient, remote, local string, maxWorker
 				return fmt.Errorf("cannot create directory %s: %s", localPath, err)
 			}
 		} else {
-			sftpConn.GetFile(remotePath, localPath, maxWorkers, &getProgressFunc)
+			pool.Enqueue(func() {
+				sftpConn.GetFile(remotePath, localPath, maxWorkers, &getProgressFunc)
+			})
+
 		}
 	}
+
+	pool.Wait()
 	return nil
 }
 
@@ -109,6 +136,7 @@ var getCmd = &cobra.Command{
 		}
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		maxWorkers, _ := cmd.Flags().GetInt("max-workers")
+		concurrent, _ := cmd.Flags().GetInt("concurrent-downloads")
 		sshcConf := cmnflags.GetSshClientConf(cmd, args[0])
 		// sshcConf.Quiet = true
 		conn := sshc.NewSshConnection(sshcConf)
@@ -118,7 +146,7 @@ var getCmd = &cobra.Command{
 		go sftpConn.Start()
 
 		if recursive {
-			err := getFileRecursive(sftpConn, remote, local, maxWorkers)
+			err := getFileRecursive(sftpConn, remote, local, maxWorkers, concurrent)
 			if err != nil {
 				getLog.Printf("error while copying file: %s", err)
 			}
@@ -129,5 +157,6 @@ var getCmd = &cobra.Command{
 			}
 		}
 
+		getProgress.Wait()
 	},
 }

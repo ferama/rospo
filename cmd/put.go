@@ -7,38 +7,57 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
-	"github.com/cheggaaa/pb/v3"
+	"github.com/fatih/color"
 	"github.com/ferama/rospo/cmd/cmnflags"
 	"github.com/ferama/rospo/pkg/sshc"
+	"github.com/ferama/rospo/pkg/worker"
 	"github.com/spf13/cobra"
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 )
+
+var putWG sync.WaitGroup
+var putProgress = mpb.New(mpb.WithWidth(60), mpb.WithWaitGroup(&putWG))
 
 func init() {
 	rootCmd.AddCommand(putCmd)
 
 	cmnflags.AddSshClientFlags(putCmd.Flags())
 	putCmd.Flags().IntP("max-workers", "w", 16, "nmber of parallel workers")
+	putCmd.Flags().IntP("concurrent-uploads", "c", 4, "concurrent uploads (recursive only)")
 	putCmd.Flags().BoolP("recursive", "r", false, "if the copy should be recursive")
 
 }
 
-var putProgressFunc sshc.ProgressFunc = func(fileSize int64, offset int64, remotePath string, progressCh chan int64) {
-	tmpl := `{{string . "target" | white}} {{counters . | blue }} {{bar . "|" "=" ">" "." "|" }} {{percent . | blue }} {{speed . | blue }} {{rtime . "ETA %s" | blue }}`
-	pbar := pb.ProgressBarTemplate(tmpl).Start64(fileSize)
-	pbar.Set(pb.Bytes, true)
-	pbar.Set(pb.SIBytesPrefix, true)
-	pbar.Set("target", filepath.Base(remotePath))
-	pbar.Add64(offset)
+var putProgressFunc sshc.ProgressFunc = func(fileSize int64, offset int64, fileName string, progressCh chan int64) {
+	putWG.Add(1)
+	defer putWG.Done()
+
+	var val int64
+	val = offset
+
+	pbar := putProgress.AddBar(fileSize,
+		mpb.PrependDecorators(
+			decor.Name(color.BlueString("⬆ %s ", fileName)),
+		),
+		mpb.AppendDecorators(
+			decor.CountersKibiByte("% .2f / % .2f "), // Human-readable size
+			decor.Percentage(decor.WC{W: 5}),         // Percentage with fixed width
+		),
+		mpb.BarFillerClearOnComplete(),
+	)
 
 	for w := range progressCh {
-		pbar.Add64(w)
+		val += w
+		pbar.SetCurrent(val)
 	}
 
-	pbar.Finish()
+	pbar.Completed()
 }
 
-func putFileRecursive(sftpConn *sshc.SftpClient, remote, local string, maxWorkers int) error {
+func putFileRecursive(sftpConn *sshc.SftpClient, remote, local string, maxWorkers int, concurrent int) error {
 	sftpConn.ReadyWait()
 
 	remotePath, err := sftpConn.Client.RealPath(remote)
@@ -62,6 +81,8 @@ func putFileRecursive(sftpConn *sshc.SftpClient, remote, local string, maxWorker
 		return fmt.Errorf("local path is not a directory: %s", remotePath)
 	}
 
+	pool := worker.NewPool(concurrent)
+
 	dir := filepath.Base(local)
 	err = filepath.WalkDir(local, func(localPath string, d fs.DirEntry, err error) error {
 		part := strings.TrimPrefix(localPath, local)
@@ -72,13 +93,16 @@ func putFileRecursive(sftpConn *sshc.SftpClient, remote, local string, maxWorker
 				return fmt.Errorf("cannot create directory %s: %s", remotePath, err)
 			}
 		} else {
-			sftpConn.PutFile(targetPath, localPath, maxWorkers, &putProgressFunc)
+			pool.Enqueue(func() {
+				sftpConn.PutFile(targetPath, localPath, maxWorkers, &putProgressFunc)
+			})
 		}
 		return nil
 	})
 	if err != nil {
 		log.Println(err)
 	}
+	pool.Wait()
 	return nil
 }
 
@@ -106,6 +130,7 @@ var putCmd = &cobra.Command{
 
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		maxWorkers, _ := cmd.Flags().GetInt("max-workers")
+		concurrent, _ := cmd.Flags().GetInt("concurrent-uploads")
 		sshcConf := cmnflags.GetSshClientConf(cmd, args[0])
 		// sshcConf.Quiet = true
 		conn := sshc.NewSshConnection(sshcConf)
@@ -115,7 +140,7 @@ var putCmd = &cobra.Command{
 		go sftpConn.Start()
 
 		if recursive {
-			err := putFileRecursive(sftpConn, remote, local, maxWorkers)
+			err := putFileRecursive(sftpConn, remote, local, maxWorkers, concurrent)
 			if err != nil {
 				log.Printf("error while copying file: %s", err)
 			}
@@ -125,5 +150,7 @@ var putCmd = &cobra.Command{
 				log.Printf("error while copying file: %s", err)
 			}
 		}
+
+		putProgress.Wait()
 	},
 }
