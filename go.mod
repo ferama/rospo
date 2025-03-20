@@ -3,15 +3,15 @@ module github.com/ferama/rospo
 go 1.24.0
 
 require (
-	github.com/cheggaaa/pb/v3 v3.1.7
 	github.com/creack/pty v1.1.24
+	github.com/dustin/go-humanize v1.0.1
+	github.com/fatih/color v1.18.0
 	github.com/ferama/go-socks v0.0.0-20240510140443-0400c78f7018
 	github.com/judwhite/go-svc v1.2.1
 	github.com/miekg/dns v1.1.63
 	github.com/pkg/sftp v1.13.8
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
-	github.com/vbauerster/mpb v3.4.0+incompatible
 	github.com/vbauerster/mpb/v8 v8.9.3
 	golang.org/x/crypto v0.36.0
 	golang.org/x/net v0.37.0
@@ -23,7 +23,6 @@ require (
 require (
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
-	github.com/fatih/color v1.18.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/kr/fs v0.1.0 // indirect
 	github.com/kr/pretty v0.3.0 // indirect

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/dustin/go-humanize"
 	"github.com/fatih/color"
 	"github.com/ferama/rospo/cmd/cmnflags"
 	"github.com/ferama/rospo/pkg/sshc"
@@ -19,7 +20,7 @@ import (
 )
 
 var putWG sync.WaitGroup
-var putProgress = mpb.New(mpb.WithWidth(60), mpb.WithWaitGroup(&putWG))
+var putProgress = mpb.New(mpb.WithWidth(50), mpb.WithWaitGroup(&putWG))
 
 func init() {
 	rootCmd.AddCommand(putCmd)
@@ -38,13 +39,20 @@ var putProgressFunc sshc.ProgressFunc = func(fileSize int64, offset int64, fileN
 	var val int64
 	val = offset
 
+	var s decor.SizeB1000 = 0
+
 	pbar := putProgress.AddBar(fileSize,
 		mpb.PrependDecorators(
 			decor.Name(color.BlueString("⬆ %s ", fileName)),
+			decor.Elapsed(decor.ET_STYLE_GO),
+			decor.OnComplete(decor.AverageSpeed(s, " (% .1f)", decor.WC{}), ""),
+			decor.Percentage(decor.WC{W: 10}),
 		),
 		mpb.AppendDecorators(
-			decor.CountersKibiByte("% .2f / % .2f "), // Human-readable size
-			decor.Percentage(decor.WC{W: 5}),         // Percentage with fixed width
+			decor.OnComplete(
+				decor.CountersKibiByte("% .2f / % .2f"),
+				humanize.Bytes(uint64(fileSize)),
+			),
 		),
 		mpb.BarFillerClearOnComplete(),
 	)
