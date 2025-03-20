@@ -7,10 +7,11 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/cheggaaa/pb/v3"
 	"github.com/ferama/rospo/pkg/worker"
 	"github.com/pkg/sftp"
 )
+
+type ProgressFunc func(fileSize int64, offset int64, fileName string, progressChan chan int64)
 
 type SftpClient struct {
 	sshConn   *SshConnection
@@ -83,7 +84,7 @@ func (s *SftpClient) Stop() {
 	close(s.terminate)
 }
 
-func (s *SftpClient) GetFile(remote, localPath string, maxWorkers int) error {
+func (s *SftpClient) GetFile(remote, localPath string, maxWorkers int, progressFn *ProgressFunc) error {
 	const chunkSize = 128 * 1024 // 128KB per chunk
 
 	s.ReadyWait()
@@ -136,18 +137,14 @@ func (s *SftpClient) GetFile(remote, localPath string, maxWorkers int) error {
 
 	// Start progress bar
 	progressCh := make(chan int64, maxWorkers)
-	go func() {
-		tmpl := `{{string . "target" | white}} {{counters . | blue }} {{bar . "|" "=" ">" "." "|" }} {{percent . | blue }} {{speed . | blue }} {{rtime . "ETA %s" | blue }}`
-		pbar := pb.ProgressBarTemplate(tmpl).Start64(fileSize)
-		pbar.Set(pb.Bytes, true)
-		pbar.Set(pb.SIBytesPrefix, true)
-		pbar.Set("target", filepath.Base(remotePath))
-		pbar.Add64(offset)
-		for w := range progressCh {
-			pbar.Add64(w)
-		}
-		pbar.Finish()
-	}()
+	if progressFn != nil {
+		go (*progressFn)(fileSize, offset, remotePath, progressCh)
+	} else {
+		go func() {
+			for range progressCh {
+			}
+		}()
+	}
 
 	workerPool := worker.NewPool(maxWorkers)
 	defer workerPool.Stop()
@@ -266,7 +263,7 @@ func (s *SftpClient) uploadChunk(remotePath string, lFile *os.File, offset, chun
 	return nil
 }
 
-func (s *SftpClient) PutFile(remote, localPath string, maxWorkers int) error {
+func (s *SftpClient) PutFile(remote, localPath string, maxWorkers int, progressFn *ProgressFunc) error {
 	const chunkSize = 128 * 1024 // 128KB per chunk
 
 	s.ReadyWait()
@@ -302,18 +299,14 @@ func (s *SftpClient) PutFile(remote, localPath string, maxWorkers int) error {
 
 	progressCh := make(chan int64, maxWorkers)
 
-	go func() {
-		tmpl := `{{string . "target" | white}} {{counters . | blue }} {{bar . "|" "=" ">" "." "|" }} {{percent . | blue }} {{speed . | blue }} {{rtime . "ETA %s" | blue }}`
-		pbar := pb.ProgressBarTemplate(tmpl).Start64(fileSize)
-		pbar.Set(pb.Bytes, true)
-		pbar.Set(pb.SIBytesPrefix, true)
-		pbar.Set("target", filepath.Base(remotePath))
-		pbar.Add64(offset)
-		for w := range progressCh {
-			pbar.Add64(w)
-		}
-		pbar.Finish()
-	}()
+	if progressFn != nil {
+		go (*progressFn)(fileSize, offset, remotePath, progressCh)
+	} else {
+		go func() {
+			for range progressCh {
+			}
+		}()
+	}
 
 	log.Printf("Using %d workers", maxWorkers)
 	workerPool := worker.NewPool(maxWorkers)

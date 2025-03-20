@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/cheggaaa/pb/v3"
 	"github.com/ferama/rospo/cmd/cmnflags"
 	"github.com/ferama/rospo/pkg/logger"
 	"github.com/ferama/rospo/pkg/sshc"
@@ -21,6 +22,21 @@ func init() {
 	cmnflags.AddSshClientFlags(getCmd.Flags())
 	getCmd.Flags().IntP("max-workers", "w", 16, "nmber of parallel workers")
 	getCmd.Flags().BoolP("recursive", "r", false, "if the copy should be recursive")
+}
+
+var getProgressFunc sshc.ProgressFunc = func(fileSize int64, offset int64, remotePath string, progressCh chan int64) {
+	tmpl := `{{string . "target" | white}} {{counters . | blue }} {{bar . "|" "=" ">" "." "|" }} {{percent . | blue }} {{speed . | blue }} {{rtime . "ETA %s" | blue }}`
+	pbar := pb.ProgressBarTemplate(tmpl).Start64(fileSize)
+	pbar.Set(pb.Bytes, true)
+	pbar.Set(pb.SIBytesPrefix, true)
+	pbar.Set("target", filepath.Base(remotePath))
+	pbar.Add64(offset)
+
+	for w := range progressCh {
+		pbar.Add64(w)
+	}
+
+	pbar.Finish()
 }
 
 func getFileRecursive(sftpConn *sshc.SftpClient, remote, local string, maxWorkers int) error {
@@ -64,7 +80,7 @@ func getFileRecursive(sftpConn *sshc.SftpClient, remote, local string, maxWorker
 				return fmt.Errorf("cannot create directory %s: %s", localPath, err)
 			}
 		} else {
-			sftpConn.GetFile(remotePath, localPath, maxWorkers)
+			sftpConn.GetFile(remotePath, localPath, maxWorkers, &getProgressFunc)
 		}
 	}
 	return nil
@@ -107,7 +123,7 @@ var getCmd = &cobra.Command{
 				getLog.Printf("error while copying file: %s", err)
 			}
 		} else {
-			err := sftpConn.GetFile(remote, local, maxWorkers)
+			err := sftpConn.GetFile(remote, local, maxWorkers, &getProgressFunc)
 			if err != nil {
 				getLog.Printf("error while copying file: %s", err)
 			}
