@@ -2,7 +2,6 @@ package cmnflags
 
 import (
 	"fmt"
-	"log"
 	"path/filepath"
 
 	"github.com/ferama/rospo/pkg/sshc"
@@ -49,7 +48,6 @@ func GetSshClientConf(cmd *cobra.Command, serverURI string) *sshc.SshClientConf 
 		insecure = !hostConf.StrictHostKeyChecking
 		sshURI = fmt.Sprintf("%s@%s:%d", hostConf.User, hostConf.HostName, hostConf.Port)
 	}
-	log.Printf("%+v", hostConf)
 
 	sshcConf := &sshc.SshClientConf{
 		Identity:   identity,
