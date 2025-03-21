@@ -6,9 +6,24 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/kevinburke/ssh_config"
 )
+
+var (
+	instance *SSHConfigParser
+	once     sync.Once
+)
+
+// GetSSHConfigInstance ensures the singleton is initialized only once
+func GetSSHConfigInstance() *SSHConfigParser {
+	once.Do(func() {
+		instance = newSSHConfigParser()
+		instance.parse()
+	})
+	return instance
+}
 
 type NodeConfig struct {
 	Host                  string
@@ -21,9 +36,11 @@ type NodeConfig struct {
 	ProxyJump             string
 }
 
-type SSHConfigParser struct{}
+type SSHConfigParser struct {
+	hosts []NodeConfig
+}
 
-func NewSSHConfigParser() *SSHConfigParser {
+func newSSHConfigParser() *SSHConfigParser {
 	return &SSHConfigParser{}
 }
 
@@ -42,8 +59,9 @@ func (s *SSHConfigParser) parseContent(f *os.File) ([]NodeConfig, error) {
 
 			nodeConf := NodeConfig{
 				Host:                  pattern.String(),
+				User:                  os.Getenv("USER"), // Default User
 				Port:                  22,                // Default Port
-				IdentityFile:          "~/.ssh/identity", // Default IdentityFile
+				IdentityFile:          "~/.ssh/id_rsa",   // Default IdentityFile
 				UserKnownHostsFile:    "~/.ssh/known_hosts",
 				StrictHostKeyChecking: true, // Default StrictHostKeyChecking
 				ProxyJump:             "",
@@ -99,7 +117,26 @@ func (s *SSHConfigParser) parseContent(f *os.File) ([]NodeConfig, error) {
 	return nodes, nil
 }
 
-func (s *SSHConfigParser) Parse() ([]NodeConfig, error) {
+func (s *SSHConfigParser) GetHostNames() []string {
+	ret := []string{}
+	for _, node := range s.hosts {
+		ret = append(ret, node.Host)
+	}
+	return ret
+}
+
+func (s *SSHConfigParser) GetHostConf(host string) *NodeConfig {
+	for _, node := range s.hosts {
+		if node.Host == host {
+			return &node
+		}
+	}
+	return nil
+}
+
+func (s *SSHConfigParser) parse() ([]NodeConfig, error) {
 	f, _ := os.Open(filepath.Join(os.Getenv("HOME"), ".ssh", "config"))
-	return s.parseContent(f)
+	var err error
+	s.hosts, err = s.parseContent(f)
+	return s.hosts, err
 }

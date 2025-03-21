@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/ferama/rospo/cmd/cmnflags"
+	"github.com/ferama/rospo/pkg/autocomplete"
 	"github.com/ferama/rospo/pkg/conf"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/tun"
@@ -28,7 +29,8 @@ Preliminary checks:
   # proxing through a jump host server
   $ rospo tun reverse -l :5000 -r :8888 -j jump_host_server user@server
 	`,
-	Args: cobra.MinimumNArgs(1),
+	Args:              cobra.MinimumNArgs(1),
+	ValidArgsFunction: autocomplete.Host(),
 	Run: func(cmd *cobra.Command, args []string) {
 		local, _ := cmd.Flags().GetString("local")
 		remote, _ := cmd.Flags().GetString("remote")

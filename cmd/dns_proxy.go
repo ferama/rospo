@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/ferama/rospo/cmd/cmnflags"
+	"github.com/ferama/rospo/pkg/autocomplete"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/spf13/cobra"
 )
@@ -24,7 +25,8 @@ var dnsProxyCmd = &cobra.Command{
 to the configured DNS server.
 It uses dns over TCP so the remote DNS serve must support TCP.
 	`,
-	Args: cobra.MinimumNArgs(1),
+	Args:              cobra.MinimumNArgs(1),
+	ValidArgsFunction: autocomplete.Host(),
 	Run: func(cmd *cobra.Command, args []string) {
 		sshcConf := cmnflags.GetSshClientConf(cmd, args[0])
 		conn := sshc.NewSshConnection(sshcConf)

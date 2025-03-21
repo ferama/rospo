@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/ferama/rospo/cmd/cmnflags"
+	"github.com/ferama/rospo/pkg/autocomplete"
 	"github.com/ferama/rospo/pkg/conf"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/ferama/rospo/pkg/tun"
@@ -27,7 +28,8 @@ Preliminary checks:
   # Forwards the local 8080 port to the remote 8080 
   $ rospo tun forward -l :8080 -r :8080 user@server:port
 	`,
-	Args: cobra.MinimumNArgs(1),
+	Args:              cobra.MinimumNArgs(1),
+	ValidArgsFunction: autocomplete.Host(),
 	Run: func(cmd *cobra.Command, args []string) {
 		local, _ := cmd.Flags().GetString("local")
 		remote, _ := cmd.Flags().GetString("remote")

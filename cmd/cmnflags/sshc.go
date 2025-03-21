@@ -1,6 +1,8 @@
 package cmnflags
 
 import (
+	"fmt"
+	"log"
 	"path/filepath"
 
 	"github.com/ferama/rospo/pkg/sshc"
@@ -26,6 +28,8 @@ func AddSshClientFlags(fs *pflag.FlagSet) {
 
 // GetSshClientConf builds an SshcConf object from cmd
 func GetSshClientConf(cmd *cobra.Command, serverURI string) *sshc.SshClientConf {
+	sshURI := serverURI
+
 	identity, _ := cmd.Flags().GetString("user-identity")
 	knownHosts, _ := cmd.Flags().GetString("known-hosts")
 	insecure, _ := cmd.Flags().GetBool("insecure")
@@ -34,12 +38,25 @@ func GetSshClientConf(cmd *cobra.Command, serverURI string) *sshc.SshClientConf 
 
 	disableBanner, _ := cmd.Flags().GetBool("disable-banner")
 
+	cp := utils.GetSSHConfigInstance()
+	hostConf := cp.GetHostConf(serverURI)
+	if hostConf != nil {
+		identity = hostConf.IdentityFile
+		knownHosts = hostConf.UserKnownHostsFile
+		if hostConf.ProxyJump != "" {
+			jumpHost = hostConf.ProxyJump
+		}
+		insecure = !hostConf.StrictHostKeyChecking
+		sshURI = fmt.Sprintf("%s@%s:%d", hostConf.User, hostConf.HostName, hostConf.Port)
+	}
+	log.Printf("%+v", hostConf)
+
 	sshcConf := &sshc.SshClientConf{
 		Identity:   identity,
 		KnownHosts: knownHosts,
 		Password:   password,
 		Quiet:      disableBanner,
-		ServerURI:  serverURI,
+		ServerURI:  sshURI,
 		JumpHosts:  make([]*sshc.JumpHostConf, 0),
 		Insecure:   insecure,
 	}

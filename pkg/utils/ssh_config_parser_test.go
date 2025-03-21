@@ -6,7 +6,7 @@ import (
 )
 
 func TestSSHConfigParser(t *testing.T) {
-	parser := NewSSHConfigParser()
+	parser := newSSHConfigParser()
 	f, _ := os.Open("testdata/ssh_config")
 	defer f.Close()
 
@@ -21,7 +21,7 @@ func TestSSHConfigParser(t *testing.T) {
 			Port:                  22,
 			HostName:              "127.0.0.1",
 			User:                  "user1",
-			IdentityFile:          "~/.ssh/identity",
+			IdentityFile:          "~/.ssh/id_rsa",
 			StrictHostKeyChecking: true,
 			UserKnownHostsFile:    "~/.ssh/known_hosts",
 			ProxyJump:             "",

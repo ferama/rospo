@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/ferama/rospo/cmd/cmnflags"
+	"github.com/ferama/rospo/pkg/autocomplete"
 	"github.com/ferama/rospo/pkg/sshc"
 	"github.com/spf13/cobra"
 )
@@ -15,10 +16,11 @@ func init() {
 }
 
 var shellCmd = &cobra.Command{
-	Use:   "shell [user@]host[:port] [cmd_string]",
-	Short: "Starts a remote shell",
-	Long:  "Starts a remote shell",
-	Args:  cobra.MinimumNArgs(1),
+	Use:               "shell [user@]host[:port] [cmd_string]",
+	Short:             "Starts a remote shell",
+	Long:              "Starts a remote shell",
+	Args:              cobra.MinimumNArgs(1),
+	ValidArgsFunction: autocomplete.Host(),
 	Run: func(cmd *cobra.Command, args []string) {
 		sshcConf := cmnflags.GetSshClientConf(cmd, args[0])
 		conn := sshc.NewSshConnection(sshcConf)
