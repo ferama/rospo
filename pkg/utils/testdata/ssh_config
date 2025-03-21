@@ -1,0 +1,20 @@
+Host test1
+    HostName 127.0.0.1
+    User user1
+
+
+Host test2
+    # comment here
+    HostName myhost.link
+    Port 2222
+    User user2
+    IdentityFile ~/identities/myhost
+
+Host test3
+    HostName myhost.link
+    Port 2222
+    User user2
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+    IdentityFile ~/identities/myhost
+    ProxyJump test2
