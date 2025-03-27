@@ -58,12 +58,32 @@ func GetSshClientConf(cmd *cobra.Command, serverURI string) *sshc.SshClientConf 
 		JumpHosts:  make([]*sshc.JumpHostConf, 0),
 		Insecure:   insecure,
 	}
+
+	// search for jump hosts in the ssh config file
+	if jumpHost != "" {
+		for {
+			jumpHostConf := cp.GetHostConf(jumpHost)
+			if jumpHostConf == nil {
+				break
+			}
+			identity = jumpHostConf.IdentityFile
+			sshcConf.JumpHosts = append(sshcConf.JumpHosts, &sshc.JumpHostConf{
+				URI:      fmt.Sprintf("%s@%s:%d", jumpHostConf.User, jumpHostConf.HostName, jumpHostConf.Port),
+				Identity: identity,
+			})
+			jumpHost = jumpHostConf.ProxyJump
+		}
+	}
+
+	// add jump host from command line
 	if jumpHost != "" {
 		sshcConf.JumpHosts = append(sshcConf.JumpHosts, &sshc.JumpHostConf{
 			URI:      jumpHost,
 			Identity: identity,
 		})
 	}
+
+	// utils.PrettyPrintStruct(sshcConf)
 
 	return sshcConf
 }

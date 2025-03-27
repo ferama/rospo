@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -178,4 +179,14 @@ func CurrentUser() *user.User {
 		}()
 	})
 	return currentUserCache.u
+}
+
+// PrettyPrintStruct prints a struct in a readable JSON format
+func PrettyPrintStruct(v interface{}) {
+	data, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		fmt.Println("Error pretty printing struct:", err)
+		return
+	}
+	fmt.Println(string(data))
 }
