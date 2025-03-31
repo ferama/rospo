@@ -1,7 +1,6 @@
 module github.com/ferama/rospo
 
 go 1.24.0
-
 require (
 	github.com/creack/pty v1.1.24
 	github.com/dustin/go-humanize v1.0.1
@@ -15,7 +14,7 @@ require (
 	github.com/spf13/pflag v1.0.6
 	github.com/vbauerster/mpb/v8 v8.9.3
 	golang.org/x/crypto v0.36.0
-	golang.org/x/net v0.37.0
+	golang.org/x/net v0.38.0
 	golang.org/x/sys v0.31.0
 	golang.org/x/term v0.30.0
 	gopkg.in/yaml.v3 v3.0.1
