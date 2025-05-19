@@ -13,7 +13,7 @@ require (
 	github.com/pkg/sftp v1.13.9
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
-	github.com/vbauerster/mpb/v8 v8.10.0
+	github.com/vbauerster/mpb/v8 v8.10.1
 	golang.org/x/crypto v0.38.0
 	golang.org/x/net v0.40.0
 	golang.org/x/sys v0.33.0
