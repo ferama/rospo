@@ -223,11 +223,19 @@ func (s *sshServer) serveConnection(conn net.Conn, config ssh.ServerConfig) {
 		log.Printf("client connection error %s", err)
 		return
 	}
+	msg := fmt.Sprintf("client %s logged in as user '%s'", sshConn.RemoteAddr(), sshConn.User())
 	if !s.disableAuth {
-		log.Printf("logged in %s", sshConn.Permissions.Extensions["pubkey-fp"])
+		// Log the user that logged in
+		if sshConn.Permissions.Extensions["pubkey-fp"] != "" {
+			// Log the public key fingerprint used for authentication
+			msg = fmt.Sprintf("%s with public key '%s'", msg, sshConn.Permissions.Extensions["pubkey-fp"])
+		} else {
+			msg = fmt.Sprintf("%s with password authentication", msg)
+		}
 	} else {
-		log.Println("logged in WITHOUT authentication")
+		msg = fmt.Sprintf("%s without authentication", msg)
 	}
+	log.Println(msg)
 
 	requestHandler := newRequestHandler(s, sshConn, reqs)
 	go requestHandler.handleRequests()

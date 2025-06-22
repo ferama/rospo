@@ -28,6 +28,8 @@ func newSessionHandler(sshConn *ssh.ServerConn,
 }
 
 func (s *sessionHandler) handleClient(client net.Conn) {
+	log.Printf("start forward session: %s", client.LocalAddr())
+
 	remotetcpaddr := client.RemoteAddr().(*net.TCPAddr)
 	raddr := remotetcpaddr.IP.String()
 	rport := uint32(remotetcpaddr.Port)
@@ -51,7 +53,7 @@ func (s *sessionHandler) handleClient(client net.Conn) {
 	}
 	go ssh.DiscardRequests(requests)
 	rio.CopyConn(c, client)
-	log.Printf("ended forward session: %s", client.LocalAddr())
+	log.Printf("end forward session: %s", client.LocalAddr())
 }
 
 func (s *sessionHandler) handleSession() {
@@ -65,8 +67,6 @@ func (s *sessionHandler) handleSession() {
 			}
 			break
 		}
-		log.Printf("started forward session: %s", client.LocalAddr())
-
 		go s.handleClient(client)
 	}
 }
