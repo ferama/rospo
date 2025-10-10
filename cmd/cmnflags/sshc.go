@@ -40,12 +40,18 @@ func GetSshClientConf(cmd *cobra.Command, serverURI string) *sshc.SshClientConf 
 	cp := utils.GetSSHConfigInstance()
 	hostConf := cp.GetHostConf(serverURI)
 	if hostConf != nil {
-		identity = hostConf.IdentityFile
-		knownHosts = hostConf.UserKnownHostsFile
-		if hostConf.ProxyJump != "" {
+		if !cmd.Flags().Changed("user-identity") {
+			identity = hostConf.IdentityFile
+		}
+		if !cmd.Flags().Changed("known-hosts") {
+			knownHosts = hostConf.UserKnownHostsFile
+		}
+		if hostConf.ProxyJump != "" && !cmd.Flags().Changed("jump-host") {
 			jumpHost = hostConf.ProxyJump
 		}
-		insecure = !hostConf.StrictHostKeyChecking
+		if !cmd.Flags().Changed("insecure") {
+			insecure = !hostConf.StrictHostKeyChecking
+		}
 		sshURI = fmt.Sprintf("%s@%s:%d", hostConf.User, hostConf.HostName, hostConf.Port)
 	}
 
