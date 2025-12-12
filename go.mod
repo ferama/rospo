@@ -11,7 +11,7 @@ require (
 	github.com/kevinburke/ssh_config v1.4.0
 	github.com/miekg/dns v1.1.68
 	github.com/pkg/sftp v1.13.10
-	github.com/spf13/cobra v1.10.1
+	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/vbauerster/mpb/v8 v8.11.2
 	golang.org/x/crypto v0.45.0
