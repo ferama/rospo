@@ -108,6 +108,30 @@ func (s *channelHandler) handleShellExecRequest(
 	envVal = append(envVal, fmt.Sprintf("USER=%s", usr.Username))
 	envVal = append(envVal, fmt.Sprintf("LOGNAME=%s", usr.Username))
 
+	// export PATH
+	path := os.Getenv("PATH")
+	if path == "" {
+		if runtime.GOOS == "windows" {
+			path = `C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem`
+		} else {
+			path = "/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
+		}
+	}
+	envVal = append(envVal, fmt.Sprintf("PATH=%s", path))
+
+	// export SHELL
+	envVal = append(envVal, fmt.Sprintf("SHELL=%s", shell))
+
+	// Fix missing locale vars if LANG is set
+	if lang, ok := env["LANG"]; ok && lang != "" && runtime.GOOS != "windows" {
+		if _, ok := env["LC_ALL"]; !ok {
+			envVal = append(envVal, fmt.Sprintf("LC_ALL=%s", lang))
+		}
+		if _, ok := env["LANGUAGE"]; !ok {
+			envVal = append(envVal, fmt.Sprintf("LANGUAGE=%s", lang))
+		}
+	}
+
 	cmd.Env = envVal
 	cmd.Dir = usr.HomeDir
 

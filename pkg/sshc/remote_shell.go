@@ -47,6 +47,13 @@ func (rs *RemoteShell) Start(cmd string, requestPty bool) error {
 	session.Stderr = os.Stderr
 	session.Stdin = os.Stdin
 
+	// Send environment variables
+	for _, envName := range []string{"LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", "LC_COLLATE", "LC_MONETARY", "LC_MESSAGES", "LC_PAPER", "LC_NAME", "LC_ADDRESS", "LC_TELEPHONE", "LC_MEASUREMENT", "LC_IDENTIFICATION", "LC_ALL"} {
+		if val := os.Getenv(envName); val != "" {
+			session.Setenv(envName, val)
+		}
+	}
+
 	fd := int(os.Stdin.Fd())
 	if term.IsTerminal(fd) && requestPty {
 		state, err := term.MakeRaw(fd)
