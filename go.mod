@@ -6,7 +6,7 @@ require (
 	github.com/creack/pty v1.1.24
 	github.com/dustin/go-humanize v1.0.1
 	github.com/fatih/color v1.18.0
-	github.com/ferama/go-socks v0.0.0-20240510140443-0400c78f7018
+	github.com/ferama/go-socks v0.0.0-20260207144257-becabd7b3e0b
 	github.com/judwhite/go-svc v1.2.1
 	github.com/kevinburke/ssh_config v1.4.0
 	github.com/miekg/dns v1.1.72
