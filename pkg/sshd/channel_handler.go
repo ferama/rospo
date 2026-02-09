@@ -122,16 +122,6 @@ func (s *channelHandler) handleShellExecRequest(
 	// export SHELL
 	envVal = append(envVal, fmt.Sprintf("SHELL=%s", shell))
 
-	// Fix missing locale vars if LANG is set
-	if lang, ok := env["LANG"]; ok && lang != "" && runtime.GOOS != "windows" {
-		if _, ok := env["LC_ALL"]; !ok {
-			envVal = append(envVal, fmt.Sprintf("LC_ALL=%s", lang))
-		}
-		if _, ok := env["LANGUAGE"]; !ok {
-			envVal = append(envVal, fmt.Sprintf("LANGUAGE=%s", lang))
-		}
-	}
-
 	cmd.Env = envVal
 	cmd.Dir = usr.HomeDir
 
