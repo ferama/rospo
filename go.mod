@@ -8,7 +8,7 @@ require (
 	github.com/fatih/color v1.18.0
 	github.com/ferama/go-socks v0.0.0-20260207144257-becabd7b3e0b
 	github.com/judwhite/go-svc v1.2.1
-	github.com/kevinburke/ssh_config v1.4.0
+	github.com/kevinburke/ssh_config v1.5.0
 	github.com/miekg/dns v1.1.72
 	github.com/pkg/sftp v1.13.10
 	github.com/spf13/cobra v1.10.2
