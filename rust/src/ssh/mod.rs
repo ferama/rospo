@@ -466,5 +466,9 @@ async fn drain_channel(channel: &mut russh::Channel<russh::client::Msg>, interac
         }
     }
 
-    Ok(exit_status.unwrap_or(0))
+    if let Some(code) = exit_status {
+        Ok(code)
+    } else {
+        Err("channel closed without exit status".to_string())
+    }
 }

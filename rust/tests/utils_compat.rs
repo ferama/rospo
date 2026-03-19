@@ -2,7 +2,10 @@ use std::fs;
 use std::path::PathBuf;
 
 use internal_russh_forked_ssh_key::PublicKey;
-use rospo::utils::{add_host_key_to_known_hosts, new_endpoint, parse_ssh_config_file, parse_ssh_url, serialize_public_key};
+use rospo::utils::{
+    add_host_key_to_known_hosts, byte_count_si, expand_user_home, get_user_default_shell, new_endpoint,
+    parse_ssh_config_file, parse_ssh_url, serialize_public_key,
+};
 use serde_json::Value;
 
 fn repo_root() -> PathBuf {
@@ -45,9 +48,41 @@ fn ssh_url_matches_ipv6_fixture() {
 }
 
 #[test]
+fn ssh_url_matches_go_table_cases() {
+    let current_user = std::env::var("USER")
+        .or_else(|_| std::env::var("USERNAME"))
+        .unwrap_or_else(|_| "root".to_string());
+    let cases = [
+        ("192.168.0.1", (current_user.as_str(), "192.168.0.1", 22u16)),
+        ("192.168.0.1:2222", (current_user.as_str(), "192.168.0.1", 2222u16)),
+        (":22", (current_user.as_str(), "127.0.0.1", 22u16)),
+        ("user-name@192.168.0.1:2222", ("user-name", "192.168.0.1", 2222u16)),
+        ("user@dm1.dm2.dm3.com", ("user", "dm1.dm2.dm3.com", 22u16)),
+        (
+            "[2001:0db8:85a3:0000:0000:8a2e:0370:7334]",
+            (current_user.as_str(), "[2001:0db8:85a3:0000:0000:8a2e:0370:7334]", 22u16),
+        ),
+    ];
+
+    for (input, expected) in cases {
+        let parsed = parse_ssh_url(input).expect("parse ssh url");
+        assert_eq!(parsed.username, expected.0);
+        assert_eq!(parsed.host, expected.1);
+        assert_eq!(parsed.port, expected.2);
+    }
+}
+
+#[test]
 fn endpoint_string_matches_go_behavior() {
     let endpoint = new_endpoint("localhost:2222").expect("parse endpoint");
     assert_eq!(endpoint.to_string(), "localhost:2222");
+}
+
+#[test]
+fn expand_user_home_matches_go_behavior() {
+    let expanded = expand_user_home("~/.ssh");
+    assert!(expanded.ends_with("/.ssh"));
+    assert_eq!(expand_user_home("/app/.ssh"), "/app/.ssh");
 }
 
 #[test]
@@ -95,4 +130,33 @@ fn add_host_key_uses_go_known_hosts_format() {
     assert!(content.starts_with("127.0.0.1 ecdsa-sha2-nistp521 "));
 
     let _ = std::fs::remove_file(path);
+}
+
+#[test]
+fn get_user_default_shell_falls_back_for_unknown_user() {
+    #[cfg(windows)]
+    assert_eq!(
+        get_user_default_shell("notexistinguser"),
+        r"c:\windows\system32\windowspowershell\v1.0\powershell.exe"
+    );
+
+    #[cfg(not(windows))]
+    assert_eq!(get_user_default_shell("notexistinguser"), "/bin/sh");
+}
+
+#[test]
+fn byte_count_si_matches_go_outputs() {
+    let cases = [
+        (1000, "1.0 kB"),
+        (1001, "1.0 kB"),
+        (1101, "1.1 kB"),
+        (10000, "10.0 kB"),
+        (1_000_000, "1.0 MB"),
+        (1_000_000_000, "1.0 GB"),
+        (1_000_000_000_000, "1.0 TB"),
+    ];
+
+    for (input, expected) in cases {
+        assert_eq!(byte_count_si(input), expected);
+    }
 }

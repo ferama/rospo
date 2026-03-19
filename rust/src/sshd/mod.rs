@@ -19,7 +19,9 @@ use tokio::process::{ChildStderr, ChildStdout, Command};
 use tokio::sync::{mpsc, Mutex};
 
 use crate::config::SshdConf;
-use crate::utils::{current_home_dir, current_username, expand_user_home, write_file_0600};
+use crate::utils::{
+    current_home_dir, current_username, expand_user_home, get_user_default_shell, write_file_0600,
+};
 
 const BANNER: &str = "\n .---------------.\n | 🐸 rospo sshd |\n .---------------.\n\n";
 
@@ -322,6 +324,8 @@ impl server::Handler for Handler {
     ) -> Result<(), Self::Error> {
         if self.state.options.disable_shell {
             session.channel_failure(channel)?;
+            let _ = session.eof(channel);
+            let _ = session.close(channel);
         } else {
             if let Some(state) = self.state.channels.lock().await.get_mut(&channel) {
                 state.pty = Some(PtyRequest {
@@ -359,6 +363,8 @@ impl server::Handler for Handler {
     ) -> Result<(), Self::Error> {
         if self.state.options.disable_shell {
             session.channel_failure(channel)?;
+            let _ = session.eof(channel);
+            let _ = session.close(channel);
             return Ok(());
         }
         let env = self
@@ -382,6 +388,8 @@ impl server::Handler for Handler {
     ) -> Result<(), Self::Error> {
         if self.state.options.disable_shell {
             session.channel_failure(channel)?;
+            let _ = session.eof(channel);
+            let _ = session.close(channel);
             return Ok(());
         }
         let env = self
@@ -413,6 +421,8 @@ impl server::Handler for Handler {
     ) -> Result<(), Self::Error> {
         if name != "sftp" || self.state.options.disable_sftp_subsystem {
             session.channel_failure(channel)?;
+            let _ = session.eof(channel);
+            let _ = session.close(channel);
             return Ok(());
         }
 
@@ -777,7 +787,7 @@ fn build_command(shell_executable: &str, command: Option<String>) -> Command {
         return cmd;
     }
 
-    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
+    let shell = get_user_default_shell(&current_username());
     let mut cmd = Command::new(shell);
     if let Some(command) = command {
         cmd.arg("-c").arg(command);
@@ -795,7 +805,7 @@ fn apply_default_env(cmd: &mut Command, env: &HashMap<String, String>, shell_exe
         if cfg!(windows) {
             "powershell.exe".to_string()
         } else {
-            std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string())
+            get_user_default_shell(&current_username())
         }
     } else {
         shell_executable

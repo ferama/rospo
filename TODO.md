@@ -2,243 +2,175 @@
 
 Date: 2026-03-19
 
-This is the exhaustive remaining-work and incomplete-implementation list based on the current repository state.
+This file lists the remaining work after the current Rust implementation state. It intentionally excludes work that is already implemented and validated.
 
 ## Completion Status
 
-The migration is not complete. The Rust binary is not yet a drop-in replacement.
+The migration is still not complete. The Rust binary is not yet a proven drop-in replacement.
 
-Implemented in Rust:
+Already implemented in Rust:
 
 - fixture-matched root help and root no-arg output
-- fixture-matched command help outputs for all captured commands
+- fixture-matched help output for captured commands
 - fixture-matched template output
-- config schema mirror and YAML parsing
-- utility behavior for SSH URL parsing, endpoint formatting, SSH config parsing, known-hosts formatting
+- config schema mirror and config file loading
+- SSH URL parsing, endpoint formatting, SSH config parsing, known-hosts formatting
 - `keygen`
 - `grabpubkey`
-- partial `shell`
-- partial `run`
-- compatibility tests for the above
+- `shell`
+- `socks-proxy`
+- `dns-proxy`
+- `get`
+- `put`
+- `tun forward`
+- `tun reverse`
+- `sshd`
+- `revshell`
+- non-placeholder `run` orchestration for implemented sections
+- HTTP/HTTPS `authorized_keys` support
+- Unix PTY-backed embedded-server shell handling
+- Rust automated coverage for config, utils, keys, SSH, SSHD, SOCKS, and tunnels
 
-Not complete:
+## Highest Priority Remaining Work
 
-- almost all runtime features outside `keygen`, `grabpubkey`, and part of `shell`
+- finish exact logging/output parity with the Go binary
+- finish Windows support:
+  - Windows service mode
+  - Windows PTY/ConPTY support
+- finish Go-equivalent concurrent/chunked SFTP transfer behavior
+- finish exhaustive exit-code and malformed-invocation parity
+- automate mixed Go/Rust interoperability validation across the full matrix
 
 ## CLI Parity Work
 
-- implement full runtime behavior for:
-  - `dns-proxy`
-  - `get`
-  - `put`
-  - `revshell`
-  - `run`
-  - `socks-proxy`
-  - `sshd`
-  - `tun forward`
-  - `tun reverse`
-- verify exact exit codes for all success and failure paths, not just help and current implemented slices
+- verify exact exit codes for all success and failure paths, not just the currently covered ones
 - verify unknown-flag and malformed-invocation behavior against Cobra for every command
 - verify `help` subcommand parity beyond the currently captured combinations
-- decide whether to keep manual parsing or migrate live parsing to `clap` without losing exact Cobra compatibility
-- wire the root `-q/--quiet` behavior through all commands and runtime paths
+- decide whether the current manual parsing approach is sufficient long term or if a lower-risk parser abstraction is needed
+- wire root `-q/--quiet` behavior consistently through all commands and runtime paths
 
 ## Config Layer Work
 
-- validate all Go config fixtures, not only the currently covered SSH client fixtures
-- add Rust tests for:
-  - `pkg/conf/testdata/sshd.yaml`
+- add Rust tests for more Go-style config compositions:
   - tunnel-oriented configs
   - socks proxy configs
   - DNS proxy configs
   - mixed multi-section configs used by `run`
-- verify unknown-field ignoring matches Go in every relevant scenario
-- implement runtime defaulting behavior outside raw YAML load
-- decide and document whether the apparent Go `run` DNS proxy config bug must be preserved:
-  - Go appears to use `conf.SocksProxy.SshClientConf`
-  - expected field would be `conf.DnsProxy.SshClientConf`
+- verify unknown-field ignoring matches Go in more mixed config scenarios
+- verify runtime defaulting behavior for every config-backed command path
+- decide whether the apparent Go `run` DNS-client selection bug must be preserved exactly
 
 ## SSH Client Work
 
-- implement reconnect loop with 5-second retry cadence
-- implement periodic `keepalive@rospo` sending every 5 seconds
-- verify host-key failure messaging matches Go wording and exit codes
-- integrate parsed SSH config overrides into connection setup:
-  - user
-  - hostname
-  - port
-  - identity file
-  - user-known-hosts file
-  - strict host key checking
-  - proxy jump
-- implement actual `--jump-host` routing
-- implement config-driven jump-host chains from YAML `jump_hosts`
-- implement banner behavior exactly for all code paths
-- verify password-auth behavior and prompts against Go
-- verify no-auth server behavior against Go
-- fix the currently observed no-auth mismatch:
-  - Rust `shell` against Go `sshd -T` failed
-  - Go logged `ssh: no authentication methods available`
-  - Rust returned `Channel send error`
-- implement PTY resize propagation
-- verify interactive shell terminal-mode behavior against Go
-- verify stdout/stderr interleaving and exit-status propagation
-- verify identity-file loading behavior including passphrases if Go supports them
-- verify known-hosts creation behavior on malformed files, missing parents, and parse failures
+- verify exact keepalive behavior versus Go:
+  - timing
+  - request type
+  - disconnect handling
+- verify host-key failure wording and exit codes match Go
+- verify password-auth behavior and prompts against Go CLI/OpenSSH expectations
+- verify no-auth server behavior against Go across more combinations
+- verify stdout/stderr interleaving and exit-status propagation in more edge cases
+- verify identity-file loading behavior including encrypted/passphrase cases if Go supports them
+- verify malformed known-hosts behavior matches Go
 
 ## Embedded SSH Server Work
 
-- implement Rust `sshd`
-- support key-based authentication
-- support password authentication
-- support disabled-auth mode
-- support shell/session requests
-- support disable-shell mode
-- implement frog banner behavior with Windows suppression rules
-- implement SFTP subsystem support
-- implement disable-SFTP-subsystem option
-- implement remote port forwarding support
-- implement disable-tunnelling option
-- implement configurable shell executable
-- verify interoperability:
-  - Go client -> Rust server
-  - Rust client -> Rust server
-  - Rust client -> Go server
-  - Go client -> Go server as baseline
+- implement Windows PTY behavior equivalent to the Go ConPTY path
+- verify shell/session behavior against Go in more OpenSSH client combinations
+- verify forwarding lifecycle and teardown behavior against Go more exhaustively
+- verify disable-auth behavior across mixed Go/Rust client-server combinations
+- expose or test active-session-count parity if that contract matters
 
 ## Tunnel Engine Work
 
-- implement forward tunnel runtime
-- implement reverse tunnel runtime
-- implement reconnect loop with 5-second retry
-- implement `direct-tcpip` flow for forward tunnels
-- implement `tcpip-forward` requests for reverse tunnels
-- implement `forwarded-tcpip` accept handling
-- implement server-side liveness behavior using `checkalive@rospo`
-- match Go listener lifecycle, error handling, and shutdown behavior
-- verify multi-tunnel behavior from YAML `run`
-- compare against captured Go tunnel traces in `compat/golden/runtime/go_test_pkg_tun.txt`
+- verify Go-equivalent `checkalive@rospo` behavior and timing
+- compare listener lifecycle, reconnect timing, and shutdown semantics side by side with Go
+- add automated mixed-version tunnel tests:
+  - Go client -> Rust server
+  - Rust client -> Go server
+  - Go server -> Rust client
 
 ## SOCKS Proxy Work
 
-- implement local SOCKS proxy runtime
-- match Go support for SOCKS4
-- match Go support for SOCKS5
-- match feature limitations and unsupported modes exactly
-- verify local listen defaults and error paths
-- integrate with SSH transport and reconnect behavior
+- verify unsupported SOCKS modes and failure replies match Go exactly
+- validate mixed Go/Rust SOCKS behavior in both directions
+- verify listen-default and bind-error wording/exit codes
 
 ## DNS Proxy Work
 
-- implement local UDP listener
-- implement local TCP listener
-- implement DNS-over-TCP framing through SSH
-- implement `--remote-dns-server` default and config-driven remote DNS address behavior
-- verify behavior under `run`
-- compare against Go runtime and fixtures
-- decide whether to preserve the apparent `run` DNS-client selection bug if confirmed
+- verify exact UDP/TCP failure semantics against Go
+- validate `run` orchestration behavior and failure handling for DNS proxy sections
+- decide whether to preserve the apparent Go DNS-client selection bug in `run`
 
 ## SFTP Work
 
-- implement SFTP client download path for `get`
-- implement SFTP client upload path for `put`
-- implement resumable transfers
-- implement chunked concurrent transfers
-- implement worker-pool behavior equivalent to Go `pkg/worker`
-- implement recursive transfer logic
-- implement embedded server SFTP subsystem
-- implement subsystem-disable behavior
-- compare transfer concurrency defaults and limits exactly
+- port Go-equivalent chunked concurrent uploads
+- port Go-equivalent chunked concurrent downloads
+- port or emulate Go worker-pool behavior and limits
+- verify resume semantics match Go
+- verify recursive transfer edge cases against Go
+- add automated mixed Go/Rust SFTP coverage beyond the current manual/live validations
 
 ## `run` Command Work
 
-- replace the current placeholder `nothing to run` hardcoded timestamp output with verified Go-equivalent behavior
-- orchestrate all configured sections:
-  - `sshclient`
-  - `tunnel`
-  - `sshd`
-  - `socksproxy`
-  - `dnsproxy`
-- ensure config composition behavior matches Go when multiple sections are present
-- preserve Go startup ordering if it is user-visible
-- preserve Go error propagation and exit behavior if one subsystem fails while others start
-- preserve quiet/logging behavior across all spawned components
+- verify exact startup ordering against Go
+- verify exact failure propagation if one subsystem fails while others start
+- verify shutdown behavior on `ctrl-c`
+- verify logging/quiet behavior across all spawned subsystems
+- add end-to-end tests for realistic multi-section configs
 
 ## Logging Work
 
-- replace placeholder `init_logging`
-- match Go logger formatting and prefixes
-- match color behavior
-- match quiet-mode suppression
-- match command/runtime log wording where user-visible and compatibility-sensitive
-- verify whether logs go to stdout vs stderr on each path
+- replace the current placeholder `rust/src/logging/mod.rs`
+- match Go logger prefixes, colors, wording, and formatting
+- match quiet-mode suppression behavior
+- verify stdout versus stderr placement on each path
 
 ## Cross-Platform Work
 
-- verify Linux runtime behavior
-- verify macOS runtime behavior
+- verify Linux runtime behavior end to end
+- verify macOS runtime behavior end to end
 - implement Windows service mode equivalent to Go `go-svc`
-- implement Windows PTY support equivalent to ConPTY path in Go
+- implement Windows ConPTY-backed shell/session handling
 - verify Windows banner suppression and shell behavior
-- verify path expansion and home-directory behavior on Windows
-- verify file-permission semantics for key files on Windows
+- verify Windows home/path expansion semantics
+- verify Windows file-permission semantics for key files
 
 ## Test Suite Work
 
-- extend CLI golden coverage beyond help/template/root to real runtime outputs
-- add Rust-vs-Go side-by-side integration tests
-- boot Go and Rust implementations against each other in automated tests
+- add exact exit-code assertions for more command/runtime paths
 - add failure-path coverage for:
   - unknown hosts
   - invalid keys
   - auth failure
-  - tunnel listener collisions
+  - listener collisions
   - network interruption
   - reconnect recovery
-- turn the currently manual live interoperability checks into automated tests
-- add exact exit-code assertions for all commands
-- add more config compatibility fixtures
-- add end-to-end tests for `run`
+- turn the current manual live interop checks into automated tests where practical
+- extend `run` coverage with realistic mixed configs
+- decide what to do about the Go test packages that do not have direct Rust module equivalents:
+  - `pkg/registry`
+  - `pkg/worker`
+  - `pkg/rio`
 
 ## Interop Validation Work
 
-- validate Go client -> Rust server
-- validate Rust client -> Go server for all commands, not just `grabpubkey` and keyed `shell`
-- validate Rust server -> Go client behavior
-- validate forward tunnels across mixed Go/Rust combinations
-- validate reverse tunnels across mixed Go/Rust combinations
-- validate SOCKS across mixed Go/Rust combinations
-- validate SFTP across mixed Go/Rust combinations
-- validate known-hosts enrollment and trust behavior across mixed binaries
+- validate the full mixed-version matrix for all implemented commands
+- diff Go and Rust outputs/behaviors side by side where user-visible
+- validate known-hosts enrollment/trust behavior across mixed binaries
+- validate SFTP, SOCKS, DNS, and tunnels across mixed Go/Rust combinations systematically
 
 ## Documentation Work
 
-- keep `docs/migration/report.md` in sync with the actual implementation state or retire it in favor of the new top-level docs
-- document any proven unavoidable differences only after they are verified
-- add a final migration report once runtime parity is real
+- keep `ARCHITECTURE.md`, `DECISIONS.md`, and `SPEC.md` in sync with implementation changes
+- refresh `docs/migration/report.md` or retire it if the top-level docs are the new source of truth
+- document any unavoidable differences only after they are verified
 
-## Current Known Mismatches And Incomplete Behaviors
+## Current Known Gaps
 
-- `shell --jump-host` is accepted but ignored
-- `run` only parses config and returns placeholder behavior
-- non-help runtime commands other than `keygen`, `grabpubkey`, and `shell` still return `Rust runtime implementation is not complete yet`
-- logging parity is absent
-- reconnect/keepalive behavior is absent
-- no embedded server exists yet
-- no tunnel engine exists yet
-- no SOCKS runtime exists yet
-- no DNS proxy runtime exists yet
-- no SFTP runtime exists yet
-- no Windows service mode exists yet
-- no cross-platform parity validation exists yet
-- one no-auth live SSH interop path is currently broken
-
-## Proven-Complete Areas So Far
-
-- Go CLI and config surface have been inventoried
-- Go golden fixtures are reproducible
-- Rust YAML schema mirror exists
-- Rust utility behavior is partially fixture-matched
-- Rust `keygen` exists
-- Rust `grabpubkey` exists
-- Rust `shell` can execute a command successfully against a keyed Go server
+- logging parity is not done
+- Windows support is not done
+- chunked concurrent SFTP parity is not done
+- full exit-code/error-text parity is not proven
+- full mixed Go/Rust automated interoperability coverage is not done
+- some Go test coverage has no direct Rust module equivalent yet

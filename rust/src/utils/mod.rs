@@ -59,6 +59,47 @@ pub fn expand_user_home(path: &str) -> String {
     }
 }
 
+pub fn get_user_default_shell(username: &str) -> String {
+    #[cfg(windows)]
+    {
+        let _ = username;
+        return r"c:\windows\system32\windowspowershell\v1.0\powershell.exe".to_string();
+    }
+
+    #[cfg(not(windows))]
+    {
+        let fallback = "/bin/sh".to_string();
+        let Ok(passwd) = fs::read_to_string("/etc/passwd") else {
+            return fallback;
+        };
+        for line in passwd.lines() {
+            let fields: Vec<_> = line.split(':').collect();
+            if fields.len() == 7 && fields[0] == username {
+                return fields[6].to_string();
+            }
+        }
+        fallback
+    }
+}
+
+pub fn byte_count_si(bytes: i64) -> String {
+    const UNIT: i64 = 1000;
+    if bytes < UNIT {
+        return format!("{bytes} B");
+    }
+
+    let mut div = UNIT;
+    let mut exp = 0usize;
+    let mut n = bytes / UNIT;
+    while n >= UNIT {
+        div *= UNIT;
+        exp += 1;
+        n /= UNIT;
+    }
+
+    format!("{:.1} {}B", bytes as f64 / div as f64, ['k', 'M', 'G', 'T', 'P', 'E'][exp])
+}
+
 pub fn parse_ssh_url(input: &str) -> Result<SshUrl, String> {
     let (username, host_port) = match input.split_once('@') {
         Some((user, rest)) => (user.to_string(), rest.to_string()),

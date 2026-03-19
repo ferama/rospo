@@ -1,3 +1,6 @@
+use std::fs;
+use std::path::Path;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -98,4 +101,9 @@ pub struct SshdConf {
 
 pub fn load_config(input: &str) -> Result<Config, serde_yaml::Error> {
     serde_yaml::from_str(input)
+}
+
+pub fn load_config_file(path: &Path) -> Result<Config, String> {
+    let content = fs::read_to_string(path).map_err(|err| err.to_string())?;
+    load_config(&content).map_err(|err| err.to_string())
 }
