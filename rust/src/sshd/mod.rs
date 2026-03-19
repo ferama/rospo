@@ -668,7 +668,7 @@ async fn copy_stdout(channel: ChannelId, handle: server::Handle, mut stdout: Chi
         match stdout.read(&mut buf).await {
             Ok(0) | Err(_) => break,
             Ok(n) => {
-                let _ = handle.data(channel, buf[..n].to_vec().into()).await;
+                let _ = handle.data(channel, buf[..n].to_vec()).await;
             }
         }
     }
@@ -680,7 +680,7 @@ async fn copy_stderr(channel: ChannelId, handle: server::Handle, mut stderr: Chi
         match stderr.read(&mut buf).await {
             Ok(0) | Err(_) => break,
             Ok(n) => {
-                let _ = handle.extended_data(channel, 1, buf[..n].to_vec().into()).await;
+                let _ = handle.extended_data(channel, 1, buf[..n].to_vec()).await;
             }
         }
     }
@@ -697,7 +697,7 @@ async fn run_pty_reader(
         match reader.read(&mut buf).await {
             Ok(0) | Err(_) => break,
             Ok(n) => {
-                let _ = handle.data(channel, buf[..n].to_vec().into()).await;
+                let _ = handle.data(channel, buf[..n].to_vec()).await;
             }
         }
     }
