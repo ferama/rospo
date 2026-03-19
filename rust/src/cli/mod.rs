@@ -2,8 +2,12 @@ use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::config::{load_config, Config};
+use crate::config::{load_config, Config, JumpHostConf, SshClientConf};
+use crate::dns_proxy;
+use crate::sftp;
 use crate::ssh::{fetch_server_public_key, ClientOptions, JumpHostOptions, Session};
+use crate::sshd::{self, ServerOptions};
+use crate::socks;
 use crate::tunnel;
 use crate::utils::{
     add_host_key_to_known_hosts, current_home_dir, expand_user_home, get_default_ssh_config_host, new_endpoint,
@@ -109,10 +113,13 @@ fn dispatch(args: &[String]) -> CliResponse {
         Some("keygen") => keygen_command(rest),
         Some("grabpubkey") => grabpubkey_command(rest),
         Some("shell") => shell_command(rest),
+        Some("get") => get_command(rest),
+        Some("put") => put_command(rest),
+        Some("socks-proxy") => socks_proxy_command(rest),
+        Some("dns-proxy") => dns_proxy_command(rest),
         Some("tun") => tun_command(rest),
-        Some("dns-proxy" | "get" | "put" | "revshell" | "socks-proxy" | "sshd") => {
-            CliResponse::failure("Rust runtime implementation is not complete yet\n", 1)
-        }
+        Some("sshd") => sshd_command(rest),
+        Some("revshell") => revshell_command(rest),
         _ => CliResponse::failure("invalid subcommand\n", 1),
     }
 }
@@ -144,7 +151,78 @@ fn run_config_command(rest: &[String]) -> CliResponse {
         return CliResponse::success("2026/03/19 00:00:00 nothing to run\n");
     }
 
-    CliResponse::failure("Rust runtime implementation is not complete yet\n", 1)
+    let runtime = match tokio::runtime::Builder::new_multi_thread().enable_all().build() {
+        Ok(runtime) => runtime,
+        Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
+    };
+
+    let result = runtime.block_on(async move {
+        let mut tasks = Vec::new();
+
+        if let Some(sshd_conf) = parsed.sshd.clone() {
+            let options = ServerOptions::from_conf(&sshd_conf);
+            tasks.push(tokio::spawn(async move { sshd::run(options).await }));
+        }
+
+        if let Some(tunnels) = parsed.tunnel.clone() {
+            for tunnel_conf in tunnels {
+                let base = match tunnel_conf.ssh_client.clone().or(parsed.ssh_client.clone()) {
+                    Some(conf) => conf,
+                    None => return Err("you need to configure sshclient section to support tunnel".to_string()),
+                };
+                let options = client_options_from_conf(&base)?;
+                let local = new_endpoint(&tunnel_conf.local)?;
+                let remote = new_endpoint(&tunnel_conf.remote)?;
+                tasks.push(tokio::spawn(async move {
+                    if tunnel_conf.forward {
+                        tunnel::run_forward(options, local, remote).await
+                    } else {
+                        tunnel::run_reverse(options, local, remote).await
+                    }
+                }));
+            }
+        }
+
+        if let Some(socks_conf) = parsed.socks_proxy.clone() {
+            let conf = match socks_conf.ssh_client.clone().or(parsed.ssh_client.clone()) {
+                Some(conf) => conf,
+                None => return Err("you need to configure sshclient section to support socks proxy".to_string()),
+            };
+            let options = client_options_from_conf(&conf)?;
+            tasks.push(tokio::spawn(async move {
+                socks::run(options, &socks_conf.listen_address).await
+            }));
+        }
+
+        if let Some(dns_conf) = parsed.dns_proxy.clone() {
+            let conf = if let Some(conf) = dns_conf.ssh_client.clone() {
+                conf
+            } else if let Some(global) = parsed.ssh_client.clone() {
+                global
+            } else {
+                return Err("you need to configure sshclient section to support dns proxy".to_string());
+            };
+            let options = client_options_from_conf(&conf)?;
+            let remote_dns = dns_conf
+                .remote_dns_address
+                .unwrap_or_else(|| "1.1.1.1:53".to_string());
+            tasks.push(tokio::spawn(async move {
+                dns_proxy::run(options, &dns_conf.listen_address, &remote_dns).await
+            }));
+        }
+
+        if tasks.is_empty() {
+            return Ok::<(), String>(());
+        }
+
+        tokio::signal::ctrl_c().await.map_err(|err| err.to_string())?;
+        Ok(())
+    });
+
+    match result {
+        Ok(()) => CliResponse::success(""),
+        Err(err) => CliResponse::failure(format!("{err}\n"), 1),
+    }
 }
 
 fn keygen_command(rest: &[String]) -> CliResponse {
@@ -491,6 +569,648 @@ fn tun_command(rest: &[String]) -> CliResponse {
     }
 }
 
+fn get_command(rest: &[String]) -> CliResponse {
+    if matches!(rest, [cmd, help] if cmd == "get" && is_help_flag(help)) {
+        return CliResponse::success(golden_cli("get-help.txt"));
+    }
+    match parse_get_command(rest) {
+        Ok(parsed) => {
+            let runtime = match tokio::runtime::Builder::new_current_thread().enable_all().build() {
+                Ok(runtime) => runtime,
+                Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
+            };
+            let result = runtime.block_on(async move {
+                let mut client = sftp::Client::connect(parsed.options).await?;
+                let result = if parsed.recursive {
+                    client.get_recursive(&parsed.remote, &parsed.local).await
+                } else {
+                    client.get_file(&parsed.remote, &parsed.local).await
+                };
+                let _ = client.close().await;
+                result
+            });
+            match result {
+                Ok(()) => CliResponse::success(""),
+                Err(err) => CliResponse::failure(format!("{err}\n"), 1),
+            }
+        }
+        Err(err) => CliResponse::failure(format!("{err}\n"), 1),
+    }
+}
+
+fn put_command(rest: &[String]) -> CliResponse {
+    if matches!(rest, [cmd, help] if cmd == "put" && is_help_flag(help)) {
+        return CliResponse::success(golden_cli("put-help.txt"));
+    }
+    match parse_put_command(rest) {
+        Ok(parsed) => {
+            let runtime = match tokio::runtime::Builder::new_current_thread().enable_all().build() {
+                Ok(runtime) => runtime,
+                Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
+            };
+            let result = runtime.block_on(async move {
+                let mut client = sftp::Client::connect(parsed.options).await?;
+                let result = if parsed.recursive {
+                    client.put_recursive(&parsed.remote, &parsed.local).await
+                } else {
+                    client.put_file(&parsed.remote, &parsed.local).await
+                };
+                let _ = client.close().await;
+                result
+            });
+            match result {
+                Ok(()) => CliResponse::success(""),
+                Err(err) => CliResponse::failure(format!("{err}\n"), 1),
+            }
+        }
+        Err(err) => CliResponse::failure(format!("{err}\n"), 1),
+    }
+}
+
+fn socks_proxy_command(rest: &[String]) -> CliResponse {
+    if matches!(rest, [cmd, help] if cmd == "socks-proxy" && is_help_flag(help)) {
+        return CliResponse::success(golden_cli("socks-proxy-help.txt"));
+    }
+    match parse_socks_proxy_command(rest) {
+        Ok((options, listen_address)) => {
+            let runtime = match tokio::runtime::Builder::new_multi_thread().enable_all().build() {
+                Ok(runtime) => runtime,
+                Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
+            };
+            match runtime.block_on(socks::run(options, &listen_address)) {
+                Ok(()) => CliResponse::success(""),
+                Err(err) => CliResponse::failure(format!("{err}\n"), 1),
+            }
+        }
+        Err(err) => CliResponse::failure(format!("{err}\n"), 1),
+    }
+}
+
+fn dns_proxy_command(rest: &[String]) -> CliResponse {
+    if matches!(rest, [cmd, help] if cmd == "dns-proxy" && is_help_flag(help)) {
+        return CliResponse::success(golden_cli("dns-proxy-help.txt"));
+    }
+    match parse_dns_proxy_command(rest) {
+        Ok((options, listen_address, remote_dns)) => {
+            let runtime = match tokio::runtime::Builder::new_multi_thread().enable_all().build() {
+                Ok(runtime) => runtime,
+                Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
+            };
+            match runtime.block_on(dns_proxy::run(options, &listen_address, &remote_dns)) {
+                Ok(()) => CliResponse::success(""),
+                Err(err) => CliResponse::failure(format!("{err}\n"), 1),
+            }
+        }
+        Err(err) => CliResponse::failure(format!("{err}\n"), 1),
+    }
+}
+
+fn sshd_command(rest: &[String]) -> CliResponse {
+    if matches!(rest, [cmd, help] if cmd == "sshd" && is_help_flag(help)) {
+        return CliResponse::success(golden_cli("sshd-help.txt"));
+    }
+    let options = match parse_sshd_command(rest) {
+        Ok(options) => options,
+        Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
+    };
+    let runtime = match tokio::runtime::Builder::new_multi_thread().enable_all().build() {
+        Ok(runtime) => runtime,
+        Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
+    };
+    match runtime.block_on(sshd::run(options)) {
+        Ok(()) => CliResponse::success(""),
+        Err(err) => CliResponse::failure(format!("{err}\n"), 1),
+    }
+}
+
+fn revshell_command(rest: &[String]) -> CliResponse {
+    if matches!(rest, [cmd, help] if cmd == "revshell" && is_help_flag(help)) {
+        return CliResponse::success(golden_cli("revshell-help.txt"));
+    }
+    let (client_options, server_options, local, remote) = match parse_revshell_command(rest) {
+        Ok(parsed) => parsed,
+        Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
+    };
+    let runtime = match tokio::runtime::Builder::new_multi_thread().enable_all().build() {
+        Ok(runtime) => runtime,
+        Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
+    };
+    let result = runtime.block_on(async move {
+        let sshd_task = tokio::spawn(async move { sshd::run(server_options).await });
+        let tunnel_task = tokio::spawn(async move { tunnel::run_reverse(client_options, local, remote).await });
+
+        tokio::select! {
+            result = sshd_task => match result {
+                Ok(result) => result,
+                Err(err) => Err(err.to_string()),
+            },
+            result = tunnel_task => match result {
+                Ok(result) => result,
+                Err(err) => Err(err.to_string()),
+            },
+        }
+    });
+    match result {
+        Ok(()) => CliResponse::success(""),
+        Err(err) => CliResponse::failure(format!("{err}\n"), 1),
+    }
+}
+
+struct ParsedGetCommand {
+    options: ClientOptions,
+    remote: String,
+    local: String,
+    recursive: bool,
+}
+
+struct ParsedPutCommand {
+    options: ClientOptions,
+    local: String,
+    remote: String,
+    recursive: bool,
+}
+
+fn parse_get_command(rest: &[String]) -> Result<ParsedGetCommand, String> {
+    let (options, positionals, recursive) = parse_ssh_flags_and_positionals(rest, "get")?;
+    if positionals.len() < 2 {
+        return Err("get requires a server and remote path".to_string());
+    }
+    let remote = positionals[1].clone();
+    let local = positionals.get(2).cloned().unwrap_or_default();
+    Ok(ParsedGetCommand {
+        options,
+        remote,
+        local,
+        recursive,
+    })
+}
+
+fn parse_put_command(rest: &[String]) -> Result<ParsedPutCommand, String> {
+    let (options, positionals, recursive) = parse_ssh_flags_and_positionals(rest, "put")?;
+    if positionals.len() < 2 {
+        return Err("put requires a server and local path".to_string());
+    }
+    let local = positionals[1].clone();
+    let remote = positionals.get(2).cloned().unwrap_or_default();
+    Ok(ParsedPutCommand {
+        options,
+        local,
+        remote,
+        recursive,
+    })
+}
+
+fn parse_ssh_flags_and_positionals(
+    rest: &[String],
+    command_name: &str,
+) -> Result<(ClientOptions, Vec<String>, bool), String> {
+    let default_identity = format!("{}/.ssh/id_rsa", current_home_dir());
+    let default_known_hosts = format!("{}/.ssh/known_hosts", current_home_dir());
+    let mut disable_banner = false;
+    let mut insecure = false;
+    let mut user_identity = default_identity;
+    let mut known_hosts = default_known_hosts;
+    let mut password = None::<String>;
+    let mut jump_host = None::<String>;
+    let mut user_identity_changed = false;
+    let mut known_hosts_changed = false;
+    let mut insecure_changed = false;
+    let mut jump_host_changed = false;
+    let mut recursive = false;
+    let mut positionals = Vec::<String>::new();
+
+    let mut idx = 1usize;
+    while idx < rest.len() {
+        match rest[idx].as_str() {
+            "-b" | "--disable-banner" => {
+                disable_banner = true;
+                idx += 1;
+            }
+            "-i" | "--insecure" => {
+                insecure = true;
+                insecure_changed = true;
+                idx += 1;
+            }
+            "-j" | "--jump-host" => {
+                let Some(value) = rest.get(idx + 1) else {
+                    return Err("flag needs an argument: --jump-host".to_string());
+                };
+                jump_host = Some(value.clone());
+                jump_host_changed = true;
+                idx += 2;
+            }
+            "-s" | "--user-identity" => {
+                let Some(value) = rest.get(idx + 1) else {
+                    return Err("flag needs an argument: --user-identity".to_string());
+                };
+                user_identity = expand_user_home(value);
+                user_identity_changed = true;
+                idx += 2;
+            }
+            "-k" | "--known-hosts" => {
+                let Some(value) = rest.get(idx + 1) else {
+                    return Err("flag needs an argument: --known-hosts".to_string());
+                };
+                known_hosts = expand_user_home(value);
+                known_hosts_changed = true;
+                idx += 2;
+            }
+            "-p" | "--password" => {
+                let Some(value) = rest.get(idx + 1) else {
+                    return Err("flag needs an argument: --password".to_string());
+                };
+                password = Some(value.clone());
+                idx += 2;
+            }
+            "-r" | "--recursive" => {
+                recursive = true;
+                idx += 1;
+            }
+            "-w" | "--max-workers" | "-c" | "--concurrent-downloads" | "--concurrent-uploads" => {
+                if rest.get(idx + 1).is_none() {
+                    return Err(format!("flag needs an argument: {}", rest[idx]));
+                }
+                idx += 2;
+            }
+            value if value.starts_with('-') => return Err(format!("unknown argument: {value}")),
+            value => {
+                positionals.push(value.to_string());
+                idx += 1;
+            }
+        }
+    }
+
+    if positionals.is_empty() {
+        return Err(format!("{command_name} requires a server argument"));
+    }
+
+    let server = positionals[0].clone();
+    let parsed = if let Some(host_conf) = get_default_ssh_config_host(&server) {
+        if !user_identity_changed {
+            user_identity = expand_user_home(&host_conf.identity_file);
+        }
+        if !known_hosts_changed {
+            known_hosts = expand_user_home(&host_conf.user_known_hosts_file);
+        }
+        if !jump_host_changed && !host_conf.proxy_jump.is_empty() {
+            jump_host = Some(host_conf.proxy_jump.clone());
+        }
+        if !insecure_changed {
+            insecure = !host_conf.strict_host_key_checking;
+        }
+        parse_ssh_url(&format!("{}@{}:{}", host_conf.user, host_conf.host_name, host_conf.port))?
+    } else {
+        parse_ssh_url(&server)?
+    };
+
+    let mut jump_hosts = Vec::<JumpHostOptions>::new();
+    while let Some(current) = jump_host.take() {
+        if let Some(host_conf) = get_default_ssh_config_host(&current) {
+            user_identity = expand_user_home(&host_conf.identity_file);
+            jump_hosts.push(JumpHostOptions {
+                username: host_conf.user,
+                host: host_conf.host_name,
+                port: host_conf.port,
+                identity: PathBuf::from(user_identity.clone()),
+                password: None,
+            });
+            if host_conf.proxy_jump.is_empty() {
+                break;
+            }
+            jump_host = Some(host_conf.proxy_jump);
+            continue;
+        }
+
+        let hop = parse_ssh_url(&current)?;
+        jump_hosts.push(JumpHostOptions {
+            username: hop.username,
+            host: hop.host.trim_matches(&['[', ']'][..]).to_string(),
+            port: hop.port,
+            identity: PathBuf::from(user_identity.clone()),
+            password: None,
+        });
+    }
+
+    Ok((
+        ClientOptions {
+            username: parsed.username,
+            host: parsed.host.trim_matches(&['[', ']'][..]).to_string(),
+            port: parsed.port,
+            identity: PathBuf::from(user_identity),
+            known_hosts: PathBuf::from(known_hosts),
+            password,
+            insecure,
+            quiet: disable_banner,
+            jump_hosts,
+        },
+        positionals,
+        recursive,
+    ))
+}
+
+fn parse_socks_proxy_command(rest: &[String]) -> Result<(ClientOptions, String), String> {
+    let default_identity = format!("{}/.ssh/id_rsa", current_home_dir());
+    let default_known_hosts = format!("{}/.ssh/known_hosts", current_home_dir());
+    let mut disable_banner = false;
+    let mut insecure = false;
+    let mut user_identity = default_identity;
+    let mut known_hosts = default_known_hosts;
+    let mut password = None::<String>;
+    let mut jump_host = None::<String>;
+    let mut user_identity_changed = false;
+    let mut known_hosts_changed = false;
+    let mut insecure_changed = false;
+    let mut jump_host_changed = false;
+    let mut listen_address = "127.0.0.1:1080".to_string();
+    let mut positionals = Vec::<String>::new();
+
+    let mut idx = 1usize;
+    while idx < rest.len() {
+        match rest[idx].as_str() {
+            "-b" | "--disable-banner" => {
+                disable_banner = true;
+                idx += 1;
+            }
+            "-i" | "--insecure" => {
+                insecure = true;
+                insecure_changed = true;
+                idx += 1;
+            }
+            "-j" | "--jump-host" => {
+                let Some(value) = rest.get(idx + 1) else { return Err("flag needs an argument: --jump-host".to_string()); };
+                jump_host = Some(value.clone());
+                jump_host_changed = true;
+                idx += 2;
+            }
+            "-s" | "--user-identity" => {
+                let Some(value) = rest.get(idx + 1) else { return Err("flag needs an argument: --user-identity".to_string()); };
+                user_identity = expand_user_home(value);
+                user_identity_changed = true;
+                idx += 2;
+            }
+            "-k" | "--known-hosts" => {
+                let Some(value) = rest.get(idx + 1) else { return Err("flag needs an argument: --known-hosts".to_string()); };
+                known_hosts = expand_user_home(value);
+                known_hosts_changed = true;
+                idx += 2;
+            }
+            "-p" | "--password" => {
+                let Some(value) = rest.get(idx + 1) else { return Err("flag needs an argument: --password".to_string()); };
+                password = Some(value.clone());
+                idx += 2;
+            }
+            "-l" | "--listen-address" => {
+                let Some(value) = rest.get(idx + 1) else { return Err("flag needs an argument: --listen-address".to_string()); };
+                listen_address = value.clone();
+                idx += 2;
+            }
+            value if value.starts_with('-') => return Err(format!("unknown argument: {value}")),
+            value => {
+                positionals.push(value.to_string());
+                idx += 1;
+            }
+        }
+    }
+    if positionals.is_empty() {
+        return Err("socks-proxy requires a server argument".to_string());
+    }
+    let options = build_client_options_from_server(
+        &positionals[0],
+        user_identity,
+        known_hosts,
+        password,
+        insecure,
+        disable_banner,
+        jump_host,
+        user_identity_changed,
+        known_hosts_changed,
+        insecure_changed,
+        jump_host_changed,
+    )?;
+    Ok((options, listen_address))
+}
+
+fn parse_dns_proxy_command(rest: &[String]) -> Result<(ClientOptions, String, String), String> {
+    let default_identity = format!("{}/.ssh/id_rsa", current_home_dir());
+    let default_known_hosts = format!("{}/.ssh/known_hosts", current_home_dir());
+    let mut disable_banner = false;
+    let mut insecure = false;
+    let mut user_identity = default_identity;
+    let mut known_hosts = default_known_hosts;
+    let mut password = None::<String>;
+    let mut jump_host = None::<String>;
+    let mut user_identity_changed = false;
+    let mut known_hosts_changed = false;
+    let mut insecure_changed = false;
+    let mut jump_host_changed = false;
+    let mut listen_address = ":53".to_string();
+    let mut remote_dns = "1.1.1.1:53".to_string();
+    let mut positionals = Vec::<String>::new();
+
+    let mut idx = 1usize;
+    while idx < rest.len() {
+        match rest[idx].as_str() {
+            "-b" | "--disable-banner" => {
+                disable_banner = true;
+                idx += 1;
+            }
+            "-i" | "--insecure" => {
+                insecure = true;
+                insecure_changed = true;
+                idx += 1;
+            }
+            "-j" | "--jump-host" => {
+                let Some(value) = rest.get(idx + 1) else { return Err("flag needs an argument: --jump-host".to_string()); };
+                jump_host = Some(value.clone());
+                jump_host_changed = true;
+                idx += 2;
+            }
+            "-s" | "--user-identity" => {
+                let Some(value) = rest.get(idx + 1) else { return Err("flag needs an argument: --user-identity".to_string()); };
+                user_identity = expand_user_home(value);
+                user_identity_changed = true;
+                idx += 2;
+            }
+            "-k" | "--known-hosts" => {
+                let Some(value) = rest.get(idx + 1) else { return Err("flag needs an argument: --known-hosts".to_string()); };
+                known_hosts = expand_user_home(value);
+                known_hosts_changed = true;
+                idx += 2;
+            }
+            "-p" | "--password" => {
+                let Some(value) = rest.get(idx + 1) else { return Err("flag needs an argument: --password".to_string()); };
+                password = Some(value.clone());
+                idx += 2;
+            }
+            "-l" | "--listen-address" => {
+                let Some(value) = rest.get(idx + 1) else { return Err("flag needs an argument: --listen-address".to_string()); };
+                listen_address = value.clone();
+                idx += 2;
+            }
+            "-d" | "--remote-dns-server" => {
+                let Some(value) = rest.get(idx + 1) else { return Err("flag needs an argument: --remote-dns-server".to_string()); };
+                remote_dns = value.clone();
+                idx += 2;
+            }
+            value if value.starts_with('-') => return Err(format!("unknown argument: {value}")),
+            value => {
+                positionals.push(value.to_string());
+                idx += 1;
+            }
+        }
+    }
+    if positionals.is_empty() {
+        return Err("dns-proxy requires a server argument".to_string());
+    }
+    let options = build_client_options_from_server(
+        &positionals[0],
+        user_identity,
+        known_hosts,
+        password,
+        insecure,
+        disable_banner,
+        jump_host,
+        user_identity_changed,
+        known_hosts_changed,
+        insecure_changed,
+        jump_host_changed,
+    )?;
+    Ok((options, listen_address, remote_dns))
+}
+
+fn build_client_options_from_server(
+    server: &str,
+    mut user_identity: String,
+    known_hosts: String,
+    password: Option<String>,
+    mut insecure: bool,
+    disable_banner: bool,
+    mut jump_host: Option<String>,
+    user_identity_changed: bool,
+    known_hosts_changed: bool,
+    insecure_changed: bool,
+    jump_host_changed: bool,
+) -> Result<ClientOptions, String> {
+    let parsed = if let Some(host_conf) = get_default_ssh_config_host(server) {
+        if !user_identity_changed {
+            user_identity = expand_user_home(&host_conf.identity_file);
+        }
+        let known_hosts = if !known_hosts_changed {
+            expand_user_home(&host_conf.user_known_hosts_file)
+        } else {
+            known_hosts
+        };
+        if !jump_host_changed && !host_conf.proxy_jump.is_empty() {
+            jump_host = Some(host_conf.proxy_jump.clone());
+        }
+        if !insecure_changed {
+            insecure = !host_conf.strict_host_key_checking;
+        }
+        let parsed = parse_ssh_url(&format!("{}@{}:{}", host_conf.user, host_conf.host_name, host_conf.port))?;
+        let jump_hosts = build_jump_hosts(jump_host, user_identity.clone())?;
+        return Ok(ClientOptions {
+            username: parsed.username,
+            host: parsed.host.trim_matches(&['[', ']'][..]).to_string(),
+            port: parsed.port,
+            identity: PathBuf::from(user_identity),
+            known_hosts: PathBuf::from(known_hosts),
+            password,
+            insecure,
+            quiet: disable_banner,
+            jump_hosts,
+        });
+    } else {
+        parse_ssh_url(server)?
+    };
+
+    Ok(ClientOptions {
+        username: parsed.username,
+        host: parsed.host.trim_matches(&['[', ']'][..]).to_string(),
+        port: parsed.port,
+        identity: PathBuf::from(user_identity.clone()),
+        known_hosts: PathBuf::from(known_hosts),
+        password,
+        insecure,
+        quiet: disable_banner,
+        jump_hosts: build_jump_hosts(jump_host, user_identity)?,
+    })
+}
+
+fn build_jump_hosts(mut jump_host: Option<String>, mut user_identity: String) -> Result<Vec<JumpHostOptions>, String> {
+    let mut jump_hosts = Vec::<JumpHostOptions>::new();
+    while let Some(current) = jump_host.take() {
+        if let Some(host_conf) = get_default_ssh_config_host(&current) {
+            user_identity = expand_user_home(&host_conf.identity_file);
+            jump_hosts.push(JumpHostOptions {
+                username: host_conf.user,
+                host: host_conf.host_name,
+                port: host_conf.port,
+                identity: PathBuf::from(user_identity.clone()),
+                password: None,
+            });
+            if host_conf.proxy_jump.is_empty() {
+                break;
+            }
+            jump_host = Some(host_conf.proxy_jump);
+            continue;
+        }
+        let hop = parse_ssh_url(&current)?;
+        jump_hosts.push(JumpHostOptions {
+            username: hop.username,
+            host: hop.host.trim_matches(&['[', ']'][..]).to_string(),
+            port: hop.port,
+            identity: PathBuf::from(user_identity.clone()),
+            password: None,
+        });
+    }
+    Ok(jump_hosts)
+}
+
+fn client_options_from_conf(conf: &SshClientConf) -> Result<ClientOptions, String> {
+    let parsed = parse_ssh_url(&conf.server)?;
+    let identity = if conf.identity.is_empty() {
+        format!("{}/.ssh/id_rsa", current_home_dir())
+    } else {
+        expand_user_home(&conf.identity)
+    };
+    let known_hosts = if conf.known_hosts.is_empty() {
+        format!("{}/.ssh/known_hosts", current_home_dir())
+    } else {
+        expand_user_home(&conf.known_hosts)
+    };
+    Ok(ClientOptions {
+        username: parsed.username,
+        host: parsed.host.trim_matches(&['[', ']'][..]).to_string(),
+        port: parsed.port,
+        identity: PathBuf::from(identity),
+        known_hosts: PathBuf::from(known_hosts),
+        password: if conf.password.is_empty() { None } else { Some(conf.password.clone()) },
+        insecure: conf.insecure,
+        quiet: conf.quiet,
+        jump_hosts: jump_host_options_from_conf(&conf.jump_hosts)?,
+    })
+}
+
+fn jump_host_options_from_conf(conf: &[JumpHostConf]) -> Result<Vec<JumpHostOptions>, String> {
+    let mut jump_hosts = Vec::new();
+    for item in conf {
+        let parsed = parse_ssh_url(&item.uri)?;
+        let identity = if item.identity.is_empty() {
+            format!("{}/.ssh/id_rsa", current_home_dir())
+        } else {
+            expand_user_home(&item.identity)
+        };
+        jump_hosts.push(JumpHostOptions {
+            username: parsed.username,
+            host: parsed.host.trim_matches(&['[', ']'][..]).to_string(),
+            port: parsed.port,
+            identity: PathBuf::from(identity),
+            password: if item.password.is_empty() { None } else { Some(item.password.clone()) },
+        });
+    }
+    Ok(jump_hosts)
+}
+
 struct ParsedTunnelCommand {
     options: ClientOptions,
     local: crate::utils::Endpoint,
@@ -655,6 +1375,225 @@ fn parse_tun_command(rest: &[String]) -> Result<ParsedTunnelCommand, String> {
         remote: new_endpoint(&remote)?,
         forward: subcommand == "forward",
     })
+}
+
+fn parse_sshd_command(rest: &[String]) -> Result<ServerOptions, String> {
+    let mut authorized_keys = vec!["./authorized_keys".to_string()];
+    let mut listen_address = ":2222".to_string();
+    let mut server_key = "./server_key".to_string();
+    let mut disable_auth = false;
+    let mut disable_shell = false;
+    let mut authorized_password = String::new();
+
+    let mut idx = 1usize;
+    while idx < rest.len() {
+        match rest[idx].as_str() {
+            "-K" | "--sshd-authorized-keys" => {
+                let Some(value) = rest.get(idx + 1) else {
+                    return Err("flag needs an argument: --sshd-authorized-keys".to_string());
+                };
+                authorized_keys = vec![value.clone()];
+                idx += 2;
+            }
+            "-P" | "--sshd-listen-address" => {
+                let Some(value) = rest.get(idx + 1) else {
+                    return Err("flag needs an argument: --sshd-listen-address".to_string());
+                };
+                listen_address = value.clone();
+                idx += 2;
+            }
+            "-I" | "--sshd-key" => {
+                let Some(value) = rest.get(idx + 1) else {
+                    return Err("flag needs an argument: --sshd-key".to_string());
+                };
+                server_key = value.clone();
+                idx += 2;
+            }
+            "-T" | "--disable-auth" => {
+                disable_auth = true;
+                idx += 1;
+            }
+            "-D" | "--disable-shell" => {
+                disable_shell = true;
+                idx += 1;
+            }
+            "-A" | "--sshd-authorized-password" => {
+                let Some(value) = rest.get(idx + 1) else {
+                    return Err("flag needs an argument: --sshd-authorized-password".to_string());
+                };
+                authorized_password = value.clone();
+                idx += 2;
+            }
+            value if value.starts_with('-') => return Err(format!("unknown argument: {value}")),
+            value => return Err(format!("unexpected argument: {value}")),
+        }
+    }
+
+    Ok(ServerOptions {
+        server_key,
+        authorized_keys,
+        authorized_password,
+        listen_address,
+        disable_shell,
+        disable_banner: false,
+        disable_auth,
+        disable_sftp_subsystem: false,
+        disable_tunnelling: false,
+        shell_executable: String::new(),
+    })
+}
+
+fn parse_revshell_command(
+    rest: &[String],
+) -> Result<(ClientOptions, ServerOptions, crate::utils::Endpoint, crate::utils::Endpoint), String> {
+    let default_identity = format!("{}/.ssh/id_rsa", current_home_dir());
+    let default_known_hosts = format!("{}/.ssh/known_hosts", current_home_dir());
+    let mut disable_banner = false;
+    let mut insecure = false;
+    let mut user_identity = default_identity;
+    let mut known_hosts = default_known_hosts;
+    let mut password = None::<String>;
+    let mut jump_host = None::<String>;
+    let mut user_identity_changed = false;
+    let mut known_hosts_changed = false;
+    let mut insecure_changed = false;
+    let mut jump_host_changed = false;
+
+    let mut authorized_keys = vec!["./authorized_keys".to_string()];
+    let mut listen_address = ":2222".to_string();
+    let mut server_key = "./server_key".to_string();
+    let mut disable_auth = false;
+    let mut authorized_password = String::new();
+    let mut remote = "127.0.0.1:2222".to_string();
+    let mut positionals = Vec::<String>::new();
+
+    let mut idx = 1usize;
+    while idx < rest.len() {
+        match rest[idx].as_str() {
+            "-b" | "--disable-banner" => {
+                disable_banner = true;
+                idx += 1;
+            }
+            "-i" | "--insecure" => {
+                insecure = true;
+                insecure_changed = true;
+                idx += 1;
+            }
+            "-j" | "--jump-host" => {
+                let Some(value) = rest.get(idx + 1) else {
+                    return Err("flag needs an argument: --jump-host".to_string());
+                };
+                jump_host = Some(value.clone());
+                jump_host_changed = true;
+                idx += 2;
+            }
+            "-s" | "--user-identity" => {
+                let Some(value) = rest.get(idx + 1) else {
+                    return Err("flag needs an argument: --user-identity".to_string());
+                };
+                user_identity = expand_user_home(value);
+                user_identity_changed = true;
+                idx += 2;
+            }
+            "-k" | "--known-hosts" => {
+                let Some(value) = rest.get(idx + 1) else {
+                    return Err("flag needs an argument: --known-hosts".to_string());
+                };
+                known_hosts = expand_user_home(value);
+                known_hosts_changed = true;
+                idx += 2;
+            }
+            "-p" | "--password" => {
+                let Some(value) = rest.get(idx + 1) else {
+                    return Err("flag needs an argument: --password".to_string());
+                };
+                password = Some(value.clone());
+                idx += 2;
+            }
+            "-r" | "--remote" => {
+                let Some(value) = rest.get(idx + 1) else {
+                    return Err("flag needs an argument: --remote".to_string());
+                };
+                remote = value.clone();
+                idx += 2;
+            }
+            "-K" | "--sshd-authorized-keys" => {
+                let Some(value) = rest.get(idx + 1) else {
+                    return Err("flag needs an argument: --sshd-authorized-keys".to_string());
+                };
+                authorized_keys = vec![value.clone()];
+                idx += 2;
+            }
+            "-P" | "--sshd-listen-address" => {
+                let Some(value) = rest.get(idx + 1) else {
+                    return Err("flag needs an argument: --sshd-listen-address".to_string());
+                };
+                listen_address = value.clone();
+                idx += 2;
+            }
+            "-I" | "--sshd-key" => {
+                let Some(value) = rest.get(idx + 1) else {
+                    return Err("flag needs an argument: --sshd-key".to_string());
+                };
+                server_key = value.clone();
+                idx += 2;
+            }
+            "-T" | "--disable-auth" => {
+                disable_auth = true;
+                idx += 1;
+            }
+            "-A" | "--sshd-authorized-password" => {
+                let Some(value) = rest.get(idx + 1) else {
+                    return Err("flag needs an argument: --sshd-authorized-password".to_string());
+                };
+                authorized_password = value.clone();
+                idx += 2;
+            }
+            value if value.starts_with('-') => return Err(format!("unknown argument: {value}")),
+            value => {
+                positionals.push(value.to_string());
+                idx += 1;
+            }
+        }
+    }
+
+    if positionals.is_empty() {
+        return Err("revshell requires a server argument".to_string());
+    }
+
+    let client_options = build_client_options_from_server(
+        &positionals[0],
+        user_identity,
+        known_hosts,
+        password,
+        insecure,
+        disable_banner,
+        jump_host,
+        user_identity_changed,
+        known_hosts_changed,
+        insecure_changed,
+        jump_host_changed,
+    )?;
+
+    let server_options = ServerOptions {
+        server_key,
+        authorized_keys,
+        authorized_password,
+        listen_address: listen_address.clone(),
+        disable_shell: false,
+        disable_banner: false,
+        disable_auth,
+        disable_sftp_subsystem: false,
+        disable_tunnelling: false,
+        shell_executable: String::new(),
+    };
+
+    Ok((
+        client_options,
+        server_options,
+        new_endpoint(&listen_address)?,
+        new_endpoint(&remote)?,
+    ))
 }
 
 fn matches_help(rest: &[String]) -> bool {

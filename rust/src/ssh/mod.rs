@@ -5,6 +5,7 @@ use std::time::Duration;
 use internal_russh_forked_ssh_key::PublicKey;
 use russh::client;
 use russh::{client::Handle, ChannelMsg, Disconnect, Pty};
+use russh_sftp::client::SftpSession;
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 use tokio::sync::mpsc;
 
@@ -302,6 +303,21 @@ impl Session {
             .await;
         channel.request_shell(true).await.map_err(|err| err.to_string())?;
         drain_channel(&mut channel, true).await
+    }
+
+    pub async fn open_sftp(&mut self) -> Result<SftpSession, String> {
+        let channel = self
+            .handle
+            .channel_open_session()
+            .await
+            .map_err(|err| err.to_string())?;
+        channel
+            .request_subsystem(true, "sftp")
+            .await
+            .map_err(|err| err.to_string())?;
+        SftpSession::new(channel.into_stream())
+            .await
+            .map_err(|err| err.to_string())
     }
 
     pub async fn open_direct_tcpip(

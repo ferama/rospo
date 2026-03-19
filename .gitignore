@@ -1,6 +1,6 @@
 /bin
-/server_key
-/server_key.pub
+server_key
+server_key.pub
 /authorized_keys
 /identity
 /identity.pub

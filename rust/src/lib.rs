@@ -1,8 +1,10 @@
 pub mod cli;
 pub mod config;
+pub mod dns_proxy;
 pub mod logging;
 pub mod socks;
 pub mod sftp;
 pub mod ssh;
+pub mod sshd;
 pub mod tunnel;
 pub mod utils;
