@@ -1,0 +1,28 @@
+The tool to create relieable ssh tunnels.
+
+Usage:
+  rospo [flags]
+  rospo [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  dns-proxy   Starts a DNS over tcp proxy
+  get         Gets a file from remote
+  grabpubkey  Grab the host pubkey and put it into the known_hosts file
+  help        Help about any command
+  keygen      Generates private/public key pairs
+  put         Puts files from local to remote
+  revshell    Starts a reverse shell
+  run         Run rospo using a config file.
+  shell       Starts a remote shell
+  socks-proxy Starts a SOCKS proxy
+  sshd        Starts the sshd server
+  template    Generates a config template file
+  tun         Creates a reliable ssh tunnel
+
+Flags:
+  -h, --help      help for rospo
+  -q, --quiet     if set disable all logs
+  -v, --version   version for rospo
+
+Use "rospo [command] --help" for more information about a command.

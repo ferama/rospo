@@ -8,3 +8,4 @@
 .DS_Store
 /config.yaml
 /rospo
+/rust/target

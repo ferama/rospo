@@ -1,0 +1,1072 @@
+=== RUN   TestActiveSessions
+[SSHD] 2026/03/19 15:39:16 loading server key at: '../../testdata/server'
+[SSHD] 2026/03/19 15:39:16 authorized_keys: [../../testdata/authorized_keys]
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 listening on 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59379
+[SSHD] 2026/03/19 15:39:16 active sessions: 1
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59379 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59379 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59380
+[SSHD] 2026/03/19 15:39:16 active sessions: 2
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59380 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59380 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59381
+[SSHD] 2026/03/19 15:39:16 active sessions: 3
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59381 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59381 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59382
+[SSHD] 2026/03/19 15:39:16 active sessions: 4
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59382 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59382 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59383
+[SSHD] 2026/03/19 15:39:16 active sessions: 5
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59383 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59383 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59384
+[SSHD] 2026/03/19 15:39:16 active sessions: 6
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59384 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59384 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59385
+[SSHD] 2026/03/19 15:39:16 active sessions: 7
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59385 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59385 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59386
+[SSHD] 2026/03/19 15:39:16 active sessions: 8
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59386 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59386 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59387
+[SSHD] 2026/03/19 15:39:16 active sessions: 9
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59387 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59387 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59388
+[SSHD] 2026/03/19 15:39:16 active sessions: 10
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59388 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59388 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59389
+[SSHD] 2026/03/19 15:39:16 active sessions: 11
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59389 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59389 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59390
+[SSHD] 2026/03/19 15:39:16 active sessions: 12
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59390 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59390 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59392
+[SSHD] 2026/03/19 15:39:16 active sessions: 13
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59392 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59392 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59393
+[SSHD] 2026/03/19 15:39:16 active sessions: 14
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59393 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59393 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59394
+[SSHD] 2026/03/19 15:39:16 active sessions: 15
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59394 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59394 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59395
+[SSHD] 2026/03/19 15:39:16 active sessions: 16
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59395 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59395 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59396
+[SSHD] 2026/03/19 15:39:16 active sessions: 17
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59396 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59396 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59397
+[SSHD] 2026/03/19 15:39:16 active sessions: 18
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59397 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59397 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59398
+[SSHD] 2026/03/19 15:39:16 active sessions: 19
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59398 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59398 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59399
+[SSHD] 2026/03/19 15:39:16 active sessions: 20
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59399 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59399 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59400
+[SSHD] 2026/03/19 15:39:16 active sessions: 21
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59400 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59400 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59401
+[SSHD] 2026/03/19 15:39:16 active sessions: 22
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59401 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59401 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59403
+[SSHD] 2026/03/19 15:39:16 active sessions: 23
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59403 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59403 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59404
+[SSHD] 2026/03/19 15:39:16 active sessions: 24
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59404 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59404 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59405
+[SSHD] 2026/03/19 15:39:16 active sessions: 25
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59405 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59405 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59406
+[SSHD] 2026/03/19 15:39:17 active sessions: 26
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59406 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59406 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59407
+[SSHD] 2026/03/19 15:39:17 active sessions: 27
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59407 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59407 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59408
+[SSHD] 2026/03/19 15:39:17 active sessions: 28
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59408 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59408 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59409
+[SSHD] 2026/03/19 15:39:17 active sessions: 29
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59409 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59409 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59410
+[SSHD] 2026/03/19 15:39:17 active sessions: 30
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59410 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59410 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59411
+[SSHD] 2026/03/19 15:39:17 active sessions: 31
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59411 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59411 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59412
+[SSHD] 2026/03/19 15:39:17 active sessions: 32
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59412 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59412 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59414
+[SSHD] 2026/03/19 15:39:17 active sessions: 33
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59414 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59414 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59415
+[SSHD] 2026/03/19 15:39:17 active sessions: 34
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59415 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59415 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59416
+[SSHD] 2026/03/19 15:39:17 active sessions: 35
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59416 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59416 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59417
+[SSHD] 2026/03/19 15:39:17 active sessions: 36
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59417 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59417 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59418
+[SSHD] 2026/03/19 15:39:17 active sessions: 37
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59418 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59418 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59419
+[SSHD] 2026/03/19 15:39:17 active sessions: 38
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59419 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59419 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59420
+[SSHD] 2026/03/19 15:39:17 active sessions: 39
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59420 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59420 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59421
+[SSHD] 2026/03/19 15:39:17 active sessions: 40
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59421 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59421 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59422
+[SSHD] 2026/03/19 15:39:17 active sessions: 41
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59422 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59422 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59423
+[SSHD] 2026/03/19 15:39:17 active sessions: 42
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59423 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59423 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59424
+[SSHD] 2026/03/19 15:39:17 active sessions: 43
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59424 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59424 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59425
+[SSHD] 2026/03/19 15:39:17 active sessions: 44
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59425 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59425 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59426
+[SSHD] 2026/03/19 15:39:17 active sessions: 45
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59426 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59426 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59427
+[SSHD] 2026/03/19 15:39:17 active sessions: 46
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59427 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59427 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59428
+[SSHD] 2026/03/19 15:39:17 active sessions: 47
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59428 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59428 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59429
+[SSHD] 2026/03/19 15:39:17 active sessions: 48
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59429 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59429 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59430
+[SSHD] 2026/03/19 15:39:17 active sessions: 49
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59430 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59430 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59431
+[SSHD] 2026/03/19 15:39:17 active sessions: 50
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59431 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59431 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59432
+[SSHD] 2026/03/19 15:39:17 active sessions: 51
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59432 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59432 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59433
+[SSHD] 2026/03/19 15:39:17 active sessions: 52
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59433 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59433 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59434
+[SSHD] 2026/03/19 15:39:17 active sessions: 53
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59434 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59434 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59435
+[SSHD] 2026/03/19 15:39:17 active sessions: 54
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59435 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59435 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59436
+[SSHD] 2026/03/19 15:39:17 active sessions: 55
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59436 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59436 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59437
+[SSHD] 2026/03/19 15:39:17 active sessions: 56
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59437 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59437 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59438
+[SSHD] 2026/03/19 15:39:17 active sessions: 57
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59438 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59438 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59439
+[SSHD] 2026/03/19 15:39:17 active sessions: 58
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59439 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59439 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59440
+[SSHD] 2026/03/19 15:39:17 active sessions: 59
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59440 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59440 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+[SSHC] 2026/03/19 15:39:17 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:17 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:17 connecting to 127.0.0.1:59376
+[SSHD] 2026/03/19 15:39:17 connection from 127.0.0.1:59441
+[SSHD] 2026/03/19 15:39:17 active sessions: 60
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:17 127.0.0.1:59441 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 client 127.0.0.1:59441 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:17 connected to remote server at 127.0.0.1:59376
+[SSHC] 2026/03/19 15:39:17 starting client keep alive
+    server_test.go:74: ==== generated '60' clients
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 59
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 58
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 57
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 56
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 55
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 54
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 53
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 52
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 51
+[SSHD] 2026/03/19 15:39:17 active sessions: 50
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 49
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 48
+[SSHD] 2026/03/19 15:39:17 active sessions: 47
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 46
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 45
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 44
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 43
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 42
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 41
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 40
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 39
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 38
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 37
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 36
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 35
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 34
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 33
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 32
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 31
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 30
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 29
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 28
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 27
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 26
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 25
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 24
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 23
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 22
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 21
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 20
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 19
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 18
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 17
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 16
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 15
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 14
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 13
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 12
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 11
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 10
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 9
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 8
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 7
+[SSHD] 2026/03/19 15:39:17 active sessions: 6
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 5
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 4
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 3
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 2
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 1
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 0
+--- PASS: TestActiveSessions (3.22s)
+=== RUN   TestSftpEnabled
+[SSHD] 2026/03/19 15:39:19 loading server key at: '../../testdata/server'
+[SSHD] 2026/03/19 15:39:19 authorized_keys: [../../testdata/authorized_keys]
+[SSHD] 2026/03/19 15:39:19 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:19 listening on 127.0.0.1:59445
+[SSHC] 2026/03/19 15:39:19 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:19 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:19 connecting to 127.0.0.1:59445
+[SSHD] 2026/03/19 15:39:19 connection from 127.0.0.1:59447
+[SSHD] 2026/03/19 15:39:19 active sessions: 1
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:19 127.0.0.1:59447 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:19 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:19 client 127.0.0.1:59447 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:19 connected to remote server at 127.0.0.1:59445
+[SSHC] 2026/03/19 15:39:19 starting client keep alive
+--- PASS: TestSftpEnabled (0.53s)
+=== RUN   TestSftpDisabled
+[SSHD] 2026/03/19 15:39:19 loading server key at: '../../testdata/server'
+[SSHD] 2026/03/19 15:39:19 authorized_keys: [../../testdata/authorized_keys]
+[SSHD] 2026/03/19 15:39:19 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:19 listening on 127.0.0.1:59448
+[SSHC] 2026/03/19 15:39:20 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:20 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:20 connecting to 127.0.0.1:59448
+[SSHD] 2026/03/19 15:39:20 connection from 127.0.0.1:59451
+[SSHD] 2026/03/19 15:39:20 active sessions: 1
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:20 127.0.0.1:59451 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:20 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:20 client 127.0.0.1:59451 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:20 connected to remote server at 127.0.0.1:59448
+[SSHC] 2026/03/19 15:39:20 starting client keep alive
+[SSHD] 2026/03/19 15:39:20 declining subsystem request... 
+--- PASS: TestSftpDisabled (0.53s)
+PASS
+ok  	github.com/ferama/rospo/pkg/sshd	4.525s

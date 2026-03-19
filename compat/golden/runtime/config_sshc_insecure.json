@@ -1,0 +1,15 @@
+{
+  "SshClient": {
+    "Identity": "~/.ssh/id_rsa",
+    "Password": "",
+    "KnownHosts": "./known_hosts",
+    "ServerURI": "localhost:5022",
+    "Insecure": true,
+    "Quiet": false,
+    "JumpHosts": null
+  },
+  "Tunnel": null,
+  "SshD": null,
+  "SocksProxy": null,
+  "DnsProxy": null
+}

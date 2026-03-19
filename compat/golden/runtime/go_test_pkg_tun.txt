@@ -1,0 +1,56 @@
+=== RUN   TestTunnelReverse
+[SSHD] 2026/03/19 15:39:13 loading server key at: '../../testdata/server'
+[SSHD] 2026/03/19 15:39:13 authorized_keys: [../../testdata/authorized_keys]
+[SSHD] 2026/03/19 15:39:13 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:13 listening on 127.0.0.1:59359
+[SSHC] 2026/03/19 15:39:14 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:14 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:14 connecting to 127.0.0.1:59359
+[SSHD] 2026/03/19 15:39:14 connection from 127.0.0.1:59365
+[SSHD] 2026/03/19 15:39:14 active sessions: 1
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:14 127.0.0.1:59365 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:14 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:14 client 127.0.0.1:59365 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:14 connected to remote server at 127.0.0.1:59359
+[SSHC] 2026/03/19 15:39:14 starting client keep alive
+[TUN]  2026/03/19 15:39:14 starting remote listener
+[SSHD] 2026/03/19 15:39:14 tcpip-forward listening for [127.0.0.1]:59366
+[SSHD] 2026/03/19 15:39:14 starting check for forward availability
+[TUN]  2026/03/19 15:39:14 reverse connected. Local: 127.0.0.1:59364 -> Remote: 127.0.0.1:59366
+    tunnel_test.go:98: 127.0.0.1:59366
+[SSHD] 2026/03/19 15:39:14 start forward session: 127.0.0.1:59366
+[SSHD] 2026/03/19 15:39:14 end forward session: 127.0.0.1:59366
+[TUN]  2026/03/19 15:39:14 disconnected
+[TUN]  2026/03/19 15:39:19 terminated
+--- PASS: TestTunnelReverse (8.01s)
+=== RUN   TestTunnelForward
+[SSHD] 2026/03/19 15:39:21 loading server key at: '../../testdata/server'
+[SSHD] 2026/03/19 15:39:21 authorized_keys: [../../testdata/authorized_keys]
+[SSHD] 2026/03/19 15:39:21 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:21 listening on 127.0.0.1:59454
+[SSHC] 2026/03/19 15:39:22 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:22 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:22 connecting to 127.0.0.1:59454
+[SSHD] 2026/03/19 15:39:22 connection from 127.0.0.1:59456
+[SSHD] 2026/03/19 15:39:22 active sessions: 1
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:22 127.0.0.1:59456 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:22 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:22 client 127.0.0.1:59456 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:22 connected to remote server at 127.0.0.1:59454
+[SSHC] 2026/03/19 15:39:22 starting client keep alive
+[TUN]  2026/03/19 15:39:22 forward connected. Local: 127.0.0.1:59460 <- Remote: 127.0.0.1:59455
+    tunnel_test.go:192: 127.0.0.1:59460
+[TUN]  2026/03/19 15:39:22 disconnected
+--- PASS: TestTunnelForward (1.00s)
+PASS
+ok  	github.com/ferama/rospo/pkg/tun	9.257s

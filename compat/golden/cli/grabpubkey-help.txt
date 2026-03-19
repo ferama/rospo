@@ -1,0 +1,17 @@
+Grab the host pubkey and put it into the known_hosts file
+
+Usage:
+  rospo grabpubkey host:port [flags]
+
+Examples:
+
+ # grabs the pubkey from the server at host:port and put it into ./known file
+ $ rospo grabpubkey -k ./known host:port
+	
+
+Flags:
+  -h, --help                 help for grabpubkey
+  -k, --known-hosts string   the known_hosts file absolute path (default "/Users/ferama/.ssh/known_hosts")
+
+Global Flags:
+  -q, --quiet   if set disable all logs

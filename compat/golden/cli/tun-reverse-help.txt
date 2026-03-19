@@ -1,0 +1,30 @@
+Creates a reverse ssh tunnel
+
+Preliminary checks:
+  1. Your remote server pubkey should be present into known_host file (disable this behaviour using the insecure flag)
+     You can explicitly grab it with the 'grabpubkey' command
+  2. Your identity should be authorized into the remote server  (you can generate a new identity with the keygen comand)
+
+Usage:
+  rospo tun reverse [user@][server]:port [flags]
+
+Examples:
+
+  # Start a reverse tunnel from the local port 5000 to the remote 8888
+  # proxing through a jump host server
+  $ rospo tun reverse -l :5000 -r :8888 -j jump_host_server user@server
+	
+
+Flags:
+  -h, --help   help for reverse
+
+Global Flags:
+  -b, --disable-banner         if set disable server banner printing
+  -i, --insecure               disable known_hosts key server verification
+  -j, --jump-host string       optional jump host conf
+  -k, --known-hosts string     the known_hosts file absolute path (default "/Users/ferama/.ssh/known_hosts")
+  -l, --local string           the local tunnel endpoint (default "127.0.0.1:2222")
+  -p, --password string        the ssh client password
+  -q, --quiet                  if set disable all logs
+  -r, --remote string          the remote tunnel endpoint (default "127.0.0.1:2222")
+  -s, --user-identity string   the ssh identity (private) key absolute path (default "/Users/ferama/.ssh/id_rsa")

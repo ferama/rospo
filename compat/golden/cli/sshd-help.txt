@@ -1,0 +1,17 @@
+Starts the sshd server
+
+Usage:
+  rospo sshd [flags]
+
+Flags:
+  -T, --disable-auth                      if set clients can connect without authentication
+  -D, --disable-shell                     if set disable shell/exec
+  -h, --help                              help for sshd
+  -K, --sshd-authorized-keys string       ssh server authorized keys path.
+                                          http url like https://github.com/<username>.keys are supported too (default "./authorized_keys")
+  -A, --sshd-authorized-password string   ssh server authorized password. Disabled if empty
+  -I, --sshd-key string                   the ssh server key path (default "./server_key")
+  -P, --sshd-listen-address string        the ssh server tcp port (default ":2222")
+
+Global Flags:
+  -q, --quiet   if set disable all logs

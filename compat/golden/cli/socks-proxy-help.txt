@@ -1,0 +1,29 @@
+Starts a SOCKS proxy
+
+Both version 4 and 5 are supported.
+You need to configure your browser to use the SOCKS proxy.
+On windows you should put somthing like "socks=localhost" into the address field into
+the proxy configuration form.
+
+Usage:
+  rospo socks-proxy [user@]host[:port] [flags]
+
+Examples:
+
+  # start a socks proxy on 127.0.0.1:1080
+  $ rospo proxy sshhost:sshport
+
+	
+
+Flags:
+  -b, --disable-banner          if set disable server banner printing
+  -h, --help                    help for socks-proxy
+  -i, --insecure                disable known_hosts key server verification
+  -j, --jump-host string        optional jump host conf
+  -k, --known-hosts string      the known_hosts file absolute path (default "/Users/ferama/.ssh/known_hosts")
+  -l, --listen-address string   the socks proxy listener address (default "127.0.0.1:1080")
+  -p, --password string         the ssh client password
+  -s, --user-identity string    the ssh identity (private) key absolute path (default "/Users/ferama/.ssh/id_rsa")
+
+Global Flags:
+  -q, --quiet   if set disable all logs

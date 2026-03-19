@@ -1,0 +1,273 @@
+=== RUN   TestErrors
+[SSHC] 2026/03/19 15:39:09 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:09 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:09 connecting to 127.0.0.1:48738
+[SSHC] 2026/03/19 15:39:09 dial INTO remote server error. dial tcp 127.0.0.1:48738: connect: connection refused
+[SSHC] 2026/03/19 15:39:09 error while connecting dial tcp 127.0.0.1:48738: connect: connection refused
+[SSHD] 2026/03/19 15:39:11 loading server key at: '../../testdata/server'
+[SSHD] 2026/03/19 15:39:11 authorized_keys: [../../testdata/authorized_keys]
+[SSHD] 2026/03/19 15:39:11 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:11 listening on 127.0.0.1:59356
+[SSHC] 2026/03/19 15:39:11 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:11 using identity at testdata/client
+[SSHC] 2026/03/19 15:39:11 connecting to hop ferama@127.0.0.1:48739
+[SSHC] 2026/03/19 15:39:11 dial INTO remote server error. dial tcp 127.0.0.1:48739: connect: connection refused
+[SSHC] 2026/03/19 15:39:11 error while connecting dial tcp 127.0.0.1:48739: connect: connection refused
+--- PASS: TestErrors (4.51s)
+=== RUN   TestSshC
+[SSHD] 2026/03/19 15:39:13 loading server key at: '../../testdata/server'
+[SSHD] 2026/03/19 15:39:13 authorized_keys: [../../testdata/authorized_keys]
+[SSHD] 2026/03/19 15:39:13 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:13 listening on 127.0.0.1:59358
+[SSHC] 2026/03/19 15:39:14 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:14 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:14 connecting to 127.0.0.1:48738
+[SSHC] 2026/03/19 15:39:14 dial INTO remote server error. dial tcp 127.0.0.1:48738: connect: connection refused
+[SSHC] 2026/03/19 15:39:14 error while connecting dial tcp 127.0.0.1:48738: connect: connection refused
+[SSHD] 2026/03/19 15:39:14 connection from 127.0.0.1:59361
+[SSHD] 2026/03/19 15:39:14 active sessions: 1
+[SSHC] 2026/03/19 15:39:14 using known_hosts file at /var/folders/f7/bs67db717s3b5bhc9phx5dp00000gn/T/rospo_known_hosts3257995297
+[SSHC] 2026/03/19 15:39:14 WARNING: 127.0.0.1:59358 is not trusted, adding this key: 
+
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDdTiiWRE2kZYw3030lzdaK5EbNMhPE1uLA1M/nDDyfobhQ4L8G10kdqQ0FQ653Td8GHAXNkfow9N9RLx5rC4Pr0tGJQ/iOXw0ff2pa09gIYQGe/cL76oLSSLVwlNcbyU8JVNvoOCE1mr3se2MKu6fOqSWKB41ehj7UewReZkuLIJT1LQ84yQWo0vP1TFV03U+1bSvUa5mngFEohLRmeGObDGWMFvMaISJP3LA9QWw0bxHuYH2nL2kbfw2uvM6erbdh870De476gPO4/0qpKASPoIqjJpp8VU7bfVVInPPBdCZGN+pEGb62051hYNadHeXUvV+BnVUcl6gNuHRqYueu0z0Q/jpf/KdZRVOyMpl5kcUUNfvFe9EImOjdibDpX8zO7krMqbC9uHflv2EflYFF7olnmagPvJp7aIOSsgZB3flldR8QJW5BtBPk5zvKcQDOGqQFna/Sxd9XoGlXklW+OgpZl8rcKf2WF08kem+H5/CatxYDXuo9g0awxmLP3EoAv4+x1nVsbenezQti8CFCJYv/2PLxwD5IWm2F+DcRwK4XKZuzleFAqPqyD2ubRaWK/ufWrjWp1j663KZGjuVbkhWAfcXxJEMm1tE5e4iT4pSoNPv6VoqDvaKNUwLzYY5q0n0wh0cdPVgo8uc+bJkogvZr9FLOYSAgkD1v7kIfWw==
+
+to known_hosts file.
+[SSHD] 2026/03/19 15:39:14 client connection error [ssh: no auth passed yet]
+[SSHD] 2026/03/19 15:39:14 client session terminated
+[SSHD] 2026/03/19 15:39:14 active sessions: 0
+[SSHC] 2026/03/19 15:39:14 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:14 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:14 connecting to 127.0.0.1:59358
+[SSHD] 2026/03/19 15:39:14 connection from 127.0.0.1:59362
+[SSHD] 2026/03/19 15:39:14 active sessions: 1
+[SSHC] 2026/03/19 15:39:14 using known_hosts file at /var/folders/f7/bs67db717s3b5bhc9phx5dp00000gn/T/rospo_known_hosts3257995297
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:14 127.0.0.1:59362 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:14 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:14 client 127.0.0.1:59362 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:14 connected to remote server at 127.0.0.1:59358
+[SSHC] 2026/03/19 15:39:14 starting client keep alive
+--- PASS: TestSshC (0.54s)
+=== RUN   TestJumpHosts
+[SSHD] 2026/03/19 15:39:14 loading server key at: '../../testdata/server'
+[SSHD] 2026/03/19 15:39:14 authorized_keys: [../../testdata/authorized_keys]
+[SSHD] 2026/03/19 15:39:14 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:14 listening on 127.0.0.1:59363
+[SSHD] 2026/03/19 15:39:14 loading server key at: '../../testdata/server'
+[SSHD] 2026/03/19 15:39:14 authorized_keys: [../../testdata/authorized_keys]
+[SSHD] 2026/03/19 15:39:14 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:14 listening on 127.0.0.1:59368
+[SSHD] 2026/03/19 15:39:15 loading server key at: '../../testdata/server'
+[SSHD] 2026/03/19 15:39:15 authorized_keys: [../../testdata/authorized_keys2]
+[SSHD] 2026/03/19 15:39:15 loading keys from file ../../testdata/authorized_keys2
+[SSHD] 2026/03/19 15:39:15 listening on 127.0.0.1:59371
+[SSHC] 2026/03/19 15:39:15 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:15 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:15 connecting to hop ferama@127.0.0.1:59368
+[SSHD] 2026/03/19 15:39:15 connection from 127.0.0.1:59372
+[SSHD] 2026/03/19 15:39:15 active sessions: 1
+[SSHD] 2026/03/19 15:39:15 127.0.0.1:59372 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:15 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:15 client 127.0.0.1:59372 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:15 reached the jump host ferama@127.0.0.1:59368
+[SSHC] 2026/03/19 15:39:15 connecting to hop ferama@127.0.0.1:59371
+[SSHD] 2026/03/19 15:39:15 connection from 127.0.0.1:59373
+[SSHD] 2026/03/19 15:39:15 active sessions: 1
+[SSHD] 2026/03/19 15:39:15 127.0.0.1:59373 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:15 loading keys from file ../../testdata/authorized_keys2
+[SSHD] 2026/03/19 15:39:15 client 127.0.0.1:59373 logged in as user 'ferama' with public key 'SHA256:91EqI1VJhBqORauh8Rd13+UdsTCK20iiMSEK49oKf3s'
+[SSHC] 2026/03/19 15:39:15 reached the jump host ferama@127.0.0.1:59371
+[SSHC] 2026/03/19 15:39:15 connecting to ferama@127.0.0.1:59363
+[SSHD] 2026/03/19 15:39:15 connection from 127.0.0.1:59374
+[SSHD] 2026/03/19 15:39:15 active sessions: 1
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:15 127.0.0.1:59374 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:15 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:15 client 127.0.0.1:59374 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:15 starting client keep alive
+--- PASS: TestJumpHosts (1.55s)
+=== RUN   TestWithPassword
+[SSHD] 2026/03/19 15:39:15 loading server key at: '../../testdata/server'
+[SSHD] 2026/03/19 15:39:15 authorized_keys: []
+[SSHD] 2026/03/19 15:39:15 client session terminated
+[SSHD] 2026/03/19 15:39:15 active sessions: 0
+[SSHC] 2026/03/19 15:39:15 error while sending keep alive EOF
+[SSHD] 2026/03/19 15:39:15 listening on 127.0.0.1:59375
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at /Users/ferama/.ssh/id_rsa
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59375
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59377
+[SSHD] 2026/03/19 15:39:16 active sessions: 1
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59377 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59377 logged in as user 'ferama' with password authentication
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59375
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHC] 2026/03/19 15:39:16 error while sending keep alive EOF
+--- PASS: TestWithPassword (0.53s)
+=== RUN   TestRemoteShell
+[SSHD] 2026/03/19 15:39:16 loading server key at: '../../testdata/server'
+[SSHD] 2026/03/19 15:39:16 client session terminated
+[SSHD] 2026/03/19 15:39:16 active sessions: 0
+[SSHD] 2026/03/19 15:39:16 authorized_keys: [../../testdata/authorized_keys]
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 listening on 127.0.0.1:59378
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to hop ferama@127.0.0.1:48739
+[SSHC] 2026/03/19 15:39:16 dial INTO remote server error. dial tcp 127.0.0.1:48739: connect: connection refused
+[SSHC] 2026/03/19 15:39:16 error while connecting dial tcp 127.0.0.1:48739: connect: connection refused
+[SSHC] 2026/03/19 15:39:16 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:16 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:16 connecting to 127.0.0.1:59378
+[SSHD] 2026/03/19 15:39:16 connection from 127.0.0.1:59402
+[SSHD] 2026/03/19 15:39:16 active sessions: 1
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:16 127.0.0.1:59402 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:16 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:16 client 127.0.0.1:59402 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:16 connected to remote server at 127.0.0.1:59378
+[SSHC] 2026/03/19 15:39:16 starting client keep alive
+[SSHD] 2026/03/19 15:39:16 setenv: LANG=it_IT.UTF-8
+[SSHD] 2026/03/19 15:39:16 setenv: LC_CTYPE=C.UTF-8
+[SSHD] 2026/03/19 15:39:16 setenv: LC_ALL=C.UTF-8
+[SSHD] 2026/03/19 15:39:16 command executed with exit status exit status 0
+[SSHD] 2026/03/19 15:39:16 session closed
+--- PASS: TestRemoteShell (1.50s)
+=== RUN   TestRemoteShellCmd
+[SSHD] 2026/03/19 15:39:17 client session terminated
+[SSHD] 2026/03/19 15:39:17 active sessions: 0
+[SSHD] 2026/03/19 15:39:17 loading server key at: '../../testdata/server'
+[SSHD] 2026/03/19 15:39:17 authorized_keys: [../../testdata/authorized_keys]
+[SSHD] 2026/03/19 15:39:17 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:17 listening on 127.0.0.1:59442
+[SSHC] 2026/03/19 15:39:18 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:18 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:18 connecting to 127.0.0.1:59442
+[SSHD] 2026/03/19 15:39:18 connection from 127.0.0.1:59443
+[SSHD] 2026/03/19 15:39:18 active sessions: 1
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:18 127.0.0.1:59443 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:18 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:18 client 127.0.0.1:59443 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:18 connected to remote server at 127.0.0.1:59442
+[SSHC] 2026/03/19 15:39:18 starting client keep alive
+[SSHD] 2026/03/19 15:39:18 setenv: LANG=it_IT.UTF-8
+[SSHD] 2026/03/19 15:39:18 setenv: LC_CTYPE=C.UTF-8
+[SSHD] 2026/03/19 15:39:18 setenv: LC_ALL=C.UTF-8
+Applications
+Desktop
+Documents
+Downloads
+Games
+Insta
+Library
+Movies
+Music
+Pictures
+Public
+aseprite
+bin
+cetena
+cetena-share
+go
+k8syaml
+projects
+relatech
+rospo-confs
+scripts
+server_key
+server_key.pub
+spotdl
+tmp
+vpnconf
+[SSHD] 2026/03/19 15:39:18 command executed with exit status exit status 0
+[SSHD] 2026/03/19 15:39:18 session closed
+[SSHC] 2026/03/19 15:39:19 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:19 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:19 connecting to 127.0.0.1:48738
+[SSHC] 2026/03/19 15:39:19 dial INTO remote server error. dial tcp 127.0.0.1:48738: connect: connection refused
+[SSHC] 2026/03/19 15:39:19 error while connecting dial tcp 127.0.0.1:48738: connect: connection refused
+--- PASS: TestRemoteShellCmd (1.50s)
+[SSHD] 2026/03/19 15:39:19 client session terminated
+[SSHD] 2026/03/19 15:39:19 active sessions: 0
+=== RUN   TestShellDisabled
+[SSHD] 2026/03/19 15:39:19 loading server key at: '../../testdata/server'
+[SSHD] 2026/03/19 15:39:19 authorized_keys: [../../testdata/authorized_keys]
+[SSHD] 2026/03/19 15:39:19 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:19 listening on 127.0.0.1:59446
+[SSHC] 2026/03/19 15:39:19 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:19 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:19 connecting to 127.0.0.1:59446
+[SSHD] 2026/03/19 15:39:19 connection from 127.0.0.1:59449
+[SSHD] 2026/03/19 15:39:19 active sessions: 1
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:19 127.0.0.1:59449 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:19 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:19 client 127.0.0.1:59449 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:19 connected to remote server at 127.0.0.1:59446
+[SSHC] 2026/03/19 15:39:19 starting client keep alive
+[SSHD] 2026/03/19 15:39:19 setenv: LANG=it_IT.UTF-8
+[SSHD] 2026/03/19 15:39:19 setenv: LC_CTYPE=C.UTF-8
+[SSHD] 2026/03/19 15:39:19 setenv: LC_ALL=C.UTF-8
+[SSHD] 2026/03/19 15:39:19 declining exec request... 
+[SSHD] 2026/03/19 15:39:19 declining exec request... 
+--- PASS: TestShellDisabled (0.52s)
+=== RUN   TestSocksProxy
+[SSHD] 2026/03/19 15:39:19 loading server key at: '../../testdata/server'
+[SSHD] 2026/03/19 15:39:19 client session terminated
+[SSHD] 2026/03/19 15:39:19 active sessions: 0
+[SSHD] 2026/03/19 15:39:19 authorized_keys: [../../testdata/authorized_keys]
+[SSHD] 2026/03/19 15:39:19 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:19 listening on 127.0.0.1:59450
+[SSHC] 2026/03/19 15:39:20 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:20 using identity at ../../testdata/client
+[SSHC] 2026/03/19 15:39:20 connecting to 127.0.0.1:59450
+[SSHD] 2026/03/19 15:39:20 connection from 127.0.0.1:59452
+[SSHD] 2026/03/19 15:39:20 active sessions: 1
+
+ .---------------.
+ | 🐸 rospo sshd |
+ .---------------.
+
+[SSHD] 2026/03/19 15:39:20 127.0.0.1:59452 authenticate with ssh-rsa
+[SSHD] 2026/03/19 15:39:20 loading keys from file ../../testdata/authorized_keys
+[SSHD] 2026/03/19 15:39:20 client 127.0.0.1:59452 logged in as user 'ferama' with public key 'SHA256:JNnK7lFLj0twcO3fn/RAzD7yfP5sI6sZde9Zm724nfU'
+[SSHC] 2026/03/19 15:39:20 connected to remote server at 127.0.0.1:59450
+[SSHC] 2026/03/19 15:39:20 starting client keep alive
+[SSHC] 2026/03/19 15:39:20 local socks proxy listening at '127.0.0.1:10800'
+[SSHC] 2026/03/19 15:39:21 trying to connect to remote server...
+[SSHC] 2026/03/19 15:39:21 using identity at testdata/client
+[SSHC] 2026/03/19 15:39:21 connecting to hop ferama@127.0.0.1:48739
+[SSHC] 2026/03/19 15:39:21 dial INTO remote server error. dial tcp 127.0.0.1:48739: connect: connection refused
+[SSHC] 2026/03/19 15:39:21 error while connecting dial tcp 127.0.0.1:48739: connect: connection refused
+[SSHC] 2026/03/19 15:39:21 error while sending keep alive read tcp 127.0.0.1:59402->127.0.0.1:59378: use of closed network connection
+    sshc_test.go:231: starting socks client...
+    sshc_test.go:243: do http req...
+--- PASS: TestSocksProxy (2.50s)
+PASS
+ok  	github.com/ferama/rospo/pkg/sshc	13.530s

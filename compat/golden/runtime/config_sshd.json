@@ -1,0 +1,20 @@
+{
+  "SshClient": null,
+  "Tunnel": null,
+  "SshD": {
+    "Key": "./server_key",
+    "AuthorizedKeysURI": [
+      "./authorized_keys"
+    ],
+    "AuthorizedPassword": "",
+    "ListenAddress": "",
+    "DisableShell": false,
+    "DisableBanner": false,
+    "DisableAuth": false,
+    "DisableSftpSubsystem": false,
+    "DisableTunnelling": false,
+    "ShellExecutable": ""
+  },
+  "SocksProxy": null,
+  "DnsProxy": null
+}

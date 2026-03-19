@@ -1,0 +1,20 @@
+Starts a local DNS server that sends its request through the ssh tunnel
+to the configured DNS server.
+It uses dns over TCP so the remote DNS serve must support TCP.
+
+Usage:
+  rospo dns-proxy [user@]host[:port] [flags]
+
+Flags:
+  -b, --disable-banner             if set disable server banner printing
+  -h, --help                       help for dns-proxy
+  -i, --insecure                   disable known_hosts key server verification
+  -j, --jump-host string           optional jump host conf
+  -k, --known-hosts string         the known_hosts file absolute path (default "/Users/ferama/.ssh/known_hosts")
+  -l, --listen-address string      the dns proxy listener address (default ":53")
+  -p, --password string            the ssh client password
+  -d, --remote-dns-server string   the dns address to reach through sshc (default "1.1.1.1:53")
+  -s, --user-identity string       the ssh identity (private) key absolute path (default "/Users/ferama/.ssh/id_rsa")
+
+Global Flags:
+  -q, --quiet   if set disable all logs

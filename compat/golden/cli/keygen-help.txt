@@ -1,0 +1,19 @@
+Generates private/public key pairs
+
+Usage:
+  rospo keygen [flags]
+
+Examples:
+
+  # generates a key pair an store it into identiy and identity.pub files
+  $ rospo keygen -s
+	
+
+Flags:
+  -h, --help          help for keygen
+  -n, --name string   output file name (default "identity")
+  -p, --path string   key pair destination path (default ".")
+  -s, --store         optional store the keys to files
+
+Global Flags:
+  -q, --quiet   if set disable all logs

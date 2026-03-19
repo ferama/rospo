@@ -1,0 +1,16 @@
+Starts a remote shell
+
+Usage:
+  rospo shell [user@]host[:port] [cmd_string] [flags]
+
+Flags:
+  -b, --disable-banner         if set disable server banner printing
+  -h, --help                   help for shell
+  -i, --insecure               disable known_hosts key server verification
+  -j, --jump-host string       optional jump host conf
+  -k, --known-hosts string     the known_hosts file absolute path (default "/Users/ferama/.ssh/known_hosts")
+  -p, --password string        the ssh client password
+  -s, --user-identity string   the ssh identity (private) key absolute path (default "/Users/ferama/.ssh/id_rsa")
+
+Global Flags:
+  -q, --quiet   if set disable all logs

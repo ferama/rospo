@@ -1,0 +1,32 @@
+[
+  {
+    "Host": "test1",
+    "Port": 22,
+    "HostName": "127.0.0.1",
+    "User": "user1",
+    "IdentityFile": "~/.ssh/id_rsa",
+    "StrictHostKeyChecking": true,
+    "UserKnownHostsFile": "~/.ssh/known_hosts",
+    "ProxyJump": ""
+  },
+  {
+    "Host": "test2",
+    "Port": 2222,
+    "HostName": "myhost.link",
+    "User": "user2",
+    "IdentityFile": "~/identities/myhost",
+    "StrictHostKeyChecking": true,
+    "UserKnownHostsFile": "~/.ssh/known_hosts",
+    "ProxyJump": ""
+  },
+  {
+    "Host": "test3",
+    "Port": 2222,
+    "HostName": "myhost.link",
+    "User": "user2",
+    "IdentityFile": "~/identities/myhost",
+    "StrictHostKeyChecking": false,
+    "UserKnownHostsFile": "/dev/null",
+    "ProxyJump": "test2"
+  }
+]

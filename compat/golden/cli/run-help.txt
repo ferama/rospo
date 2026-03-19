@@ -1,0 +1,10 @@
+Run rospo using a config file.
+
+Usage:
+  rospo run config_file_path.yaml [flags]
+
+Flags:
+  -h, --help   help for run
+
+Global Flags:
+  -q, --quiet   if set disable all logs

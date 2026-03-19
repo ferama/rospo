@@ -1,0 +1,16 @@
+Generates a config template file
+
+Usage:
+  rospo template [flags]
+
+Examples:
+
+  # generates a template and store it into the conf.yaml file
+  $ rospo template > conf.yaml
+	
+
+Flags:
+  -h, --help   help for template
+
+Global Flags:
+  -q, --quiet   if set disable all logs

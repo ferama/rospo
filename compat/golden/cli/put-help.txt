@@ -1,0 +1,31 @@
+Puts files from local to remote
+
+Usage:
+  rospo put [user@]host[:port] local [remote] [flags]
+
+Examples:
+
+  # uploads a file to the remote server
+  $ rospo put myserver:2222 ~/mylocalfolder/myfile.txt /home/myuser/
+
+  # uploads recursively all contents of mylocalfolder to remote current working directory
+  $ rospo put myserver:2222 ~/mylocalfolder -r
+
+  # uploads recursively all contents of mylocalfolder to remote target directory
+  $ rospo put myserver:2222 ~/mylocalfolder /home/myuser/myremotefolder -r
+	
+
+Flags:
+  -c, --concurrent-uploads int   concurrent uploads (recursive only) (default 4)
+  -b, --disable-banner           if set disable server banner printing
+  -h, --help                     help for put
+  -i, --insecure                 disable known_hosts key server verification
+  -j, --jump-host string         optional jump host conf
+  -k, --known-hosts string       the known_hosts file absolute path (default "/Users/ferama/.ssh/known_hosts")
+  -w, --max-workers int          nmber of parallel workers (default 16)
+  -p, --password string          the ssh client password
+  -r, --recursive                if the copy should be recursive
+  -s, --user-identity string     the ssh identity (private) key absolute path (default "/Users/ferama/.ssh/id_rsa")
+
+Global Flags:
+  -q, --quiet   if set disable all logs

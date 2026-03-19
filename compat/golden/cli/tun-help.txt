@@ -1,0 +1,25 @@
+Creates a reliable ssh tunnel
+
+Usage:
+  rospo tun [flags]
+  rospo tun [command]
+
+Available Commands:
+  forward     Creates a forward ssh tunnel
+  reverse     Creates a reverse ssh tunnel
+
+Flags:
+  -b, --disable-banner         if set disable server banner printing
+  -h, --help                   help for tun
+  -i, --insecure               disable known_hosts key server verification
+  -j, --jump-host string       optional jump host conf
+  -k, --known-hosts string     the known_hosts file absolute path (default "/Users/ferama/.ssh/known_hosts")
+  -l, --local string           the local tunnel endpoint (default "127.0.0.1:2222")
+  -p, --password string        the ssh client password
+  -r, --remote string          the remote tunnel endpoint (default "127.0.0.1:2222")
+  -s, --user-identity string   the ssh identity (private) key absolute path (default "/Users/ferama/.ssh/id_rsa")
+
+Global Flags:
+  -q, --quiet   if set disable all logs
+
+Use "rospo tun [command] --help" for more information about a command.

@@ -1,0 +1,29 @@
+Creates a forward ssh tunnel
+
+Preliminary checks:
+  1. Your remote server pubkey should be present into known_host file (disable this behaviour using the insecure flag)
+     You can explicitly grab it with the 'grabpubkey' command
+  2. Your identity should be authorized into the remote server (you can generate a new identity with the keygen comand)
+
+Usage:
+  rospo tun forward [user@][server]:port [flags]
+
+Examples:
+
+  # Forwards the local 8080 port to the remote 8080 
+  $ rospo tun forward -l :8080 -r :8080 user@server:port
+	
+
+Flags:
+  -h, --help   help for forward
+
+Global Flags:
+  -b, --disable-banner         if set disable server banner printing
+  -i, --insecure               disable known_hosts key server verification
+  -j, --jump-host string       optional jump host conf
+  -k, --known-hosts string     the known_hosts file absolute path (default "/Users/ferama/.ssh/known_hosts")
+  -l, --local string           the local tunnel endpoint (default "127.0.0.1:2222")
+  -p, --password string        the ssh client password
+  -q, --quiet                  if set disable all logs
+  -r, --remote string          the remote tunnel endpoint (default "127.0.0.1:2222")
+  -s, --user-identity string   the ssh identity (private) key absolute path (default "/Users/ferama/.ssh/id_rsa")
