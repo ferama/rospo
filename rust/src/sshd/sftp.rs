@@ -239,7 +239,7 @@ impl russh_sftp::server::Handler for SftpServer {
 
     async fn symlink(
         &mut self,
-        id: u32,
+        _id: u32,
         linkpath: String,
         targetpath: String,
     ) -> Result<Status, Self::Error> {

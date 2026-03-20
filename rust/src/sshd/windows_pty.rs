@@ -18,7 +18,7 @@ use windows_sys::Win32::System::Pipes::CreatePipe;
 use windows_sys::Win32::System::Threading::{
     CreateProcessW, DeleteProcThreadAttributeList, EXTENDED_STARTUPINFO_PRESENT,
     GetExitCodeProcess, INFINITE, InitializeProcThreadAttributeList, PROCESS_INFORMATION,
-    PROC_THREAD_ATTRIBUTE_LIST, STARTUPINFOEXW, UpdateProcThreadAttribute,
+    LPPROC_THREAD_ATTRIBUTE_LIST, STARTUPINFOEXW, UpdateProcThreadAttribute,
     WaitForSingleObject,
 };
 
@@ -57,6 +57,11 @@ pub(super) struct ConPtyProcess {
     closed: AtomicBool,
 }
 
+// Win32 HANDLEs and HPCON values are opaque OS-owned resources. Moving the wrapper across threads
+// is the intended usage model for the ConPTY reader/writer helper threads.
+unsafe impl Send for ConPtyProcess {}
+unsafe impl Sync for ConPtyProcess {}
+
 impl ConPtyProcess {
     pub(super) fn spawn(command_line: &str, cols: u16, rows: u16) -> io::Result<Arc<Self>> {
         if !is_conpty_available() {
@@ -71,14 +76,14 @@ impl ConPtyProcess {
             bInheritHandle: 0,
         };
 
-        let mut pty_in = 0;
-        let mut cmd_in = 0;
+        let mut pty_in: HANDLE = null_mut();
+        let mut cmd_in: HANDLE = null_mut();
         if unsafe { CreatePipe(&mut pty_in, &mut cmd_in, &mut sa, 0) } == 0 {
             return Err(io::Error::last_os_error());
         }
 
-        let mut cmd_out = 0;
-        let mut pty_out = 0;
+        let mut cmd_out: HANDLE = null_mut();
+        let mut pty_out: HANDLE = null_mut();
         if unsafe { CreatePipe(&mut cmd_out, &mut pty_out, &mut sa, 0) } == 0 {
             unsafe {
                 CloseHandle(pty_in);
@@ -154,7 +159,7 @@ impl ConPtyProcess {
 
     pub(super) fn read(&self, buf: &mut [u8]) -> io::Result<usize> {
         let mut read = 0u32;
-        let ok = unsafe { ReadFile(self.cmd_out, buf.as_mut_ptr().cast(), buf.len() as u32, &mut read, null_mut()) };
+        let ok = unsafe { ReadFile(self.cmd_out, buf.as_mut_ptr(), buf.len() as u32, &mut read, null_mut()) };
         if ok == 0 {
             let err = unsafe { GetLastError() };
             if err == ERROR_BROKEN_PIPE {
@@ -168,7 +173,7 @@ impl ConPtyProcess {
     pub(super) fn write_all(&self, mut buf: &[u8]) -> io::Result<()> {
         while !buf.is_empty() {
             let mut written = 0u32;
-            let ok = unsafe { WriteFile(self.cmd_in, buf.as_ptr().cast(), buf.len() as u32, &mut written, null_mut()) };
+            let ok = unsafe { WriteFile(self.cmd_in, buf.as_ptr(), buf.len() as u32, &mut written, null_mut()) };
             if ok == 0 {
                 let err = unsafe { GetLastError() };
                 if err == ERROR_BROKEN_PIPE {
@@ -223,7 +228,7 @@ fn create_process_attached_to_pty(hpc: Hpcon, command_line: &str) -> io::Result<
         let _ = InitializeProcThreadAttributeList(null_mut(), 1, 0, &mut size);
     }
     let mut attr_list = vec![0u8; size];
-    let attr_ptr = attr_list.as_mut_ptr() as *mut PROC_THREAD_ATTRIBUTE_LIST;
+    let attr_ptr = attr_list.as_mut_ptr() as LPPROC_THREAD_ATTRIBUTE_LIST;
     if unsafe { InitializeProcThreadAttributeList(attr_ptr, 1, 0, &mut size) } == 0 {
         return Err(io::Error::last_os_error());
     }
@@ -283,7 +288,7 @@ fn create_process_attached_to_pty(hpc: Hpcon, command_line: &str) -> io::Result<
 
 fn create_pseudo_console(coord: Coord, pty_in: HANDLE, pty_out: HANDLE) -> io::Result<Hpcon> {
     let create = create_pseudo_console_ptr()?;
-    let mut hpc = 0;
+    let mut hpc: Hpcon = null_mut();
     let status = unsafe { create(coord, pty_in, pty_out, 0, &mut hpc) };
     if status != S_OK {
         return Err(io::Error::other(format!(
@@ -294,17 +299,17 @@ fn create_pseudo_console(coord: Coord, pty_in: HANDLE, pty_out: HANDLE) -> io::R
 }
 
 unsafe fn close_pseudo_console(hpc: Hpcon) {
-    if hpc == 0 {
+    if hpc.is_null() {
         return;
     }
     if let Ok(close) = close_pseudo_console_ptr() {
-        close(hpc);
+        unsafe { close(hpc) };
     }
 }
 
 unsafe fn close_handle(handle: HANDLE) {
-    if handle != 0 && handle != INVALID_HANDLE_VALUE {
-        let _ = CloseHandle(handle);
+    if !handle.is_null() && handle != INVALID_HANDLE_VALUE {
+        let _ = unsafe { CloseHandle(handle) };
     }
 }
 
@@ -328,15 +333,16 @@ fn close_pseudo_console_ptr() -> io::Result<ClosePseudoConsoleFn> {
 
 fn proc_address<T>(name: &str) -> io::Result<T> {
     let kernel32 = unsafe { GetModuleHandleW(wide("kernel32.dll").as_ptr()) };
-    if kernel32 == 0 {
+    if kernel32.is_null() {
         return Err(io::Error::last_os_error());
     }
     let mut symbol_name = name.as_bytes().to_vec();
     symbol_name.push(0);
     let symbol = unsafe { GetProcAddress(kernel32, symbol_name.as_ptr()) };
-    if symbol.is_null() {
+    if symbol.is_none() {
         return Err(io::Error::other(format!("{name} not found")));
     }
+    let symbol = symbol.expect("checked FARPROC");
     Ok(unsafe { std::mem::transmute_copy(&symbol) })
 }
 

@@ -1,6 +1,6 @@
 use std::ffi::{OsString, c_void};
 use std::io;
-use std::ptr::{null, null_mut};
+use std::ptr::null_mut;
 use std::sync::mpsc;
 use std::sync::{Mutex, OnceLock};
 use std::thread;
@@ -71,7 +71,7 @@ fn run_service() -> Result<(), String> {
     let status_handle = unsafe {
         RegisterServiceCtrlHandlerExW(service_name.as_ptr(), Some(service_control_handler), null_mut())
     };
-    if status_handle == 0 {
+    if status_handle.is_null() {
         return Err(io::Error::last_os_error().to_string());
     }
 
