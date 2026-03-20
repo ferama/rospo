@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::Path;
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Config {
@@ -37,9 +37,9 @@ pub struct SshClientConf {
     pub known_hosts: String,
     #[serde(rename = "server", default)]
     pub server: String,
-    #[serde(rename = "insecure", default)]
+    #[serde(rename = "insecure", default, deserialize_with = "deserialize_bool_compat")]
     pub insecure: bool,
-    #[serde(rename = "quiet", default)]
+    #[serde(rename = "quiet", default, deserialize_with = "deserialize_bool_compat")]
     pub quiet: bool,
     #[serde(rename = "jump_hosts", default)]
     pub jump_hosts: Vec<JumpHostConf>,
@@ -51,7 +51,7 @@ pub struct TunnelConf {
     pub remote: String,
     #[serde(rename = "local", default)]
     pub local: String,
-    #[serde(rename = "forward", default)]
+    #[serde(rename = "forward", default, deserialize_with = "deserialize_bool_compat")]
     pub forward: bool,
     #[serde(rename = "sshclient")]
     pub ssh_client: Option<SshClientConf>,
@@ -85,15 +85,15 @@ pub struct SshdConf {
     pub authorized_password: String,
     #[serde(rename = "listen_address", default)]
     pub listen_address: String,
-    #[serde(rename = "disable_shell", default)]
+    #[serde(rename = "disable_shell", default, deserialize_with = "deserialize_bool_compat")]
     pub disable_shell: bool,
-    #[serde(rename = "disable_banner", default)]
+    #[serde(rename = "disable_banner", default, deserialize_with = "deserialize_bool_compat")]
     pub disable_banner: bool,
-    #[serde(rename = "disable_auth", default)]
+    #[serde(rename = "disable_auth", default, deserialize_with = "deserialize_bool_compat")]
     pub disable_auth: bool,
-    #[serde(rename = "disable_sftp_subsystem", default)]
+    #[serde(rename = "disable_sftp_subsystem", default, deserialize_with = "deserialize_bool_compat")]
     pub disable_sftp_subsystem: bool,
-    #[serde(rename = "disable_tunnelling", default)]
+    #[serde(rename = "disable_tunnelling", default, deserialize_with = "deserialize_bool_compat")]
     pub disable_tunnelling: bool,
     #[serde(rename = "shell_executable", default)]
     pub shell_executable: String,
@@ -106,4 +106,27 @@ pub fn load_config(input: &str) -> Result<Config, serde_yaml::Error> {
 pub fn load_config_file(path: &Path) -> Result<Config, String> {
     let content = fs::read_to_string(path).map_err(|err| err.to_string())?;
     load_config(&content).map_err(|err| err.to_string())
+}
+
+fn deserialize_bool_compat<'de, D>(deserializer: D) -> Result<bool, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum BoolCompat {
+        Bool(bool),
+        String(String),
+    }
+
+    match BoolCompat::deserialize(deserializer)? {
+        BoolCompat::Bool(value) => Ok(value),
+        BoolCompat::String(value) => match value.trim().to_ascii_lowercase().as_str() {
+            "y" | "yes" | "true" | "on" => Ok(true),
+            "n" | "no" | "false" | "off" => Ok(false),
+            other => Err(serde::de::Error::custom(format!(
+                "invalid boolean value {other:?}, expected one of yes/no/true/false/on/off"
+            ))),
+        },
+    }
 }

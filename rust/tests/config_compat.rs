@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use rospo::config::{load_config_file, Config};
+use rospo::config::{load_config, load_config_file, Config};
 
 fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -52,4 +52,28 @@ fn empty_sshclient_is_none() {
 fn fails_on_nonexistent_and_unparsable_config_files() {
     assert!(load_config_file(&repo_root().join("pkg/conf/testdata/not_existent.yaml")).is_err());
     assert!(load_config_file(&repo_root().join("pkg/conf/testdata/unparsable.yaml")).is_err());
+}
+
+#[test]
+fn yaml_compat_accepts_yes_no_style_booleans() {
+    let content = r#"
+sshclient:
+  server: emphasis@192.168.0.213:22
+  jump_hosts:
+    - uri: ferama@160.97.70.2
+
+tunnel:
+  - remote: ":8443"
+    local: ":8443"
+    forward: yes
+
+  - remote: ":80"
+    local: ":8080"
+    forward: no
+"#;
+
+    let config = load_config(content).expect("parse yaml with yes/no booleans");
+    let tunnels = config.tunnel.expect("tunnel section");
+    assert!(tunnels[0].forward);
+    assert!(!tunnels[1].forward);
 }
