@@ -1,4 +1,7 @@
+mod common;
+
 use std::path::PathBuf;
+use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use rospo::cli::execute;
@@ -34,8 +37,8 @@ fn root_quiet_flag_is_accepted_before_subcommands() {
 fn root_noargs_matches_go_fixture() {
     let response = execute(["rospo"]);
     assert_eq!(response.exit_code, 0);
-    assert_eq!(response.stdout, golden("root-noargs.txt"));
-    assert!(response.stderr.is_empty());
+    assert!(response.stdout.is_empty());
+    assert_eq!(response.stderr, golden("root-noargs.txt"));
 }
 
 #[test]
@@ -119,4 +122,40 @@ fn keygen_store_writes_expected_files() {
     let _ = std::fs::remove_file(dir.join("identity"));
     let _ = std::fs::remove_file(dir.join("identity.pub"));
     let _ = std::fs::remove_dir(dir);
+}
+
+#[test]
+fn malformed_invocations_match_go_baseline() {
+    if !common::has_go_baseline() {
+        return;
+    }
+
+    let cases = [
+        vec!["rospo", "run"],
+        vec!["rospo", "keygen", "--bad"],
+        vec!["rospo", "grabpubkey"],
+        vec!["rospo", "shell"],
+        vec!["rospo", "get"],
+        vec!["rospo", "put"],
+        vec!["rospo", "socks-proxy"],
+        vec!["rospo", "dns-proxy"],
+        vec!["rospo", "tun"],
+        vec!["rospo", "tun", "forward"],
+        vec!["rospo", "tun", "reverse"],
+        vec!["rospo", "sshd", "--bad"],
+        vec!["rospo", "revshell"],
+        vec!["rospo", "bogus"],
+    ];
+
+    for args in cases {
+        let rust = execute(args.clone());
+        let go = Command::new(common::go_baseline_path())
+            .args(args.iter().skip(1))
+            .output()
+            .expect("run go baseline");
+
+        assert_eq!(rust.exit_code, go.status.code().unwrap_or_default(), "args: {args:?}");
+        assert_eq!(rust.stdout, String::from_utf8_lossy(&go.stdout), "args: {args:?}");
+        assert_eq!(rust.stderr, String::from_utf8_lossy(&go.stderr), "args: {args:?}");
+    }
 }

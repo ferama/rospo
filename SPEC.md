@@ -275,10 +275,12 @@ Rust status:
   - `ProxyJump` and explicit jump-host chains
   - Unix PTY-backed interactive sessions
   - PTY resize propagation on Unix
+  - client-side raw-terminal handling on Unix
+  - immediate local shell teardown on remote exit without requiring extra keypresses
   - root/global quiet-mode suppression for client-side banner and runtime logging
 - remaining gaps:
   - no interactive password prompt workflow beyond direct flag use
-  - Windows interactive client-side PTY behavior is not implemented
+  - Windows interactive client-side raw-terminal parity is not yet validated
   - exact edge-case parity for stderr/stdout/exit-status is not yet exhaustively proven
 
 #### `socks-proxy [user@]host[:port]`
@@ -490,6 +492,8 @@ Current Rust status:
 - jump-host routing exists
 - known-hosts verification exists
 - command and interactive shell paths exist
+- Unix client-side raw-terminal handling exists for interactive shells
+- Unix client-side PTY resize propagation exists
 - service-style reconnect loops exist for tunnels
 - root/global quiet mode is wired into client-side runtime output suppression
 - exact Go keepalive behavior is not yet proven equivalent
@@ -657,6 +661,7 @@ Automated Rust coverage currently includes:
 
 - root help and root no-arg output
 - all captured command help outputs
+- malformed invocation regression coverage against the Go baseline for representative CLI failure cases
 - template output
 - keygen output shape and stored-file behavior
 - Go config fixture parsing and config file failure behavior
@@ -734,6 +739,7 @@ Implemented in Rust:
 - `keygen`
 - `grabpubkey`
 - `shell`
+- Unix client-side raw-terminal handling and non-blocking interactive shell teardown
 - `socks-proxy`
 - `dns-proxy`
 - `get`
@@ -756,7 +762,7 @@ Implemented in Rust:
 Not implemented or not yet fully equivalent:
 
 - exact Go logging/output parity
-- exact Cobra failure/exit-code parity for all malformed invocations
+- exhaustive Cobra failure/exit-code parity for all malformed invocations
 - exact Go worker-pool/progress SFTP equivalence
 - full side-by-side Go/Rust behavioral diff suite
 - validated Windows service parity

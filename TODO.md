@@ -31,11 +31,12 @@ Already implemented in Rust:
 - Unix PTY-backed embedded-server shell handling
 - Windows service entrypoint and SCM detection
 - Windows ConPTY-backed embedded-server shell handling
+- Unix client-side raw-terminal handling and immediate interactive shell teardown
 - root `-q/--quiet` acceptance and global quiet-mode suppression
 - Go-style stdout logger with timestamps, prefixes, ANSI colors, and quiet suppression
 - chunked concurrent single-file SFTP upload/download
 - bounded concurrent recursive SFTP transfer scheduling
-- Rust automated coverage for config, utils, keys, SSH, SSHD, SOCKS, tunnels, chunked SFTP, and Rust->Go interop
+- Rust automated coverage for config, utils, keys, SSH, SSHD, SOCKS, tunnels, chunked SFTP, malformed CLI parity, and Rust->Go interop
 
 ## Highest Priority Remaining Work
 
@@ -45,13 +46,13 @@ Already implemented in Rust:
   - Windows PTY/ConPTY behavior
   - Windows-specific path, permission, and banner semantics
 - finish exact Go worker-pool/progress SFTP parity
-- finish exhaustive exit-code and malformed-invocation parity
+- finish exhaustive exit-code and malformed-invocation parity beyond the currently covered representative cases
 - automate mixed Go/Rust interoperability validation across the full matrix
 
 ## CLI Parity Work
 
 - verify exact exit codes for all success and failure paths, not just the currently covered ones
-- verify unknown-flag and malformed-invocation behavior against Cobra for every command
+- extend the current malformed-invocation regression coverage to all commands and more edge cases
 - verify `help` subcommand parity beyond the currently captured combinations
 - decide whether the current manual parsing approach is sufficient long term or if a lower-risk parser abstraction is needed
 
@@ -176,6 +177,6 @@ Already implemented in Rust:
 - logging parity is not done
 - Windows support is implemented but not yet validated
 - exact Go worker-pool/progress SFTP parity is not proven
-- full exit-code/error-text parity is not proven
+- full exit-code/error-text parity is not proven beyond the currently covered malformed-invocation cases
 - full mixed Go/Rust automated interoperability coverage is not done
 - some Go test coverage has no direct Rust module equivalent yet

@@ -38,6 +38,14 @@ impl CliResponse {
         }
     }
 
+    fn success_stderr(stderr: impl Into<String>) -> Self {
+        Self {
+            stdout: String::new(),
+            stderr: stderr.into(),
+            exit_code: 0,
+        }
+    }
+
     fn failure(stderr: impl Into<String>, exit_code: i32) -> Self {
         Self {
             stdout: String::new(),
@@ -106,7 +114,7 @@ fn dispatch(args: &[String]) -> CliResponse {
     let rest = if args.is_empty() { &[][..] } else { &args[1..] };
 
     if rest.is_empty() {
-        return CliResponse::success(golden_cli("root-noargs.txt"));
+        return CliResponse::success_stderr(golden_cli("root-noargs.txt"));
     }
 
     if matches_help(rest) {
@@ -148,7 +156,11 @@ fn dispatch(args: &[String]) -> CliResponse {
         Some("tun") => tun_command(rest),
         Some("sshd") => sshd_command(rest),
         Some("revshell") => revshell_command(rest),
-        _ => CliResponse::failure("invalid subcommand\n", 1),
+        _ => CliResponse {
+            stdout: "invalid subcommand\n".to_string(),
+            stderr: String::new(),
+            exit_code: 1,
+        },
     }
 }
 
@@ -157,7 +169,7 @@ fn run_config_command(rest: &[String]) -> CliResponse {
         return CliResponse::success(golden_cli("run-help.txt"));
     }
     if rest.len() < 2 {
-        return CliResponse::failure("run requires a config file path\n", 1);
+        return cobra_usage_error("run-help.txt", "requires at least 1 arg(s), only received 0");
     }
 
     let config_path = Path::new(&rest[1]);
@@ -271,20 +283,20 @@ fn keygen_command(rest: &[String]) -> CliResponse {
             }
             "-p" | "--path" => {
                 let Some(value) = rest.get(idx + 1) else {
-                    return CliResponse::failure("flag needs an argument: --path\n", 1);
+                    return cobra_usage_error("keygen-help.txt", "flag needs an argument: --path");
                 };
                 path = value.clone();
                 idx += 2;
             }
             "-n" | "--name" => {
                 let Some(value) = rest.get(idx + 1) else {
-                    return CliResponse::failure("flag needs an argument: --name\n", 1);
+                    return cobra_usage_error("keygen-help.txt", "flag needs an argument: --name");
                 };
                 name = value.clone();
                 idx += 2;
             }
             other => {
-                return CliResponse::failure(format!("unknown argument: {other}\n"), 1);
+                return cobra_usage_error("keygen-help.txt", &format!("unknown flag: {other}"));
             }
         }
     }
@@ -320,7 +332,7 @@ fn grabpubkey_command(rest: &[String]) -> CliResponse {
         return CliResponse::success(golden_cli("grabpubkey-help.txt"));
     }
     if rest.len() < 2 {
-        return CliResponse::failure("grabpubkey requires a host:port\n", 1);
+        return cobra_usage_error("grabpubkey-help.txt", "requires at least 1 arg(s), only received 0");
     }
 
     let mut known_hosts = expand_user_home("~/.ssh/known_hosts");
@@ -330,13 +342,13 @@ fn grabpubkey_command(rest: &[String]) -> CliResponse {
         match rest[idx].as_str() {
             "-k" | "--known-hosts" => {
                 let Some(value) = rest.get(idx + 1) else {
-                    return CliResponse::failure("flag needs an argument: --known-hosts\n", 1);
+                    return cobra_usage_error("grabpubkey-help.txt", "flag needs an argument: --known-hosts");
                 };
                 known_hosts = expand_user_home(value);
                 idx += 2;
             }
             value if value.starts_with('-') => {
-                return CliResponse::failure(format!("unknown argument: {value}\n"), 1);
+                return cobra_usage_error("grabpubkey-help.txt", &format!("unknown flag: {value}"));
             }
             value => {
                 host = Some(value.to_string());
@@ -346,7 +358,7 @@ fn grabpubkey_command(rest: &[String]) -> CliResponse {
     }
 
     let Some(host) = host else {
-        return CliResponse::failure("grabpubkey requires a host:port\n", 1);
+        return cobra_usage_error("grabpubkey-help.txt", "requires at least 1 arg(s), only received 0");
     };
     let parsed = match parse_ssh_url(&host) {
         Ok(parsed) => parsed,
@@ -374,7 +386,7 @@ fn shell_command(rest: &[String]) -> CliResponse {
 
     let parsed = match parse_ssh_client_command(rest, "shell") {
         Ok(parsed) => parsed,
-        Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
+        Err(err) => return parse_error_response("shell-help.txt", &err),
     };
 
     let runtime = match tokio::runtime::Builder::new_current_thread().enable_all().build() {
@@ -399,7 +411,7 @@ fn shell_command(rest: &[String]) -> CliResponse {
             stderr: String::new(),
             exit_code: code as i32,
         },
-        Err(err) => CliResponse::failure(format!("{err}\n"), 1),
+        Err(err) => parse_error_response("shell-help.txt", &err),
     }
 }
 
@@ -408,7 +420,7 @@ struct ParsedSshCommand {
     command: Vec<String>,
 }
 
-fn parse_ssh_client_command(rest: &[String], command_name: &str) -> Result<ParsedSshCommand, String> {
+fn parse_ssh_client_command(rest: &[String], _command_name: &str) -> Result<ParsedSshCommand, String> {
     let default_identity = format!("{}/.ssh/id_rsa", current_home_dir());
     let default_known_hosts = format!("{}/.ssh/known_hosts", current_home_dir());
     let mut disable_banner = false;
@@ -436,36 +448,29 @@ fn parse_ssh_client_command(rest: &[String], command_name: &str) -> Result<Parse
                 idx += 1;
             }
             "-j" | "--jump-host" => {
-                let Some(value) = rest.get(idx + 1) else {
-                    return Err("flag needs an argument: --jump-host".to_string());
-                };
+                let Some(value) = rest.get(idx + 1) else { return Err("flag needs an argument: --jump-host".to_string()); };
                 jump_host = Some(value.clone());
                 jump_host_changed = true;
                 idx += 2;
             }
             "-s" | "--user-identity" => {
-                let Some(value) = rest.get(idx + 1) else {
-                    return Err("flag needs an argument: --user-identity".to_string());
-                };
+                let Some(value) = rest.get(idx + 1) else { return Err("flag needs an argument: --user-identity".to_string()); };
                 user_identity = expand_user_home(value);
                 user_identity_changed = true;
                 idx += 2;
             }
             "-k" | "--known-hosts" => {
-                let Some(value) = rest.get(idx + 1) else {
-                    return Err("flag needs an argument: --known-hosts".to_string());
-                };
+                let Some(value) = rest.get(idx + 1) else { return Err("flag needs an argument: --known-hosts".to_string()); };
                 known_hosts = expand_user_home(value);
                 known_hosts_changed = true;
                 idx += 2;
             }
             "-p" | "--password" => {
-                let Some(value) = rest.get(idx + 1) else {
-                    return Err("flag needs an argument: --password".to_string());
-                };
+                let Some(value) = rest.get(idx + 1) else { return Err("flag needs an argument: --password".to_string()); };
                 password = Some(value.clone());
                 idx += 2;
             }
+            value if value.starts_with('-') => return Err(format!("unknown flag: {value}")),
             value => {
                 positionals.push(value.to_string());
                 idx += 1;
@@ -474,7 +479,7 @@ fn parse_ssh_client_command(rest: &[String], command_name: &str) -> Result<Parse
     }
 
     if positionals.is_empty() {
-        return Err(format!("{command_name} requires a server argument"));
+        return Err(format!("requires at least 1 arg(s), only received {}", positionals.len()));
     }
     let server = positionals.remove(0);
 
@@ -593,7 +598,14 @@ fn tun_command(rest: &[String]) -> CliResponse {
                 Err(err) => CliResponse::failure(format!("{err}\n"), 1),
             }
         }
-        Err(err) => CliResponse::failure(format!("{err}\n"), 1),
+        Err(err) => {
+            let help_key = match rest.get(1).map(String::as_str) {
+                Some("forward") => "tun-forward-help.txt",
+                Some("reverse") => "tun-reverse-help.txt",
+                _ => "tun-help.txt",
+            };
+            parse_error_response(help_key, &err)
+        }
     }
 }
 
@@ -627,7 +639,7 @@ fn get_command(rest: &[String]) -> CliResponse {
                 Err(err) => CliResponse::failure(format!("{err}\n"), 1),
             }
         }
-        Err(err) => CliResponse::failure(format!("{err}\n"), 1),
+        Err(err) => parse_error_response("get-help.txt", &err),
     }
 }
 
@@ -661,7 +673,7 @@ fn put_command(rest: &[String]) -> CliResponse {
                 Err(err) => CliResponse::failure(format!("{err}\n"), 1),
             }
         }
-        Err(err) => CliResponse::failure(format!("{err}\n"), 1),
+        Err(err) => parse_error_response("put-help.txt", &err),
     }
 }
 
@@ -680,7 +692,7 @@ fn socks_proxy_command(rest: &[String]) -> CliResponse {
                 Err(err) => CliResponse::failure(format!("{err}\n"), 1),
             }
         }
-        Err(err) => CliResponse::failure(format!("{err}\n"), 1),
+        Err(err) => parse_error_response("socks-proxy-help.txt", &err),
     }
 }
 
@@ -699,7 +711,7 @@ fn dns_proxy_command(rest: &[String]) -> CliResponse {
                 Err(err) => CliResponse::failure(format!("{err}\n"), 1),
             }
         }
-        Err(err) => CliResponse::failure(format!("{err}\n"), 1),
+        Err(err) => parse_error_response("dns-proxy-help.txt", &err),
     }
 }
 
@@ -709,7 +721,7 @@ fn sshd_command(rest: &[String]) -> CliResponse {
     }
     let options = match parse_sshd_command(rest) {
         Ok(options) => options,
-        Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
+        Err(err) => return parse_error_response("sshd-help.txt", &err),
     };
     let runtime = match tokio::runtime::Builder::new_multi_thread().enable_all().build() {
         Ok(runtime) => runtime,
@@ -727,7 +739,7 @@ fn revshell_command(rest: &[String]) -> CliResponse {
     }
     let (client_options, server_options, local, remote) = match parse_revshell_command(rest) {
         Ok(parsed) => parsed,
-        Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
+        Err(err) => return parse_error_response("revshell-help.txt", &err),
     };
     let runtime = match tokio::runtime::Builder::new_multi_thread().enable_all().build() {
         Ok(runtime) => runtime,
@@ -897,7 +909,7 @@ fn parse_ssh_flags_and_positionals(
                 }
                 idx += 2;
             }
-            value if value.starts_with('-') => return Err(format!("unknown argument: {value}")),
+            value if value.starts_with('-') => return Err(format!("unknown flag: {value}")),
             value => {
                 positionals.push(value.to_string());
                 idx += 1;
@@ -905,8 +917,8 @@ fn parse_ssh_flags_and_positionals(
         }
     }
 
-    if positionals.is_empty() {
-        return Err(format!("{command_name} requires a server argument"));
+    if positionals.len() < 2 {
+        return Err(format!("requires at least 2 arg(s), only received {}", positionals.len()));
     }
 
     let server = positionals[0].clone();
@@ -1031,7 +1043,7 @@ fn parse_socks_proxy_command(rest: &[String]) -> Result<(ClientOptions, String),
                 listen_address = value.clone();
                 idx += 2;
             }
-            value if value.starts_with('-') => return Err(format!("unknown argument: {value}")),
+            value if value.starts_with('-') => return Err(format!("unknown flag: {value}")),
             value => {
                 positionals.push(value.to_string());
                 idx += 1;
@@ -1039,7 +1051,7 @@ fn parse_socks_proxy_command(rest: &[String]) -> Result<(ClientOptions, String),
         }
     }
     if positionals.is_empty() {
-        return Err("socks-proxy requires a server argument".to_string());
+        return Err(format!("requires at least 1 arg(s), only received {}", positionals.len()));
     }
     let options = build_client_options_from_server(
         &positionals[0],
@@ -1119,7 +1131,7 @@ fn parse_dns_proxy_command(rest: &[String]) -> Result<(ClientOptions, String, St
                 remote_dns = value.clone();
                 idx += 2;
             }
-            value if value.starts_with('-') => return Err(format!("unknown argument: {value}")),
+            value if value.starts_with('-') => return Err(format!("unknown flag: {value}")),
             value => {
                 positionals.push(value.to_string());
                 idx += 1;
@@ -1127,7 +1139,7 @@ fn parse_dns_proxy_command(rest: &[String]) -> Result<(ClientOptions, String, St
         }
     }
     if positionals.is_empty() {
-        return Err("dns-proxy requires a server argument".to_string());
+        return Err(format!("requires at least 1 arg(s), only received {}", positionals.len()));
     }
     let options = build_client_options_from_server(
         &positionals[0],
@@ -1364,7 +1376,7 @@ fn parse_tun_command(rest: &[String]) -> Result<ParsedTunnelCommand, String> {
                 remote = value.clone();
                 idx += 2;
             }
-            value if value.starts_with('-') => return Err(format!("unknown argument: {value}")),
+            value if value.starts_with('-') => return Err(format!("unknown flag: {value}")),
             value => {
                 positionals.push(value.to_string());
                 idx += 1;
@@ -1373,10 +1385,10 @@ fn parse_tun_command(rest: &[String]) -> Result<ParsedTunnelCommand, String> {
     }
 
     let Some(subcommand) = subcommand else {
-        return Err("tun requires a subcommand".to_string());
+        return Err("requires at least 1 arg(s), only received 0".to_string());
     };
     if positionals.is_empty() {
-        return Err(format!("tun {} requires a server argument", subcommand));
+        return Err(format!("requires at least 1 arg(s), only received {}", positionals.len()));
     }
 
     let server = positionals.remove(0);
@@ -1491,7 +1503,7 @@ fn parse_sshd_command(rest: &[String]) -> Result<ServerOptions, String> {
                 authorized_password = value.clone();
                 idx += 2;
             }
-            value if value.starts_with('-') => return Err(format!("unknown argument: {value}")),
+            value if value.starts_with('-') => return Err(format!("unknown flag: {value}")),
             value => return Err(format!("unexpected argument: {value}")),
         }
     }
@@ -1616,7 +1628,7 @@ fn parse_revshell_command(
                 authorized_password = value.clone();
                 idx += 2;
             }
-            value if value.starts_with('-') => return Err(format!("unknown argument: {value}")),
+            value if value.starts_with('-') => return Err(format!("unknown flag: {value}")),
             value => {
                 positionals.push(value.to_string());
                 idx += 1;
@@ -1625,7 +1637,7 @@ fn parse_revshell_command(
     }
 
     if positionals.is_empty() {
-        return Err("revshell requires a server argument".to_string());
+        return Err(format!("requires at least 1 arg(s), only received {}", positionals.len()));
     }
 
     let client_options = build_client_options_from_server(
@@ -1689,6 +1701,38 @@ fn command_help_key(path: &[&str]) -> Option<&'static str> {
         ["tun", "reverse"] => Some("tun-reverse-help.txt"),
         _ => None,
     }
+}
+
+fn parse_error_response(help_key: &str, err: &str) -> CliResponse {
+    if err.starts_with("unknown flag:")
+        || err.starts_with("flag needs an argument:")
+        || err.starts_with("requires at least ")
+    {
+        return cobra_usage_error(help_key, err);
+    }
+    CliResponse::failure(format!("{err}\n"), 1)
+}
+
+fn cobra_usage_error(help_key: &str, err: &str) -> CliResponse {
+    CliResponse::success_stderr(format!("Error: {err}\n{}", command_usage(help_key)))
+}
+
+fn command_usage(help_key: &str) -> String {
+    let help = golden_cli(help_key);
+    match help.find("Usage:\n") {
+        Some(index) => ensure_trailing_blank_line(help[index..].to_string()),
+        None => ensure_trailing_blank_line(help),
+    }
+}
+
+fn ensure_trailing_blank_line(mut value: String) -> String {
+    if !value.ends_with("\n\n") {
+        if !value.ends_with('\n') {
+            value.push('\n');
+        }
+        value.push('\n');
+    }
+    value
 }
 
 fn repo_root() -> PathBuf {
