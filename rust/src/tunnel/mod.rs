@@ -123,7 +123,7 @@ pub async fn run_reverse(options: ClientOptions, local: Endpoint, remote: Endpoi
                     });
                 }
                 _ = ping.tick() => {
-                    if let Err(err) = session.send_checkalive_request().await {
+                    if let Err(err) = session.send_keepalive_request().await {
                         SSH_LOG.log(format_args!("error while sending keep alive {}", err));
                         LOG.log(format_args!("disconnected"));
                         should_reconnect = true;
@@ -145,4 +145,14 @@ where
     let _ = copy_bidirectional(&mut socket, &mut stream).await;
     let _ = socket.shutdown().await;
     let _ = stream.shutdown().await;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::RECONNECTION_INTERVAL_SECS;
+
+    #[test]
+    fn keepalive_interval_matches_go_default() {
+        assert_eq!(RECONNECTION_INTERVAL_SECS, 5);
+    }
 }

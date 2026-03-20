@@ -4,7 +4,7 @@ use tokio::sync::mpsc;
 
 use super::interactive::{drain_channel, terminal_size};
 use super::transport::{authenticate_handle, build_client_config};
-use super::types::{ClientHandler, ClientOptions, ForwardedTcpIp, CHECKALIVE_REQUEST, KEEPALIVE_REQUEST};
+use super::types::{ClientHandler, ClientOptions, ForwardedTcpIp};
 use super::LOG;
 
 pub struct Session {
@@ -210,11 +210,7 @@ impl Session {
     }
 
     pub async fn send_keepalive_request(&self) -> Result<(), String> {
-        self.send_alive_request(KEEPALIVE_REQUEST).await
-    }
-
-    pub async fn send_checkalive_request(&self) -> Result<(), String> {
-        self.send_alive_request(CHECKALIVE_REQUEST).await
+        self.handle.send_ping().await.map_err(|err| err.to_string())
     }
 
     pub async fn next_forwarded(&mut self) -> Option<ForwardedTcpIp> {
@@ -225,14 +221,6 @@ impl Session {
         LOG.log(format_args!("disconnecting client"));
         self.handle
             .disconnect(Disconnect::ByApplication, "", "English")
-            .await
-            .map_err(|err| err.to_string())
-    }
-
-    async fn send_alive_request(&self, request_name: &str) -> Result<(), String> {
-        let _ = request_name;
-        self.handle
-            .send_ping()
             .await
             .map_err(|err| err.to_string())
     }

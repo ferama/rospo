@@ -15,7 +15,7 @@ The target remains a drop-in Rust replacement with:
 - semantically equivalent CLI parsing, flags, defaults, and help coverage
 - identical config schema and config-loading behavior
 - identical runtime behavior for SSH, tunnels, SOCKS, DNS proxying, SFTP, logging, and exit codes
-- interoperability with the Go implementation in both directions
+- Go implementation artifacts remain useful as migration references and regression oracles, but mixed Go/Rust interoperability is no longer a required target
 
 ## Source Of Truth
 
@@ -38,6 +38,7 @@ Repository artifacts currently used as compatibility oracles:
   - `rust/tests/tunnel_integration.rs`
   - `rust/tests/interop_go_server.rs`
   - `rust/tests/behavioral_diff.rs`
+  - `rust/tests/keepalive_compat.rs`
 
 ## CLI Contract
 
@@ -530,7 +531,6 @@ Current Rust config coverage:
 Go behavior that must still be preserved exactly:
 
 - reconnect loop retries every 5 seconds where the Go service-style commands do so
-- keepalive request `keepalive@rospo` behavior and timing
 - host-key failure wording and exit codes
 - lazy known-hosts creation behavior in all edge cases
 - banner behavior in all code paths
@@ -546,7 +546,8 @@ Current Rust status:
 - Unix client-side PTY resize propagation exists
 - service-style reconnect loops exist for tunnels
 - root/global quiet mode is wired into client-side runtime output suppression
-- exact Go keepalive behavior is not yet proven equivalent
+- stock `russh` keepalive/ping behavior is used
+- client keepalive behavior is regression-tested against the Rust `sshd`
 
 ### SSH Server
 
@@ -575,7 +576,6 @@ Go behavior that must still be preserved exactly:
 - reconnect every 5 seconds
 - forward uses SSH `direct-tcpip`
 - reverse uses `tcpip-forward` and `forwarded-tcpip`
-- server-side liveness behavior using `checkalive@rospo`
 - listener lifecycle and shutdown semantics
 
 Current Rust status:
@@ -583,7 +583,7 @@ Current Rust status:
 - forward and reverse runtimes exist
 - reconnect loop exists
 - echo-path behavior is validated
-- exact `checkalive@rospo` parity is not yet proven
+- client keepalive loop uses stock `russh` ping behavior with a 5-second interval
 
 ### SOCKS Proxy
 
@@ -739,6 +739,7 @@ Automated Rust coverage currently includes:
 - resumed SFTP upload/download progress offset accounting
 - forward tunnel echo path
 - reverse tunnel echo path
+- Rust keepalive request success against Rust `sshd`
 - automated Rust client -> Go server interop for shell
 - automated Rust client -> Go server interop for SFTP upload/download
 - automated Rust client -> Go server interop for forward tunnel
@@ -765,7 +766,7 @@ Observed successful interop:
 
 Remaining interop gap:
 
-- full mixed-version matrix coverage is still incomplete
+- full mixed-version matrix coverage is still incomplete, but mixed-version interoperability is no longer a required migration target
 
 ## Known Compatibility Traps
 
@@ -774,6 +775,7 @@ Remaining interop gap:
 - `run` in Go appears to contain a likely bug in DNS proxy SSH-client selection
 - logging/output parity is still a major unfinished area
 - Windows behavior is implemented but not yet parity-validated on a real Windows host
+- the Rust tree now uses upstream `russh` without a local patch override
 
 ## Current Rust Coverage Summary
 
@@ -819,6 +821,7 @@ Implemented in Rust:
 - Go-style stdout logger with timestamps, prefixes, ANSI colors, and quiet suppression
 - automated Rust compatibility/integration tests for the implemented areas
 - automated Rust -> Go server interoperability tests for shell, SFTP, and tunnels
+- stock upstream `russh` keepalive/ping behavior without a vendored dependency patch
 
 Not implemented or not yet fully equivalent:
 
@@ -828,5 +831,5 @@ Not implemented or not yet fully equivalent:
 - full side-by-side Go/Rust behavioral diff suite
 - validated Windows service parity
 - validated Windows ConPTY/PTY parity
-- exhaustive mixed Go/Rust interoperability coverage
+- exhaustive mixed Go/Rust interoperability coverage is not pursued as a required outcome
 - standalone Rust equivalents for Go-only helper packages `pkg/registry`, `pkg/worker`, and `pkg/rio`

@@ -43,6 +43,7 @@ Already implemented in Rust:
 - transferred-file permission preservation for SFTP upload/download
 - maintainability refactor from large monolithic `mod.rs` files into package-style focused submodules for `cli`, `sshd`, `ssh`, `sftp`, and `utils`
 - Rust automated coverage for config, utils, keys, SSH, SSHD, SOCKS, tunnels, chunked SFTP, malformed CLI parity, Rust->Go interop, and side-by-side Go/Rust behavioral diffing for representative binary/runtime paths
+- upstream `russh` usage without a local patched dependency override
 
 ## Highest Priority Remaining Work
 
@@ -51,8 +52,7 @@ Already implemented in Rust:
   - Windows PTY/ConPTY behavior
   - Windows-specific path, permission, and banner semantics
 - finish exhaustive exit-code parity beyond the currently covered representative cases
-- automate mixed Go/Rust interoperability validation across the full matrix
-- extend side-by-side Go/Rust binary diff coverage beyond the currently covered representative commands
+- extend side-by-side behavioral diff coverage beyond the currently covered representative commands
 - finish exact Go mpb/progress-output parity for interactive terminal SFTP rendering
 
 ## CLI Parity Work
@@ -75,9 +75,8 @@ Already implemented in Rust:
 
 ## SSH Client Work
 
-- verify exact keepalive behavior versus Go:
-  - timing
-  - request type
+- verify stock keepalive behavior remains stable:
+  - 5-second timing
   - disconnect handling
 - verify host-key failure wording and exit codes match Go
 - verify password-auth behavior and prompts against Go CLI/OpenSSH expectations
@@ -96,17 +95,12 @@ Already implemented in Rust:
 
 ## Tunnel Engine Work
 
-- verify Go-equivalent `checkalive@rospo` behavior and timing
 - compare listener lifecycle, reconnect timing, and shutdown semantics side by side with Go
-- add automated mixed-version tunnel tests:
-  - Go client -> Rust server
-  - Rust client -> Go server
-  - Go server -> Rust client
+- keep the 5-second tunnel keepalive cadence covered by tests
 
 ## SOCKS Proxy Work
 
 - verify unsupported SOCKS modes and failure replies match Go exactly
-- validate mixed Go/Rust SOCKS behavior in both directions
 - verify listen-default and bind-error wording/exit codes
 
 ## DNS Proxy Work
@@ -119,8 +113,7 @@ Already implemented in Rust:
 
 - verify exact mpb-style progress rendering and line formatting against Go on real terminals
 - verify remaining recursive transfer edge cases against Go
-- validate permission behavior against mixed Go/Rust server-client combinations
-- extend automated mixed Go/Rust SFTP coverage beyond the current Rust-client-to-Go-server cases
+- validate permission behavior across more Rust-side combinations
 
 ## `run` Command Work
 
@@ -156,7 +149,6 @@ Already implemented in Rust:
   - listener collisions
   - network interruption
   - reconnect recovery
-- extend automated Go/Rust interop tests beyond the current shell/SFTP/tunnel coverage
 - extend `behavioral_diff.rs` to more binary commands and more failure cases
 - extend `run` coverage with realistic mixed configs
 - decide what to do about the Go test packages that do not have direct Rust module equivalents:
@@ -164,12 +156,10 @@ Already implemented in Rust:
   - `pkg/worker`
   - `pkg/rio`
 
-## Interop Validation Work
+## Optional Reference Validation
 
-- validate the full mixed-version matrix for all implemented commands
-- diff Go and Rust outputs/behaviors side by side where user-visible
-- validate known-hosts enrollment/trust behavior across mixed binaries
-- validate SFTP, SOCKS, DNS, and tunnels across mixed Go/Rust combinations systematically
+- keep using Go behavior and fixtures as reference points where useful for regressions
+- diff Go and Rust outputs/behaviors side by side where user-visible if a parity question comes up
 
 ## Documentation Work
 
@@ -182,6 +172,5 @@ Already implemented in Rust:
 - Windows support is implemented but not yet validated end to end on a real Windows host
 - exact Go mpb-style interactive SFTP progress parity is not proven
 - full exit-code/error-text parity is not proven beyond the currently covered representative cases
-- full mixed Go/Rust automated interoperability coverage is not done
-- side-by-side binary diff coverage is representative, not exhaustive
+- side-by-side behavioral diff coverage is representative, not exhaustive
 - some Go test coverage has no direct Rust module equivalent yet

@@ -12,9 +12,6 @@ pub enum Status {
     Closed,
 }
 
-pub const KEEPALIVE_REQUEST: &str = "keepalive@rospo";
-pub const CHECKALIVE_REQUEST: &str = "checkalive@rospo";
-
 #[derive(Debug, Clone)]
 pub struct JumpHostOptions {
     pub username: String,
