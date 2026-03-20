@@ -12,7 +12,7 @@ The target remains a drop-in Rust replacement with:
 
 - identical command names
 - identical flags and defaults
-- identical help output
+- semantically equivalent CLI parsing, flags, defaults, and help coverage
 - identical config schema and config-loading behavior
 - identical runtime behavior for SSH, tunnels, SOCKS, DNS proxying, SFTP, logging, and exit codes
 - interoperability with the Go implementation in both directions
@@ -25,7 +25,6 @@ Repository artifacts currently used as compatibility oracles:
 - Interim migration report: `docs/migration/report.md`
 - Architecture snapshot: `ARCHITECTURE.md`
 - Design decision log: `DECISIONS.md`
-- Go CLI golden fixtures: `compat/golden/cli`
 - Go runtime/config/parser fixtures: `compat/golden/runtime`
 - Go baseline capture script: `scripts/capture_go_baselines.sh`
 - Go baseline helper: `tools/go_baseline/main.go`
@@ -44,16 +43,18 @@ Repository artifacts currently used as compatibility oracles:
 ### Root Command
 
 - Binary name: `rospo`
-- Root long description: `The tool to create relieable ssh tunnels.`
 - Persistent global flag:
   - `-q, --quiet`
   - default: `false`
-- Cobra version flag is enabled in Go.
-- Observed Go behaviors:
-  - `rospo --help` prints help and exits `0`
-  - `rospo -h` prints help and exits `0`
-  - `rospo --version` prints version and exits `0`
-  - `rospo` with no args prints Cobra arity error plus usage and exits `0`
+- Current Rust CLI implementation:
+  - uses `clap` derive parsing from `rust/src/cli/app.rs`
+  - `rust/src/main.rs` invokes `Cli::parse()` on the normal CLI path
+  - typed clap subcommands are dispatched directly to runtime handlers
+- Current Rust behavior:
+  - `rospo --help` prints clap-generated help and exits `0`
+  - `rospo -h` prints clap-generated help and exits `0`
+  - `rospo --version` prints the clap version string and exits `0`
+  - `rospo` with no args prints root help and exits `0`
 - Current Rust status:
   - root `-q, --quiet` is accepted before subcommands and initializes global quiet-mode suppression for runtime logging
 
@@ -106,7 +107,7 @@ Purpose in Go:
 
 Rust status:
 
-- help output is fixture-matched
+- help output is clap-generated
 - runtime is implemented
 - local UDP and TCP listeners are implemented
 - upstream DNS-over-TCP framing over SSH is implemented
@@ -132,7 +133,7 @@ Purpose in Go:
 
 Rust status:
 
-- help output is fixture-matched
+- help output is clap-generated
 - runtime is implemented
 - SFTP download is implemented
 - recursive download is implemented
@@ -160,7 +161,7 @@ Purpose in Go:
 
 Rust status:
 
-- help output is fixture-matched
+- help output is clap-generated
 - implemented with a real SSH handshake
 - appends known-hosts entries in Go-compatible format
 
@@ -182,7 +183,7 @@ Purpose in Go:
 
 Rust status:
 
-- help output is fixture-matched
+- help output is clap-generated
 - implemented
 - emits SEC1 PEM private keys and OpenSSH `ecdsa-sha2-nistp521` public keys
 
@@ -206,7 +207,7 @@ Purpose in Go:
 
 Rust status:
 
-- help output is fixture-matched
+- help output is clap-generated
 - runtime is implemented
 - SFTP upload is implemented
 - recursive upload is implemented
@@ -233,7 +234,7 @@ Purpose in Go:
 
 Rust status:
 
-- help output is fixture-matched
+- help output is clap-generated
 - implemented
 - composes embedded Rust `sshd` with reverse tunnel runtime
 
@@ -250,7 +251,7 @@ Purpose in Go:
 
 Rust status:
 
-- help output is fixture-matched
+- help output is clap-generated
 - YAML file loading/parsing is implemented
 - empty config behavior matches the captured placeholder output:
   - `2026/03/19 00:00:00 nothing to run`
@@ -270,7 +271,7 @@ Purpose in Go:
 
 Rust status:
 
-- help output is fixture-matched
+- help output is clap-generated
 - implemented on a real SSH client transport
 - supports:
   - known-hosts verification unless insecure mode is enabled
@@ -307,7 +308,7 @@ Purpose in Go:
 
 Rust status:
 
-- help output is fixture-matched
+- help output is clap-generated
 - runtime is implemented
 - SOCKS4 and SOCKS5 handshake paths are implemented
 
@@ -330,7 +331,7 @@ Purpose in Go:
 
 Rust status:
 
-- help output is fixture-matched
+- help output is clap-generated
 - runtime is implemented
 - supports:
   - server key bootstrap/load
@@ -357,7 +358,7 @@ Purpose in Go:
 
 Rust status:
 
-- help output is fixture-matched
+- help output is clap-generated
 - runtime behavior is implemented
 - reads `cmd/configs/config_template.yaml` and appends a trailing newline
 
@@ -383,7 +384,7 @@ Purpose in Go:
 
 Rust status:
 
-- help output is fixture-matched
+- help output is clap-generated
 - forward and reverse runtimes are implemented
 - reconnect loop uses a 5-second retry interval
 
@@ -672,9 +673,9 @@ Verbose traces captured:
 
 Automated Rust coverage currently includes:
 
-- root help and root no-arg output
-- all captured command help outputs
-- malformed invocation regression coverage against the Go baseline for representative CLI failure cases
+- clap-generated root help and root no-arg output
+- clap-generated command help availability across implemented commands
+- malformed invocation coverage for representative clap error paths
 - template output
 - keygen output shape and stored-file behavior
 - Go config fixture parsing and config file failure behavior
@@ -728,7 +729,7 @@ Remaining interop gap:
 
 ## Known Compatibility Traps
 
-- Cobra help text ordering and wording remain compatibility-sensitive
+- clap now owns help generation; exact Go/Cobra wording is no longer the target
 - root no-arg exit code is `0` despite printing an error and usage
 - `run` in Go appears to contain a likely bug in DNS proxy SSH-client selection
 - logging/output parity is still a major unfinished area
@@ -740,8 +741,8 @@ Implemented in Rust:
 
 - executable crate entrypoint and module layout
 - maintainable package-style Rust layout with focused submodules for `cli`, `sshd`, `ssh`, `sftp`, and `utils`
-- fixture-driven CLI help and root-output matching
-- fixture-driven template output
+- clap-driven CLI parsing and help rendering
+- fixture-driven template output only
 - root `-q, --quiet` acceptance and global quiet-mode initialization
 - config schema mirror and YAML loading
 - config file loading behavior

@@ -10,8 +10,8 @@ The migration is still not complete. The Rust binary is not yet a proven drop-in
 
 Already implemented in Rust:
 
-- fixture-matched root help and root no-arg output
-- fixture-matched help output for captured commands
+- clap-driven root help and root no-arg output
+- clap-driven help output for implemented commands
 - fixture-matched template output
 - config schema mirror and config file loading
 - SSH URL parsing, endpoint formatting, SSH config parsing, known-hosts formatting
@@ -33,6 +33,7 @@ Already implemented in Rust:
 - Windows ConPTY-backed embedded-server shell handling
 - Unix client-side raw-terminal handling and immediate interactive shell teardown
 - root `-q/--quiet` acceptance and global quiet-mode suppression
+- `clap` derive-based CLI parsing, typed subcommand dispatch, and direct `Cli::parse()` entrypoint
 - Go-style stdout logger with timestamps, prefixes, ANSI colors, and quiet suppression
 - chunked concurrent single-file SFTP upload/download
 - bounded concurrent recursive SFTP transfer scheduling
@@ -51,15 +52,15 @@ Already implemented in Rust:
   - Windows PTY/ConPTY behavior
   - Windows-specific path, permission, and banner semantics
 - finish exact Go mpb/progress-output parity for SFTP
-- finish exhaustive exit-code and malformed-invocation parity beyond the currently covered representative cases
+- finish exhaustive exit-code parity beyond the currently covered representative cases
 - automate mixed Go/Rust interoperability validation across the full matrix
 
 ## CLI Parity Work
 
 - verify exact exit codes for all success and failure paths, not just the currently covered ones
 - extend the current malformed-invocation regression coverage to all commands and more edge cases
-- verify `help` subcommand parity beyond the currently captured combinations
-- keep the current split parsing modules maintainable while preserving exact Go/Cobra-compatible behavior
+- verify clap-generated help remains complete and accurate for all commands and nested subcommands
+- keep clap arg definitions and runtime option conversion logic in sync as features change
 
 ## Config Layer Work
 
@@ -181,6 +182,6 @@ Already implemented in Rust:
 - logging parity is not done
 - Windows support is implemented but not yet validated
 - exact Go mpb/progress-output SFTP parity is not proven
-- full exit-code/error-text parity is not proven beyond the currently covered malformed-invocation cases
+- full exit-code/error-text parity is not proven beyond the currently covered representative cases
 - full mixed Go/Rust automated interoperability coverage is not done
 - some Go test coverage has no direct Rust module equivalent yet
