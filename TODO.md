@@ -52,6 +52,7 @@ Already implemented in Rust:
 - SSH client trust-error handling for unknown hosts and malformed `known_hosts`
 - SSH client password-prompt fallback, no-auth coverage, disconnect-aware keepalive handling, and shell stdout/stderr/exit propagation coverage
 - Windows-target source compatibility verified with `AWS_LC_SYS_NO_ASM=1 cargo check --target x86_64-pc-windows-gnu`
+- native Unix source compatibility verified with `cargo check`
 
 ## Highest Priority Remaining Work
 
@@ -59,7 +60,7 @@ Already implemented in Rust:
   - Windows service mode behavior
   - Windows PTY/ConPTY behavior
   - Windows-specific path, permission, and banner semantics
-  - real Windows toolchain builds without local workarounds such as disabling AWS-LC assembly
+  - real Windows toolchain builds under the intended toolchains, including confirming whether the current AWS-LC no-ASM workaround is still needed in practice
 - finish exhaustive exit-code parity beyond the currently covered representative cases
 - extend side-by-side behavioral diff coverage beyond the currently covered representative commands
 - finish exact Go mpb/progress-output parity for interactive terminal SFTP rendering and reconnect-era log placement
@@ -177,7 +178,7 @@ Already implemented in Rust:
 
 ## Current Known Gaps
 
-- Windows support is implemented and the GNU Windows target now compile-checks, but it is not yet validated end to end on a real Windows host
+- Windows support is implemented, the GNU Windows target compile-checks, and the native Unix tree compile-checks again after the cross-target cleanup, but Windows is still not validated end to end on a real Windows host
 - exact Go mpb-style interactive SFTP progress parity is not proven, especially around reconnect-era terminal UX
 - full exit-code/error-text parity is not proven beyond the currently covered representative cases
 - side-by-side behavioral diff coverage is representative, not exhaustive

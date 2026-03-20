@@ -41,6 +41,7 @@ Repository artifacts currently used as compatibility oracles:
   - `rust/tests/keepalive_compat.rs`
 - Additional platform verification commands used during migration:
   - `AWS_LC_SYS_NO_ASM=1 cargo check --manifest-path rust/Cargo.toml --target x86_64-pc-windows-gnu`
+  - `cargo check --manifest-path rust/Cargo.toml`
 
 Recent implementation notes reflected in the current Rust tree:
 
@@ -49,6 +50,7 @@ Recent implementation notes reflected in the current Rust tree:
 - SFTP recovery now uses a shared reconnect coordinator per client so one outage triggers one recovery loop rather than one reconnect attempt per chunk worker
 - interactive SFTP progress rendering now coordinates with normal log output so reconnect logs clear and restore the active transfer overlay instead of leaving stacked bar lines behind
 - the Windows-specific Rust code now passes a GNU-target compile check; the remaining Windows gaps are runtime and toolchain validation rather than unresolved Rust source errors
+- the current Rust tree also passes a native Unix compile check after the cross-target cleanup required by the Windows work
 
 ## CLI Contract
 

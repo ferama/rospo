@@ -2,6 +2,8 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 use std::io::{self, Write};
+#[cfg(unix)]
+use std::io::IsTerminal;
 
 use internal_russh_forked_ssh_key::PublicKey;
 use russh::client;

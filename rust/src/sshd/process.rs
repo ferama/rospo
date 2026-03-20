@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+#[cfg(unix)]
+use std::io;
 
 use russh::{server, ChannelId};
 #[cfg(unix)]
