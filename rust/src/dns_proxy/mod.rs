@@ -12,9 +12,12 @@ pub async fn run(options: ClientOptions, listen_address: &str, remote_dns: &str)
     let remote = new_endpoint(remote_dns)?;
     let session = Session::connect(options).await?;
     let session = Arc::new(Mutex::new(session));
+    let listen_address = normalize_listen_address(listen_address);
 
-    let udp_socket = Arc::new(UdpSocket::bind(listen_address).await.map_err(|err| err.to_string())?);
-    let tcp_listener = TcpListener::bind(listen_address).await.map_err(|err| err.to_string())?;
+    // Go accepts bare `:53`-style listen addresses and treats them as "all interfaces on this
+    // port", so normalize before handing the address to Tokio.
+    let udp_socket = Arc::new(UdpSocket::bind(&listen_address).await.map_err(|err| err.to_string())?);
+    let tcp_listener = TcpListener::bind(&listen_address).await.map_err(|err| err.to_string())?;
     LOG.log(format_args!(
         "dns-proxy listening on: {}. Using remote dns: {}",
         listen_address, remote_dns
@@ -108,4 +111,23 @@ async fn resolve_dns(
         .map_err(|err| err.to_string())?;
     let _ = stream.shutdown().await;
     Ok(response)
+}
+
+fn normalize_listen_address(address: &str) -> String {
+    if address.starts_with(':') {
+        format!("0.0.0.0{address}")
+    } else {
+        address.to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::normalize_listen_address;
+
+    #[test]
+    fn normalize_listen_address_supports_go_style_port_binding() {
+        assert_eq!(normalize_listen_address(":53"), "0.0.0.0:53");
+        assert_eq!(normalize_listen_address("127.0.0.1:5300"), "127.0.0.1:5300");
+    }
 }
