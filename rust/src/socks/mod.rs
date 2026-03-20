@@ -5,6 +5,7 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::Mutex;
 
 use crate::ssh::{ClientOptions, Session};
+use crate::ssh::LOG;
 
 pub const DEFAULT_LISTEN_ADDRESS: &str = "127.0.0.1:1080";
 
@@ -14,6 +15,7 @@ pub async fn run(options: ClientOptions, listen_address: &str) -> Result<(), Str
     let listener = TcpListener::bind(listen_address)
         .await
         .map_err(|err| err.to_string())?;
+    LOG.log(format_args!("local socks proxy listening at '{}'", listen_address));
 
     loop {
         let (socket, peer) = listener.accept().await.map_err(|err| err.to_string())?;

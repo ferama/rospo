@@ -1,16 +1,12 @@
-use crate::cli::parse::{parse_revshell_command, parse_sshd_command};
+use crate::cli::app::{RevshellArgs, SshdArgs};
+use crate::cli::parse::{client_options_from_cli, server_options_from_cli};
 use crate::cli::CliResponse;
 use crate::sshd;
 use crate::tunnel;
+use crate::utils::new_endpoint;
 
-pub(crate) fn sshd_command(rest: &[String]) -> CliResponse {
-    if matches!(rest, [cmd, help] if cmd == "sshd" && super::super::help::is_help_flag(help)) {
-        return CliResponse::success(super::super::golden_cli("sshd-help.txt"));
-    }
-    let options = match parse_sshd_command(rest) {
-        Ok(options) => options,
-        Err(err) => return super::super::help::parse_error_response("sshd-help.txt", &err),
-    };
+pub(crate) fn sshd_command(args: SshdArgs) -> CliResponse {
+    let options = server_options_from_cli(&args.sshd);
     let runtime = match tokio::runtime::Builder::new_multi_thread().enable_all().build() {
         Ok(runtime) => runtime,
         Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
@@ -21,14 +17,21 @@ pub(crate) fn sshd_command(rest: &[String]) -> CliResponse {
     }
 }
 
-pub(crate) fn revshell_command(rest: &[String]) -> CliResponse {
-    if matches!(rest, [cmd, help] if cmd == "revshell" && super::super::help::is_help_flag(help)) {
-        return CliResponse::success(super::super::golden_cli("revshell-help.txt"));
-    }
-    let (client_options, server_options, local, remote) = match parse_revshell_command(rest) {
-        Ok(parsed) => parsed,
-        Err(err) => return super::super::help::parse_error_response("revshell-help.txt", &err),
+pub(crate) fn revshell_command(args: RevshellArgs) -> CliResponse {
+    let client_options = match client_options_from_cli(&args.server, &args.ssh) {
+        Ok(options) => options,
+        Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
     };
+    let server_options = server_options_from_cli(&args.sshd);
+    let local = match new_endpoint(&args.sshd.sshd_listen_address) {
+        Ok(endpoint) => endpoint,
+        Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
+    };
+    let remote = match new_endpoint(&args.remote) {
+        Ok(endpoint) => endpoint,
+        Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
+    };
+
     let runtime = match tokio::runtime::Builder::new_multi_thread().enable_all().build() {
         Ok(runtime) => runtime,
         Err(err) => return CliResponse::failure(format!("{err}\n"), 1),

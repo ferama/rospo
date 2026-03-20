@@ -5,6 +5,7 @@ use tokio::net::{TcpListener, UdpSocket};
 use tokio::sync::Mutex;
 
 use crate::ssh::{ClientOptions, Session};
+use crate::ssh::LOG;
 use crate::utils::new_endpoint;
 
 pub async fn run(options: ClientOptions, listen_address: &str, remote_dns: &str) -> Result<(), String> {
@@ -14,6 +15,10 @@ pub async fn run(options: ClientOptions, listen_address: &str, remote_dns: &str)
 
     let udp_socket = Arc::new(UdpSocket::bind(listen_address).await.map_err(|err| err.to_string())?);
     let tcp_listener = TcpListener::bind(listen_address).await.map_err(|err| err.to_string())?;
+    LOG.log(format_args!(
+        "dns-proxy listening on: {}. Using remote dns: {}",
+        listen_address, remote_dns
+    ));
 
     let udp_session = Arc::clone(&session);
     let udp_remote = remote.clone();

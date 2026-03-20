@@ -8,7 +8,7 @@ use tokio::fs;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncSeekExt, AsyncWrite, AsyncWriteExt};
 use tokio::sync::mpsc;
 
-use crate::ssh::{ClientOptions, Session};
+use crate::ssh::{ClientOptions, Session, LOG};
 
 use super::paths::{
     build_chunks, canonicalize_or, ensure_remote_dir, remote_join, remote_parent, resolve_local_target,
@@ -19,12 +19,21 @@ use super::types::{Client, DownloadJob, ProgressReporter, TransferOptions, Uploa
 impl Client {
     pub async fn connect(options: ClientOptions) -> Result<Self, String> {
         let mut session = Session::connect(options).await?;
-        let sftp = session.open_sftp().await?;
+        LOG.log(format_args!("ssh client ready"));
+        let sftp = match session.open_sftp().await {
+            Ok(sftp) => sftp,
+            Err(err) => {
+                LOG.log(format_args!("cannot create SFTP client: {}", err));
+                return Err(err);
+            }
+        };
+        LOG.log(format_args!("SFTP client created"));
         Ok(Self { session, sftp })
     }
 
     pub async fn close(&mut self) -> Result<(), String> {
         let _ = self.sftp.close().await;
+        LOG.log(format_args!("SFTP connection lost"));
         self.session.disconnect().await
     }
 
@@ -72,6 +81,7 @@ impl Client {
         };
         let size = remote_meta.len();
         if offset >= size {
+            LOG.log(format_args!("File already fully downloaded."));
             return Ok(());
         }
 
@@ -120,12 +130,14 @@ impl Client {
         }
 
         let remote_target = resolve_remote_target(remote, local, &self.sftp).await?;
+        LOG.log(format_args!("remotePath {}", remote_target));
         let offset = match self.sftp.metadata(remote_target.clone()).await {
             Ok(meta) => meta.len(),
             Err(_) => 0,
         };
         let size = local_meta.len();
         if offset >= size {
+            LOG.log(format_args!("File already fully uploaded."));
             return Ok(());
         }
 
@@ -135,6 +147,7 @@ impl Client {
 
         let (progress_tx, progress_join) =
             self.start_progress(progress, size, offset, remote_target.clone(), options.max_workers.max(1));
+        LOG.log(format_args!("Using {} workers", options.max_workers));
         let result = if options.max_workers <= 1 || size.saturating_sub(offset) as usize <= super::DEFAULT_CHUNK_SIZE {
             self.copy_file_upload(&remote_target, local, offset, progress_tx.clone())
                 .await

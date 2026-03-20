@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use crate::logging::{Logger, MAGENTA};
+use crate::ssh::LOG as SSH_LOG;
 use tokio::io::{copy_bidirectional, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::time;
@@ -15,19 +16,19 @@ pub async fn run_forward(options: ClientOptions, local: Endpoint, remote: Endpoi
     loop {
         let mut session = match Session::connect(options.clone()).await {
             Ok(session) => session,
-            Err(err) => {
-                LOG.log(format_args!("error while connecting {}", err));
+            Err(_) => {
                 time::sleep(Duration::from_secs(RECONNECTION_INTERVAL_SECS)).await;
-                if err.is_empty() {
-                    continue;
-                }
                 continue;
             }
         };
+        SSH_LOG.log(format_args!("starting client keep alive"));
 
         let listener = match TcpListener::bind(local.to_string()).await {
             Ok(listener) => listener,
-            Err(err) => return Err(err.to_string()),
+            Err(err) => {
+                LOG.log(format_args!("dial INTO remote service error. {}", err));
+                return Err(err.to_string());
+            }
         };
         LOG.log(format_args!(
             "forward connected. Local: {} <- Remote: {}",
@@ -55,8 +56,8 @@ pub async fn run_forward(options: ClientOptions, local: Endpoint, remote: Endpoi
                         u32::from(origin.port()),
                     ).await {
                         Ok(channel) => channel,
-                        Err(_) => {
-                            LOG.log(format_args!("disconnected"));
+                        Err(err) => {
+                            LOG.log(format_args!("listen open port ON local server error. {}", err));
                             should_reconnect = true;
                             continue;
                         }
@@ -64,7 +65,8 @@ pub async fn run_forward(options: ClientOptions, local: Endpoint, remote: Endpoi
                     tokio::spawn(proxy_streams(socket, channel.into_stream()));
                 }
                 _ = ping.tick() => {
-                    if session.send_keepalive_request().await.is_err() {
+                    if let Err(err) = session.send_keepalive_request().await {
+                        SSH_LOG.log(format_args!("error while sending keep alive {}", err));
                         should_reconnect = true;
                     }
                 }
@@ -81,25 +83,26 @@ pub async fn run_reverse(options: ClientOptions, local: Endpoint, remote: Endpoi
         let mut session = match Session::connect(options.clone()).await {
             Ok(session) => session,
             Err(_) => {
-                LOG.log(format_args!("error while connecting reverse tunnel"));
                 time::sleep(Duration::from_secs(RECONNECTION_INTERVAL_SECS)).await;
                 continue;
             }
         };
+        SSH_LOG.log(format_args!("starting client keep alive"));
 
         let remote_host = remote.host.trim_matches(&['[', ']'][..]).to_string();
+        LOG.log(format_args!("starting remote listener"));
         let assigned_port = match session.tcpip_forward(&remote_host, remote.port).await {
             Ok(port) => port,
-            Err(_) => {
-                LOG.log(format_args!("failed to request remote listener"));
+            Err(err) => {
+                LOG.log(format_args!("listen open port ON remote server error. {}", err));
                 let _ = session.disconnect().await;
                 time::sleep(Duration::from_secs(RECONNECTION_INTERVAL_SECS)).await;
                 continue;
             }
         };
         LOG.log(format_args!(
-            "reverse connected. Remote: {}:{} -> Local: {}",
-            remote_host, assigned_port, local
+            "reverse connected. Local: {} -> Remote: {}:{}",
+            local, remote_host, assigned_port
         ));
 
         let mut ping = time::interval(Duration::from_secs(RECONNECTION_INTERVAL_SECS));
@@ -113,13 +116,15 @@ pub async fn run_reverse(options: ClientOptions, local: Endpoint, remote: Endpoi
                     };
                     let local_addr = local.to_string();
                     tokio::spawn(async move {
-                        if let Ok(socket) = TcpStream::connect(&local_addr).await {
-                            proxy_streams(socket, forwarded.channel.into_stream()).await;
+                        match TcpStream::connect(&local_addr).await {
+                            Ok(socket) => proxy_streams(socket, forwarded.channel.into_stream()).await,
+                            Err(err) => LOG.log(format_args!("dial INTO local service error. {}", err)),
                         }
                     });
                 }
                 _ = ping.tick() => {
-                    if session.send_checkalive_request().await.is_err() {
+                    if let Err(err) = session.send_checkalive_request().await {
+                        SSH_LOG.log(format_args!("error while sending keep alive {}", err));
                         LOG.log(format_args!("disconnected"));
                         should_reconnect = true;
                     }

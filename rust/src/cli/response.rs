@@ -14,14 +14,6 @@ impl CliResponse {
         }
     }
 
-    pub(crate) fn success_stderr(stderr: impl Into<String>) -> Self {
-        Self {
-            stdout: String::new(),
-            stderr: stderr.into(),
-            exit_code: 0,
-        }
-    }
-
     pub(crate) fn failure(stderr: impl Into<String>, exit_code: i32) -> Self {
         Self {
             stdout: String::new(),

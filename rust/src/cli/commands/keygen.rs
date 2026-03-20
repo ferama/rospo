@@ -6,45 +6,11 @@ use p521::elliptic_curve::rand_core::OsRng;
 use p521::elliptic_curve::sec1::ToEncodedPoint;
 use sec1::LineEnding;
 
+use crate::cli::app::KeygenArgs;
 use crate::cli::CliResponse;
 use crate::utils::{expand_user_home, write_file_0600};
 
-pub(crate) fn keygen_command(rest: &[String]) -> CliResponse {
-    if matches!(rest, [cmd, help] if cmd == "keygen" && super::super::help::is_help_flag(help)) {
-        return CliResponse::success(super::super::golden_cli("keygen-help.txt"));
-    }
-
-    let mut store = false;
-    let mut path = ".".to_string();
-    let mut name = "identity".to_string();
-
-    let mut idx = 1usize;
-    while idx < rest.len() {
-        match rest[idx].as_str() {
-            "-s" | "--store" => {
-                store = true;
-                idx += 1;
-            }
-            "-p" | "--path" => {
-                let Some(value) = rest.get(idx + 1) else {
-                    return super::super::help::cobra_usage_error("keygen-help.txt", "flag needs an argument: --path");
-                };
-                path = value.clone();
-                idx += 2;
-            }
-            "-n" | "--name" => {
-                let Some(value) = rest.get(idx + 1) else {
-                    return super::super::help::cobra_usage_error("keygen-help.txt", "flag needs an argument: --name");
-                };
-                name = value.clone();
-                idx += 2;
-            }
-            other => {
-                return super::super::help::cobra_usage_error("keygen-help.txt", &format!("unknown flag: {other}"));
-            }
-        }
-    }
-
+pub(crate) fn keygen_command(args: KeygenArgs) -> CliResponse {
     let secret = p521::SecretKey::random(&mut OsRng);
     let private_pem = match secret.to_sec1_pem(LineEnding::LF) {
         Ok(pem) => pem.to_string(),
@@ -61,10 +27,10 @@ pub(crate) fn keygen_command(rest: &[String]) -> CliResponse {
         Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
     };
 
-    if store {
-        let dir = PathBuf::from(expand_user_home(&path));
-        let _ = write_file_0600(&dir.join(&name), private_pem.as_bytes());
-        let _ = write_file_0600(&dir.join(format!("{name}.pub")), public_key.as_bytes());
+    if args.store {
+        let dir = PathBuf::from(expand_user_home(&args.path));
+        let _ = write_file_0600(&dir.join(&args.name), private_pem.as_bytes());
+        let _ = write_file_0600(&dir.join(format!("{}.pub", args.name)), public_key.as_bytes());
         CliResponse::success("")
     } else {
         CliResponse::success(format!("{private_pem}{public_key}"))

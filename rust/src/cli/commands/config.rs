@@ -10,15 +10,8 @@ use crate::sshd::{self, ServerOptions};
 use crate::tunnel;
 use crate::utils::new_endpoint;
 
-pub(crate) fn run_config_command(rest: &[String]) -> CliResponse {
-    if matches!(rest, [cmd, help] if cmd == "run" && super::super::help::is_help_flag(help)) {
-        return CliResponse::success(super::super::golden_cli("run-help.txt"));
-    }
-    if rest.len() < 2 {
-        return super::super::help::cobra_usage_error("run-help.txt", "requires at least 1 arg(s), only received 0");
-    }
-
-    let config_path = Path::new(&rest[1]);
+pub(crate) fn run_config_command(config: &str) -> CliResponse {
+    let config_path = Path::new(config);
     let content = match fs::read_to_string(config_path) {
         Ok(content) => content,
         Err(err) => return CliResponse::failure(format!("{err}\n"), 1),

@@ -25,6 +25,7 @@ impl Session {
         let mut previous_handle = None::<Handle<ClientHandler>>;
 
         for hop in &options.jump_hosts {
+            let hop_addr = format_endpoint(&hop.host, hop.port);
             let handler = ClientHandler {
                 options: ClientOptions {
                     username: hop.username.clone(),
@@ -39,6 +40,7 @@ impl Session {
                 },
                 forwarded_sender: None,
             };
+            LOG.log(format_args!("connecting to hop {}@{}", hop.username, hop_addr));
 
             let mut handle = if let Some(previous) = previous_handle.take() {
                 let channel = previous
@@ -49,14 +51,18 @@ impl Session {
                     .await
                     .map_err(|err| err.to_string())?
             } else {
-                client::connect(build_client_config(), (hop.host.as_str(), hop.port), handler)
-                    .await
-                    .map_err(|err| err.to_string())?
+                match client::connect(build_client_config(), (hop.host.as_str(), hop.port), handler).await {
+                    Ok(handle) => handle,
+                    Err(err) => {
+                        LOG.log(format_args!("dial INTO remote server error. {}", err));
+                        return Err(err.to_string());
+                    }
+                }
             };
 
             authenticate_handle(&mut handle, &hop.username, &hop.identity, hop.password.as_deref()).await?;
 
-            LOG.log(format_args!("jump host connected: {}@{}:{}", hop.username, hop.host, hop.port));
+            LOG.log(format_args!("reached the jump host {}@{}", hop.username, hop_addr));
 
             previous_handle = Some(handle);
         }
@@ -65,8 +71,10 @@ impl Session {
             options: options.clone(),
             forwarded_sender: Some(forwarded_sender),
         };
+        let server_addr = format_endpoint(&options.host, options.port);
 
         let mut handle = if let Some(previous) = previous_handle {
+            LOG.log(format_args!("connecting to {}@{}", options.username, server_addr));
             let channel = previous
                 .channel_open_direct_tcpip(options.host.clone(), u32::from(options.port), "127.0.0.1", 0)
                 .await
@@ -75,9 +83,14 @@ impl Session {
                 .await
                 .map_err(|err| err.to_string())?
         } else {
-            client::connect(build_client_config(), (options.host.as_str(), options.port), handler)
-                .await
-                .map_err(|err| err.to_string())?
+            LOG.log(format_args!("connecting to {}", server_addr));
+            match client::connect(build_client_config(), (options.host.as_str(), options.port), handler).await {
+                Ok(handle) => handle,
+                Err(err) => {
+                    LOG.log(format_args!("dial INTO remote server error. {}", err));
+                    return Err(err.to_string());
+                }
+            }
         };
 
         authenticate_handle(
@@ -88,10 +101,7 @@ impl Session {
         )
         .await?;
 
-        LOG.log(format_args!(
-            "connected to {}@{}:{}",
-            options.username, options.host, options.port
-        ));
+        LOG.log(format_args!("connected to remote server at {}", server_addr));
 
         Ok(Self {
             handle,
@@ -220,9 +230,33 @@ impl Session {
     }
 
     async fn send_alive_request(&self, request_name: &str) -> Result<(), String> {
+        let _ = request_name;
         self.handle
             .send_ping()
             .await
-            .map_err(|err| format!("{request_name}: {err}"))
+            .map_err(|err| err.to_string())
+    }
+}
+
+fn format_endpoint(host: &str, port: u16) -> String {
+    if host.contains(':') && !host.starts_with('[') {
+        format!("[{host}]:{port}")
+    } else {
+        format!("{host}:{port}")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::format_endpoint;
+
+    #[test]
+    fn format_endpoint_preserves_ipv4() {
+        assert_eq!(format_endpoint("127.0.0.1", 2222), "127.0.0.1:2222");
+    }
+
+    #[test]
+    fn format_endpoint_wraps_ipv6() {
+        assert_eq!(format_endpoint("::1", 2222), "[::1]:2222");
     }
 }

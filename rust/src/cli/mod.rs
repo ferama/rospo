@@ -1,14 +1,18 @@
 use std::ffi::OsString;
 
+use clap::{CommandFactory, Parser};
+
 use crate::logging;
 
+pub mod app;
 mod commands;
 mod help;
 mod parse;
 mod response;
 
-pub(crate) use help::{golden_cli, matches_help, template_output};
-use help::command_help_key;
+pub use app::Cli;
+use app::{Command, HelpArgs};
+pub(crate) use help::template_output;
 pub use response::CliResponse;
 
 pub const VERSION: &str = "development";
@@ -22,23 +26,31 @@ where
         .into_iter()
         .map(|arg| arg.into().to_string_lossy().into_owned())
         .collect::<Vec<_>>();
-    let (args, _) = normalize_args(args);
-
-    dispatch(&args)
+    let cli = match Cli::try_parse_from(args) {
+        Ok(cli) => cli,
+        Err(err) => {
+            let message = err.to_string();
+            let code = err.exit_code();
+            if err.use_stderr() {
+                return CliResponse::failure(message, code);
+            }
+            return CliResponse::success(message);
+        }
+    };
+    dispatch(cli)
 }
 
 pub fn run<I, T>(args: I) -> i32
 where
     I: IntoIterator<Item = T>,
-    T: Into<OsString>,
+    T: Into<OsString> + Clone,
 {
-    let args = args
-        .into_iter()
-        .map(|arg| arg.into().to_string_lossy().into_owned())
-        .collect::<Vec<_>>();
-    let (args, quiet) = normalize_args(args);
-    logging::init_logging(quiet);
-    let response = dispatch(&args);
+    let cli = Cli::parse_from(args);
+    run_cli(cli)
+}
+
+pub fn run_cli(cli: Cli) -> i32 {
+    let response = dispatch(cli);
     if !response.stdout.is_empty() {
         print!("{}", response.stdout);
     }
@@ -48,76 +60,49 @@ where
     response.exit_code
 }
 
-fn normalize_args(args: Vec<String>) -> (Vec<String>, bool) {
-    if args.is_empty() {
-        return (args, false);
+fn dispatch(cli: Cli) -> CliResponse {
+    logging::init_logging(cli.quiet);
+
+    match cli.command {
+        None => CliResponse::success(render_help(&[])),
+        Some(Command::Help(args)) => CliResponse::success(render_help_path(args)),
+        Some(Command::Template) => CliResponse::success(template_output()),
+        Some(Command::Run(args)) => commands::config::run_config_command(&args.config),
+        Some(Command::Keygen(args)) => commands::keygen::keygen_command(args),
+        Some(Command::Grabpubkey(args)) => commands::shell::grabpubkey_command(args),
+        Some(Command::Shell(args)) => commands::shell::shell_command(args),
+        Some(Command::Get(args)) => commands::transfer::get_command(args),
+        Some(Command::Put(args)) => commands::transfer::put_command(args),
+        Some(Command::SocksProxy(args)) => commands::proxy::socks_proxy_command(args),
+        Some(Command::DnsProxy(args)) => commands::proxy::dns_proxy_command(args),
+        Some(Command::Tun(args)) => commands::transfer::tun_command(args),
+        Some(Command::Sshd(args)) => commands::server::sshd_command(args),
+        Some(Command::Revshell(args)) => commands::server::revshell_command(args),
     }
-
-    let mut normalized = Vec::with_capacity(args.len());
-    normalized.push(args[0].clone());
-    let mut quiet = false;
-
-    for arg in args.into_iter().skip(1) {
-        if arg == "-q" || arg == "--quiet" {
-            quiet = true;
-            continue;
-        }
-        normalized.push(arg);
-    }
-
-    (normalized, quiet)
 }
 
-fn dispatch(args: &[String]) -> CliResponse {
-    let rest = if args.is_empty() { &[][..] } else { &args[1..] };
-
-    if rest.is_empty() {
-        return CliResponse::success_stderr(golden_cli("root-noargs.txt"));
+fn render_help_path(args: HelpArgs) -> String {
+    match (args.command.as_deref(), args.subcommand.as_deref()) {
+        (None, _) => render_help(&[]),
+        (Some(command), None) => render_help(&[command]),
+        (Some(command), Some(subcommand)) => render_help(&[command, subcommand]),
     }
+}
 
-    if matches_help(rest) {
-        return CliResponse::success(golden_cli("root-help.txt"));
-    }
-
-    if matches!(rest, [flag] if flag == "-v" || flag == "--version") {
-        return CliResponse::success(format!("rospo version {}\n", VERSION));
-    }
-
-    if matches!(rest, [cmd, help] if cmd == "template" && help::is_help_flag(help)) {
-        return CliResponse::success(golden_cli("template-help.txt"));
-    }
-    if matches!(rest, [cmd] if cmd == "template") {
-        return CliResponse::success(template_output());
+fn render_help(path: &[&str]) -> String {
+    let mut command = Cli::command();
+    let mut current = &mut command;
+    for segment in path {
+        let Some(next) = current.find_subcommand_mut(segment) else {
+            return format!("unknown help topic: {}\n", path.join(" "));
+        };
+        current = next;
     }
 
-    let help_key = match rest {
-        [cmd, help] if help::is_help_flag(help) => command_help_key(&[cmd.as_str()]),
-        [cmd1, cmd2, help] if help::is_help_flag(help) => command_help_key(&[cmd1.as_str(), cmd2.as_str()]),
-        [cmd] if cmd == "help" => Some("root-help.txt"),
-        [cmd, topic] if cmd == "help" => command_help_key(&[topic.as_str()]),
-        [cmd, topic, subtopic] if cmd == "help" => command_help_key(&[topic.as_str(), subtopic.as_str()]),
-        _ => None,
-    };
-    if let Some(help_key) = help_key {
-        return CliResponse::success(golden_cli(help_key));
+    let mut buf = Vec::new();
+    current.write_long_help(&mut buf).expect("render clap help");
+    if !buf.ends_with(b"\n") {
+        buf.push(b'\n');
     }
-
-    match rest.first().map(String::as_str) {
-        Some("run") => commands::config::run_config_command(rest),
-        Some("keygen") => commands::keygen::keygen_command(rest),
-        Some("grabpubkey") => commands::shell::grabpubkey_command(rest),
-        Some("shell") => commands::shell::shell_command(rest),
-        Some("get") => commands::transfer::get_command(rest),
-        Some("put") => commands::transfer::put_command(rest),
-        Some("socks-proxy") => commands::proxy::socks_proxy_command(rest),
-        Some("dns-proxy") => commands::proxy::dns_proxy_command(rest),
-        Some("tun") => commands::transfer::tun_command(rest),
-        Some("sshd") => commands::server::sshd_command(rest),
-        Some("revshell") => commands::server::revshell_command(rest),
-        _ => CliResponse {
-            stdout: "invalid subcommand\n".to_string(),
-            stderr: String::new(),
-            exit_code: 1,
-        },
-    }
+    String::from_utf8(buf).expect("utf8 clap help")
 }

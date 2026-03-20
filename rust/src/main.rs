@@ -1,6 +1,9 @@
+use clap::Parser;
+
 #[cfg(not(windows))]
 fn main() {
-    std::process::exit(rospo::cli::run(std::env::args_os()));
+    let cli = rospo::cli::Cli::parse();
+    std::process::exit(rospo::cli::run_cli(cli));
 }
 
 #[cfg(windows)]
