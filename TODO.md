@@ -38,9 +38,12 @@ Already implemented in Rust:
 - chunked concurrent single-file SFTP upload/download
 - bounded concurrent recursive SFTP transfer scheduling
 - Go-style per-chunk retry worker behavior for SFTP transfers
+- shared SFTP reconnect coordination across workers
 - resumed SFTP progress accounting
 - recursive SFTP `get` root-directory preservation
 - transferred-file permission preservation for SFTP upload/download
+- SFTP reconnect-and-resume behavior without CPU spin or per-chunk reconnect-log storms
+- interactive SFTP progress/log coordination that clears and restores the active transfer overlay
 - maintainability refactor from large monolithic `mod.rs` files into package-style focused submodules for `cli`, `sshd`, `ssh`, `sftp`, and `utils`
 - Rust automated coverage for config, utils, keys, SSH, SSHD, SOCKS, tunnels, chunked SFTP, malformed CLI parity, Rust->Go interop, and side-by-side Go/Rust behavioral diffing for representative binary/runtime paths
 - upstream `russh` usage without a local patched dependency override
@@ -57,7 +60,7 @@ Already implemented in Rust:
   - Windows-specific path, permission, and banner semantics
 - finish exhaustive exit-code parity beyond the currently covered representative cases
 - extend side-by-side behavioral diff coverage beyond the currently covered representative commands
-- finish exact Go mpb/progress-output parity for interactive terminal SFTP rendering
+- finish exact Go mpb/progress-output parity for interactive terminal SFTP rendering and reconnect-era log placement
 
 ## CLI Parity Work
 
@@ -112,8 +115,10 @@ Already implemented in Rust:
 ## SFTP Work
 
 - verify exact mpb-style progress rendering and line formatting against Go on real terminals
+- verify reconnect-era log placement and bar restoration against Go on real terminals
 - verify remaining recursive transfer edge cases against Go
 - validate permission behavior across more Rust-side combinations
+- add deterministic outage/recovery coverage so reconnect-and-resume UX is exercised automatically
 
 ## `run` Command Work
 
@@ -170,7 +175,7 @@ Already implemented in Rust:
 ## Current Known Gaps
 
 - Windows support is implemented but not yet validated end to end on a real Windows host
-- exact Go mpb-style interactive SFTP progress parity is not proven
+- exact Go mpb-style interactive SFTP progress parity is not proven, especially around reconnect-era terminal UX
 - full exit-code/error-text parity is not proven beyond the currently covered representative cases
 - side-by-side behavioral diff coverage is representative, not exhaustive
 - some Go test coverage has no direct Rust module equivalent yet

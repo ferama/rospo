@@ -13,16 +13,30 @@ pub struct Session {
     handle: Handle<ClientHandler>,
     forwarded_receiver: mpsc::UnboundedReceiver<ForwardedTcpIp>,
     disconnected: Arc<AtomicBool>,
+    log_enabled: bool,
 }
 
 impl Session {
     pub async fn connect(options: ClientOptions) -> Result<Self, String> {
-        LOG.log(format_args!("trying to connect to remote server..."));
-        if !options.identity.as_os_str().is_empty() {
-            LOG.log(format_args!("using identity at {}", options.identity.display()));
-        }
-        if !options.insecure {
-            LOG.log(format_args!("using known_hosts file at {}", options.known_hosts.display()));
+        Self::connect_with_mode(options, true).await
+    }
+
+    pub async fn connect_silent(mut options: ClientOptions) -> Result<Self, String> {
+        // Internal reconnects should not print banners or regular SSHC log lines over transfer
+        // progress; callers handle their own higher-level retry logging.
+        options.quiet = true;
+        Self::connect_with_mode(options, false).await
+    }
+
+    async fn connect_with_mode(options: ClientOptions, log_enabled: bool) -> Result<Self, String> {
+        if log_enabled {
+            LOG.log(format_args!("trying to connect to remote server..."));
+            if !options.identity.as_os_str().is_empty() {
+                LOG.log(format_args!("using identity at {}", options.identity.display()));
+            }
+            if !options.insecure {
+                LOG.log(format_args!("using known_hosts file at {}", options.known_hosts.display()));
+            }
         }
         let (forwarded_sender, forwarded_receiver) = mpsc::unbounded_channel();
         let mut previous_handle = None::<Handle<ClientHandler>>;
@@ -45,7 +59,9 @@ impl Session {
                 forwarded_sender: None,
                 last_error: last_error.clone(),
             };
-            LOG.log(format_args!("connecting to hop {}@{}", hop.username, hop_addr));
+            if log_enabled {
+                LOG.log(format_args!("connecting to hop {}@{}", hop.username, hop_addr));
+            }
 
             let mut handle = if let Some(previous) = previous_handle.take() {
                 // Each hop after the first is reached through a direct-tcpip channel opened on the
@@ -62,22 +78,30 @@ impl Session {
                     Ok(handle) => handle,
                     Err(err) => {
                         if let Some(message) = take_handler_error(&last_error) {
-                            LOG.log(format_args!("{message}"));
+                            if log_enabled {
+                                LOG.log(format_args!("{message}"));
+                            }
                             return Err(message);
                         }
-                        LOG.log(format_args!("dial INTO remote server error. {}", err));
+                        if log_enabled {
+                            LOG.log(format_args!("dial INTO remote server error. {}", err));
+                        }
                         return Err(err.to_string());
                     }
                 }
             };
 
             if let Some(message) = take_handler_error(&last_error) {
-                LOG.log(format_args!("{message}"));
+                if log_enabled {
+                    LOG.log(format_args!("{message}"));
+                }
                 return Err(message);
             }
             authenticate_handle(&mut handle, &hop.username, &hop.identity, hop.password.as_deref()).await?;
 
-            LOG.log(format_args!("reached the jump host {}@{}", hop.username, hop_addr));
+            if log_enabled {
+                LOG.log(format_args!("reached the jump host {}@{}", hop.username, hop_addr));
+            }
 
             previous_handle = Some(handle);
         }
@@ -91,7 +115,9 @@ impl Session {
         let server_addr = format_endpoint(&options.host, options.port);
 
         let mut handle = if let Some(previous) = previous_handle {
-            LOG.log(format_args!("connecting to {}@{}", options.username, server_addr));
+            if log_enabled {
+                LOG.log(format_args!("connecting to {}@{}", options.username, server_addr));
+            }
             let channel = previous
                 .channel_open_direct_tcpip(options.host.clone(), u32::from(options.port), "127.0.0.1", 0)
                 .await
@@ -100,22 +126,30 @@ impl Session {
                 .await
                 .map_err(|err| err.to_string())?
         } else {
-            LOG.log(format_args!("connecting to {}", server_addr));
+            if log_enabled {
+                LOG.log(format_args!("connecting to {}", server_addr));
+            }
             match client::connect(build_client_config(), (options.host.as_str(), options.port), handler).await {
                 Ok(handle) => handle,
                 Err(err) => {
                     if let Some(message) = take_handler_error(&last_error) {
-                        LOG.log(format_args!("{message}"));
+                        if log_enabled {
+                            LOG.log(format_args!("{message}"));
+                        }
                         return Err(message);
                     }
-                    LOG.log(format_args!("dial INTO remote server error. {}", err));
+                    if log_enabled {
+                        LOG.log(format_args!("dial INTO remote server error. {}", err));
+                    }
                     return Err(err.to_string());
                 }
             }
         };
 
         if let Some(message) = take_handler_error(&last_error) {
-            LOG.log(format_args!("{message}"));
+            if log_enabled {
+                LOG.log(format_args!("{message}"));
+            }
             return Err(message);
         }
         authenticate_handle(
@@ -126,12 +160,15 @@ impl Session {
         )
         .await?;
 
-        LOG.log(format_args!("connected to remote server at {}", server_addr));
+        if log_enabled {
+            LOG.log(format_args!("connected to remote server at {}", server_addr));
+        }
 
         Ok(Self {
             handle,
             forwarded_receiver,
             disconnected: Arc::new(AtomicBool::new(false)),
+            log_enabled,
         })
     }
 
@@ -251,7 +288,9 @@ impl Session {
     }
 
     pub async fn disconnect(&mut self) -> Result<(), String> {
-        LOG.log(format_args!("disconnecting client"));
+        if self.log_enabled {
+            LOG.log(format_args!("disconnecting client"));
+        }
         self.disconnected.store(true, Ordering::Relaxed);
         self.handle
             .disconnect(Disconnect::ByApplication, "", "English")

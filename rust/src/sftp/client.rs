@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 use std::path::Path;
 use std::sync::Arc;
+use std::time::Duration;
 
 use futures::stream::{FuturesUnordered, StreamExt};
 use russh_sftp::protocol::{FileAttributes, OpenFlags};
@@ -14,11 +15,16 @@ use super::paths::{
     build_chunks, canonicalize_or, ensure_remote_dir, remote_join, remote_parent, resolve_local_target,
     resolve_remote_target,
 };
-use super::types::{Client, DownloadJob, ProgressReporter, TransferOptions, UploadJob};
+use super::types::{
+    Client, DownloadJob, ProgressReporter, RecoveredConnection, RecoveryCoordinator, RecoveryState,
+    TransferOptions, UploadJob,
+};
+
+const RECONNECT_DELAY: Duration = Duration::from_secs(5);
 
 impl Client {
     pub async fn connect(options: ClientOptions) -> Result<Self, String> {
-        let mut session = Session::connect(options).await?;
+        let mut session = Session::connect(options.clone()).await?;
         LOG.log(format_args!("ssh client ready"));
         let sftp = match session.open_sftp().await {
             Ok(sftp) => sftp,
@@ -28,7 +34,12 @@ impl Client {
             }
         };
         LOG.log(format_args!("SFTP client created"));
-        Ok(Self { session, sftp })
+        Ok(Self {
+            options,
+            session,
+            sftp,
+            recovery: Arc::new(RecoveryCoordinator::new()),
+        })
     }
 
     pub async fn close(&mut self) -> Result<(), String> {
@@ -280,8 +291,76 @@ impl Client {
         offset: u64,
         progress_tx: Option<mpsc::Sender<u64>>,
     ) -> Result<(), String> {
-        let mut remote_file = self
-            .sftp
+        let mut resume_offset = offset;
+        let mut retry_delay = Duration::from_millis(250);
+        let mut recovered = None::<Arc<RecoveredConnection>>;
+        loop {
+            let result = if let Some(conn) = recovered.as_ref() {
+                self.copy_file_download_with_sftp(&conn.sftp, remote_path, local_path, resume_offset, progress_tx.clone())
+                    .await
+            } else {
+                self.copy_file_download_with_sftp(&self.sftp, remote_path, local_path, resume_offset, progress_tx.clone())
+                    .await
+            };
+            match result {
+                Ok(()) => return Ok(()),
+                Err(_) => {
+                    if let Some(conn) = recovered.take() {
+                        self.invalidate_recovered(&conn).await;
+                    }
+                    tokio::time::sleep(retry_delay).await;
+                    retry_delay = (retry_delay * 2).min(Duration::from_secs(5));
+                    recovered = Some(self.acquire_recovered_connection().await);
+                    resume_offset = local_file_offset(local_path).await?;
+                }
+            }
+        }
+    }
+
+    async fn copy_file_upload(
+        &self,
+        remote_target: &str,
+        local: &str,
+        offset: u64,
+        progress_tx: Option<mpsc::Sender<u64>>,
+    ) -> Result<(), String> {
+        let mut resume_offset = offset;
+        let mut retry_delay = Duration::from_millis(250);
+        let mut recovered = None::<Arc<RecoveredConnection>>;
+        loop {
+            let result = if let Some(conn) = recovered.as_ref() {
+                self.copy_file_upload_with_sftp(&conn.sftp, remote_target, local, resume_offset, progress_tx.clone())
+                    .await
+            } else {
+                self.copy_file_upload_with_sftp(&self.sftp, remote_target, local, resume_offset, progress_tx.clone())
+                    .await
+            };
+            match result {
+                Ok(()) => return Ok(()),
+                Err(_) => {
+                    if let Some(conn) = recovered.take() {
+                        self.invalidate_recovered(&conn).await;
+                    }
+                    tokio::time::sleep(retry_delay).await;
+                    retry_delay = (retry_delay * 2).min(Duration::from_secs(5));
+                    recovered = Some(self.acquire_recovered_connection().await);
+                    if let Some(conn) = recovered.as_ref() {
+                        resume_offset = remote_file_offset(&conn.sftp, remote_target).await?;
+                    }
+                }
+            }
+        }
+    }
+
+    async fn copy_file_download_with_sftp(
+        &self,
+        sftp: &russh_sftp::client::SftpSession,
+        remote_path: &str,
+        local_path: &str,
+        offset: u64,
+        progress_tx: Option<mpsc::Sender<u64>>,
+    ) -> Result<(), String> {
+        let mut remote_file = sftp
             .open(remote_path.to_string())
             .await
             .map_err(|err| err.to_string())?;
@@ -309,16 +388,16 @@ impl Client {
         Ok(())
     }
 
-    async fn copy_file_upload(
+    async fn copy_file_upload_with_sftp(
         &self,
+        sftp: &russh_sftp::client::SftpSession,
         remote_target: &str,
         local: &str,
         offset: u64,
         progress_tx: Option<mpsc::Sender<u64>>,
     ) -> Result<(), String> {
         let mut local_file = fs::File::open(local).await.map_err(|err| err.to_string())?;
-        let mut remote_file = self
-            .sftp
+        let mut remote_file = sftp
             .open_with_flags(remote_target.to_string(), OpenFlags::CREATE | OpenFlags::WRITE)
             .await
             .map_err(|err| err.to_string())?;
@@ -411,15 +490,31 @@ impl Client {
         chunk: super::types::Chunk,
         progress_tx: Option<mpsc::Sender<u64>>,
     ) -> Result<(), String> {
+        let mut retry_delay = Duration::from_millis(250);
+        let mut recovered = None::<Arc<RecoveredConnection>>;
         loop {
-            match self.download_chunk(&remote_path, &local_path, chunk.clone()).await {
+            let result = if let Some(conn) = recovered.as_ref() {
+                self.download_chunk_with_sftp(&conn.sftp, &remote_path, &local_path, chunk.clone())
+                    .await
+            } else {
+                self.download_chunk_with_sftp(&self.sftp, &remote_path, &local_path, chunk.clone())
+                    .await
+            };
+            match result {
                 Ok(written) => {
                     if let Some(tx) = &progress_tx {
                         let _ = tx.send(written).await;
                     }
                     return Ok(());
                 }
-                Err(_) => continue,
+                Err(_) => {
+                    if let Some(conn) = recovered.take() {
+                        self.invalidate_recovered(&conn).await;
+                    }
+                    tokio::time::sleep(retry_delay).await;
+                    retry_delay = (retry_delay * 2).min(Duration::from_secs(5));
+                    recovered = Some(self.acquire_recovered_connection().await);
+                }
             }
         }
     }
@@ -431,27 +526,43 @@ impl Client {
         chunk: super::types::Chunk,
         progress_tx: Option<mpsc::Sender<u64>>,
     ) -> Result<(), String> {
+        let mut retry_delay = Duration::from_millis(250);
+        let mut recovered = None::<Arc<RecoveredConnection>>;
         loop {
-            match self.upload_chunk(&remote_target, &local, chunk.clone()).await {
+            let result = if let Some(conn) = recovered.as_ref() {
+                self.upload_chunk_with_sftp(&conn.sftp, &remote_target, &local, chunk.clone())
+                    .await
+            } else {
+                self.upload_chunk_with_sftp(&self.sftp, &remote_target, &local, chunk.clone())
+                    .await
+            };
+            match result {
                 Ok(written) => {
                     if let Some(tx) = &progress_tx {
                         let _ = tx.send(written).await;
                     }
                     return Ok(());
                 }
-                Err(_) => continue,
+                Err(_) => {
+                    if let Some(conn) = recovered.take() {
+                        self.invalidate_recovered(&conn).await;
+                    }
+                    tokio::time::sleep(retry_delay).await;
+                    retry_delay = (retry_delay * 2).min(Duration::from_secs(5));
+                    recovered = Some(self.acquire_recovered_connection().await);
+                }
             }
         }
     }
 
-    async fn download_chunk(
+    async fn download_chunk_with_sftp(
         &self,
+        sftp: &russh_sftp::client::SftpSession,
         remote_path: &str,
         local_path: &str,
         chunk: super::types::Chunk,
     ) -> Result<u64, String> {
-        let mut remote_file = self
-            .sftp
+        let mut remote_file = sftp
             .open(remote_path.to_string())
             .await
             .map_err(|err| err.to_string())?;
@@ -488,8 +599,9 @@ impl Client {
         Ok(chunk.len)
     }
 
-    async fn upload_chunk(
+    async fn upload_chunk_with_sftp(
         &self,
+        sftp: &russh_sftp::client::SftpSession,
         remote_target: &str,
         local: &str,
         chunk: super::types::Chunk,
@@ -499,8 +611,7 @@ impl Client {
             .seek(std::io::SeekFrom::Start(chunk.offset))
             .await
             .map_err(|err| err.to_string())?;
-        let mut remote_file = self
-            .sftp
+        let mut remote_file = sftp
             .open_with_flags(remote_target.to_string(), OpenFlags::CREATE | OpenFlags::WRITE)
             .await
             .map_err(|err| err.to_string())?;
@@ -682,6 +793,102 @@ impl Client {
             join.await.map_err(|err| err.to_string())?;
         }
         Ok(())
+    }
+
+    async fn connect_ephemeral(&self) -> Result<(Session, russh_sftp::client::SftpSession), String> {
+        let mut session = Session::connect_silent(self.options.clone()).await?;
+        let sftp = session.open_sftp().await?;
+        Ok((session, sftp))
+    }
+
+    async fn acquire_recovered_connection(&self) -> Arc<RecoveredConnection> {
+        loop {
+            let should_recover = {
+                let mut state = self.recovery.state.lock().await;
+                match &*state {
+                    RecoveryState::Ready(conn) => return conn.clone(),
+                    RecoveryState::Recovering => false,
+                    RecoveryState::Idle => {
+                        *state = RecoveryState::Recovering;
+                        true
+                    }
+                }
+            };
+
+            if should_recover {
+                loop {
+                    match self.connect_ephemeral().await {
+                        Ok((session, sftp)) => {
+                            let recovered = Arc::new(RecoveredConnection::new(session, sftp));
+                            let mut state = self.recovery.state.lock().await;
+                            *state = RecoveryState::Ready(recovered.clone());
+                            self.recovery.notify.notify_waiters();
+                            return recovered;
+                        }
+                        Err(err) => {
+                            LOG.log(format_args!("cannot create SFTP client: {}", err));
+                            tokio::time::sleep(RECONNECT_DELAY).await;
+                        }
+                    }
+                }
+            } else {
+                self.recovery.notify.notified().await;
+            }
+        }
+    }
+
+    async fn invalidate_recovered(&self, connection: &Arc<RecoveredConnection>) {
+        let stale = {
+            let mut state = self.recovery.state.lock().await;
+            match &*state {
+                RecoveryState::Ready(current) if Arc::ptr_eq(current, connection) => {
+                    let previous = match std::mem::replace(&mut *state, RecoveryState::Idle) {
+                        RecoveryState::Ready(previous) => Some(previous),
+                        _ => None,
+                    };
+                    self.recovery.notify.notify_waiters();
+                    previous
+                }
+                _ => None,
+            }
+        };
+
+        if let Some(stale) = stale {
+            stale.close().await;
+        }
+    }
+}
+
+impl RecoveredConnection {
+    fn new(session: Session, sftp: russh_sftp::client::SftpSession) -> Self {
+        Self {
+            session: tokio::sync::Mutex::new(Some(session)),
+            sftp,
+        }
+    }
+
+    async fn close(&self) {
+        let _ = self.sftp.close().await;
+        if let Some(mut session) = self.session.lock().await.take() {
+            let _ = session.disconnect().await;
+        }
+    }
+}
+
+async fn local_file_offset(local_path: &str) -> Result<u64, String> {
+    match fs::metadata(local_path).await {
+        Ok(meta) => Ok(meta.len()),
+        Err(_) => Ok(0),
+    }
+}
+
+async fn remote_file_offset(
+    sftp: &russh_sftp::client::SftpSession,
+    remote_target: &str,
+) -> Result<u64, String> {
+    match sftp.metadata(remote_target.to_string()).await {
+        Ok(meta) => Ok(meta.len()),
+        Err(_) => Ok(0),
     }
 }
 

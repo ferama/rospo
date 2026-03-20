@@ -44,6 +44,8 @@ Recent implementation notes reflected in the current Rust tree:
 
 - config booleans accept YAML 1.1-style string spellings such as `yes`, `no`, `on`, and `off`
 - the reorganized Rust modules now include targeted comments in dense runtime, PTY, config, progress, and precedence code paths where intent would otherwise be harder to infer
+- SFTP recovery now uses a shared reconnect coordinator per client so one outage triggers one recovery loop rather than one reconnect attempt per chunk worker
+- interactive SFTP progress rendering now coordinates with normal log output so reconnect logs clear and restore the active transfer overlay instead of leaving stacked bar lines behind
 
 ## CLI Contract
 
@@ -151,8 +153,10 @@ Rust status:
 - resumed transfer progress accounting is implemented
 - downloaded file permissions are applied locally
 - Go-style worker-pool/retry semantics are implemented
+- interrupted transfers reconnect and resume instead of spinning or failing on the first reconnect error
+- reconnect attempts are coordinated across workers to avoid per-chunk reconnect storms
 - progress rendering is suppressed on non-terminal stdout to match the Go binary's captured-output behavior
-- user-visible terminal progress rendering exists, but exact mpb-style interactive output is not yet proven equivalent
+- interactive terminal rendering now behaves like a single coordinated overlay instead of append-only status lines, but exact mpb-style output parity is not yet proven
 
 #### `grabpubkey host:port`
 
@@ -225,8 +229,10 @@ Rust status:
 - resumed transfer progress accounting is implemented
 - uploaded file permissions are pushed to the remote target
 - Go-style worker-pool/retry semantics are implemented
+- interrupted transfers reconnect and resume instead of spinning or failing on the first reconnect error
+- reconnect attempts are coordinated across workers to avoid per-chunk reconnect storms
 - progress rendering is suppressed on non-terminal stdout to match the Go binary's captured-output behavior
-- user-visible terminal progress rendering exists, but exact mpb-style interactive output is not yet proven equivalent
+- interactive terminal rendering now behaves like a single coordinated overlay instead of append-only status lines, but exact mpb-style output parity is not yet proven
 
 #### `revshell [user@]host[:port]`
 

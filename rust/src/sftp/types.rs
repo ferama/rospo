@@ -1,5 +1,7 @@
+use std::sync::Arc;
+
 use russh_sftp::client::SftpSession;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, Mutex, Notify};
 use tokio::task::JoinHandle;
 
 use crate::ssh::Session;
@@ -37,8 +39,35 @@ pub trait ProgressReporter: Send + Sync {
 }
 
 pub struct Client {
+    pub(crate) options: crate::ssh::ClientOptions,
     pub(crate) session: Session,
     pub(crate) sftp: SftpSession,
+    pub(crate) recovery: Arc<RecoveryCoordinator>,
+}
+
+pub(crate) struct RecoveredConnection {
+    pub(crate) session: Mutex<Option<Session>>,
+    pub(crate) sftp: SftpSession,
+}
+
+pub(crate) enum RecoveryState {
+    Idle,
+    Recovering,
+    Ready(Arc<RecoveredConnection>),
+}
+
+pub(crate) struct RecoveryCoordinator {
+    pub(crate) state: Mutex<RecoveryState>,
+    pub(crate) notify: Notify,
+}
+
+impl RecoveryCoordinator {
+    pub(crate) fn new() -> Self {
+        Self {
+            state: Mutex::new(RecoveryState::Idle),
+            notify: Notify::new(),
+        }
+    }
 }
 
 #[derive(Clone)]

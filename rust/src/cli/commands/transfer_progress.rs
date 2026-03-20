@@ -1,10 +1,11 @@
 use std::io::{self, IsTerminal, Write};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 use tokio::time::{self, Duration, Instant};
 
+use crate::logging;
 use crate::sftp::ProgressReporter;
 use crate::utils::byte_count_si;
 
@@ -59,12 +60,18 @@ impl ProgressManager {
             return Ok(());
         }
         {
-            let mut state = self.state.lock().await;
+            let mut state = self.state.lock().expect("progress state mutex poisoned");
             state.closed = true;
         }
-        if let Some(handle) = self.renderer.lock().await.take() {
+        if let Some(handle) = self
+            .renderer
+            .lock()
+            .expect("progress renderer mutex poisoned")
+            .take()
+        {
             handle.await.map_err(|err| err.to_string())?;
         }
+        logging::set_terminal_overlay(None);
         Ok(())
     }
 
@@ -72,26 +79,37 @@ impl ProgressManager {
         if !self.enabled {
             return;
         }
-        let mut guard = self.renderer.lock().await;
+        let mut guard = self
+            .renderer
+            .lock()
+            .expect("progress renderer mutex poisoned");
         if guard.is_some() {
             return;
         }
         let state = self.state.clone();
+        logging::set_terminal_overlay(Some(Arc::new({
+            let state = state.clone();
+            move || {
+                let mut out = io::stdout().lock();
+                let _ = clear_snapshot_locked(&state, &mut out);
+                let _ = out.flush();
+            }
+        })));
         *guard = Some(tokio::spawn(async move {
             // A single renderer owns terminal repainting for all transfer bars so concurrent file
             // workers do not interleave escape sequences and corrupt stdout.
             let mut ticker = time::interval(Duration::from_millis(100));
             loop {
                 ticker.tick().await;
-                if render_snapshot(&state).await.is_err() {
+                if render_snapshot(&state).is_err() {
                     break;
                 }
                 let done = {
-                    let state = state.lock().await;
+                    let state = state.lock().expect("progress state mutex poisoned");
                     state.closed && state.bars.iter().all(|bar| bar.done)
                 };
                 if done {
-                    let _ = clear_snapshot(&state).await;
+                    let _ = clear_snapshot_sync(&state);
                     break;
                 }
             }
@@ -116,7 +134,7 @@ impl ProgressReporter for ProgressManager {
             }
             manager.ensure_renderer().await;
             let id = {
-                let mut state = state.lock().await;
+                let mut state = state.lock().expect("progress state mutex poisoned");
                 state.bars.push(ProgressBar {
                     direction: manager.direction,
                     file_name,
@@ -128,12 +146,12 @@ impl ProgressReporter for ProgressManager {
                 state.bars.len() - 1
             };
             while let Some(delta) = progress_rx.recv().await {
-                let mut state = state.lock().await;
+                let mut state = state.lock().expect("progress state mutex poisoned");
                 if let Some(bar) = state.bars.get_mut(id) {
                     bar.current = bar.current.saturating_add(delta).min(bar.file_size);
                 }
             }
-            let mut state = state.lock().await;
+            let mut state = state.lock().expect("progress state mutex poisoned");
             if let Some(bar) = state.bars.get_mut(id) {
                 bar.done = true;
                 bar.current = bar.file_size;
@@ -142,9 +160,9 @@ impl ProgressReporter for ProgressManager {
     }
 }
 
-async fn render_snapshot(state: &Arc<Mutex<ProgressState>>) -> io::Result<()> {
+fn render_snapshot(state: &Arc<Mutex<ProgressState>>) -> io::Result<()> {
     let (lines, previous) = {
-        let mut state = state.lock().await;
+        let mut state = state.lock().expect("progress state mutex poisoned");
         let lines = state
             .bars
             .iter()
@@ -156,27 +174,37 @@ async fn render_snapshot(state: &Arc<Mutex<ProgressState>>) -> io::Result<()> {
         (lines, previous)
     };
 
-    let mut out = io::stdout().lock();
-    if previous > 0 {
-        write!(out, "\x1b[{}F", previous)?;
-    }
-    // Redraw in place instead of printing append-only updates so interactive transfers behave like
-    // the Go progress bars, while non-terminal stdout stays clean because rendering is disabled.
-    let total = previous.max(lines.len());
-    for idx in 0..total {
-        write!(out, "\x1b[2K")?;
-        if let Some(line) = lines.get(idx) {
-            writeln!(out, "{line}")?;
-        } else {
-            writeln!(out)?;
+    logging::with_output_lock(|| -> io::Result<()> {
+        let mut out = io::stdout().lock();
+        if previous > 0 {
+            write!(out, "\x1b[{}F", previous)?;
         }
-    }
-    out.flush()
+        // Keep the active bars as a terminal overlay instead of append-only output so reconnect
+        // logs do not leave stale copies of the same bar behind.
+        let total = previous.max(lines.len());
+        for idx in 0..total {
+            write!(out, "\x1b[2K")?;
+            if let Some(line) = lines.get(idx) {
+                writeln!(out, "{line}")?;
+            } else {
+                writeln!(out)?;
+            }
+        }
+        out.flush()
+    })
 }
 
-async fn clear_snapshot(state: &Arc<Mutex<ProgressState>>) -> io::Result<()> {
+fn clear_snapshot_sync(state: &Arc<Mutex<ProgressState>>) -> io::Result<()> {
+    logging::with_output_lock(|| -> io::Result<()> {
+        let mut out = io::stdout().lock();
+        clear_snapshot_locked(state, &mut out)?;
+        out.flush()
+    })
+}
+
+fn clear_snapshot_locked(state: &Arc<Mutex<ProgressState>>, out: &mut impl Write) -> io::Result<()> {
     let previous = {
-        let mut state = state.lock().await;
+        let mut state = state.lock().expect("progress state mutex poisoned");
         let previous = state.rendered_lines;
         state.rendered_lines = 0;
         previous
@@ -184,12 +212,11 @@ async fn clear_snapshot(state: &Arc<Mutex<ProgressState>>) -> io::Result<()> {
     if previous == 0 {
         return Ok(());
     }
-    let mut out = io::stdout().lock();
     write!(out, "\x1b[{}F", previous)?;
     for _ in 0..previous {
         write!(out, "\x1b[2K\n")?;
     }
-    out.flush()
+    Ok(())
 }
 
 fn format_bar_line(bar: &ProgressBar) -> String {
@@ -200,13 +227,37 @@ fn format_bar_line(bar: &ProgressBar) -> String {
     } else {
         (bar.current as f64 / bar.file_size as f64) * 100.0
     };
+    let bar_fill = format_bar_fill(bar.current, bar.file_size, 50);
     format!(
-        "{} {} {:>5.1}s ({speed}/s) {:>6.2}% {} / {}",
+        "{} {} {:>5.1}s ({speed}/s) {:>6.2}% [{}] {} / {}",
         bar.direction,
         bar.file_name,
         elapsed,
         pct,
+        bar_fill,
         byte_count_si(bar.current as i64),
         byte_count_si(bar.file_size as i64),
     )
+}
+
+fn format_bar_fill(current: u64, total: u64, width: usize) -> String {
+    if width == 0 {
+        return String::new();
+    }
+    if total == 0 {
+        return "=".repeat(width);
+    }
+    let ratio = (current as f64 / total as f64).clamp(0.0, 1.0);
+    let filled = ((ratio * width as f64).round() as usize).min(width);
+    if filled == 0 {
+        return "-".repeat(width);
+    }
+    if filled >= width {
+        return "=".repeat(width);
+    }
+    let mut out = String::with_capacity(width);
+    out.push_str(&"=".repeat(filled.saturating_sub(1)));
+    out.push('>');
+    out.push_str(&"-".repeat(width - filled));
+    out
 }
