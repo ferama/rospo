@@ -37,6 +37,7 @@ Repository artifacts currently used as compatibility oracles:
   - `rust/tests/sshd_integration.rs`
   - `rust/tests/tunnel_integration.rs`
   - `rust/tests/interop_go_server.rs`
+  - `rust/tests/behavioral_diff.rs`
 
 ## CLI Contract
 
@@ -144,7 +145,8 @@ Rust status:
 - resumed transfer progress accounting is implemented
 - downloaded file permissions are applied locally
 - Go-style worker-pool/retry semantics are implemented
-- user-visible progress rendering exists, but exact mpb-style output is not yet proven equivalent
+- progress rendering is suppressed on non-terminal stdout to match the Go binary's captured-output behavior
+- user-visible terminal progress rendering exists, but exact mpb-style interactive output is not yet proven equivalent
 
 #### `grabpubkey host:port`
 
@@ -217,7 +219,8 @@ Rust status:
 - resumed transfer progress accounting is implemented
 - uploaded file permissions are pushed to the remote target
 - Go-style worker-pool/retry semantics are implemented
-- user-visible progress rendering exists, but exact mpb-style output is not yet proven equivalent
+- progress rendering is suppressed on non-terminal stdout to match the Go binary's captured-output behavior
+- user-visible terminal progress rendering exists, but exact mpb-style interactive output is not yet proven equivalent
 
 #### `revshell [user@]host[:port]`
 
@@ -258,6 +261,43 @@ Rust status:
 - configured `sshd`, `tunnel`, `socksproxy`, and `dnsproxy` sections are started
 - per-section nested `sshclient` blocks are supported where applicable
 - exact Go startup/shutdown ordering and failure propagation are not yet proven equivalent
+
+## Behavioral Diff Coverage
+
+Current automated side-by-side binary and runtime diff coverage includes:
+
+- Rust binary vs Go binary:
+  - `grabpubkey` against the same Rust `sshd`
+  - `shell` exec against the same Rust `sshd`
+  - `put` against the same Rust `sshd`
+  - `get` against the same Rust `sshd`
+- Rust `sshd` vs Go `sshd`:
+  - shell exit-status probe
+  - SFTP roundtrip probe
+  - SOCKS proxy probe
+  - forward tunnel probe
+  - reverse tunnel probe
+
+The current side-by-side suite has already forced and verified these Rust parity fixes:
+
+- `grabpubkey` now writes Go-compatible `known_hosts` host tokens even when the CLI server argument includes `user@`
+- global `-q` no longer suppresses the SSH banner; `-b/--disable-banner` controls banner suppression
+- SFTP progress redraw output is no longer emitted when stdout is not a terminal
+
+## Logging And Output Rules
+
+Current Rust behavior:
+
+- runtime logs use Go-style timestamps and component prefixes
+- root `-q/--quiet` suppresses runtime logger output
+- SSH auth banners remain controlled by `-b/--disable-banner`, not by root quiet mode
+- captured non-interactive `get` and `put` output no longer includes terminal redraw progress noise
+
+Current status:
+
+- representative side-by-side binary output parity is covered for `grabpubkey`, `shell`, `get`, and `put`
+- broad runtime wording parity has been aligned for SSH, tunnels, SOCKS, DNS, and SFTP
+- exhaustive byte-for-byte output parity across every command and failure path is still not fully proven
 
 #### `shell [user@]host[:port] [cmd_string]`
 

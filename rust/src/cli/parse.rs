@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 use crate::config::{JumpHostConf, SshClientConf};
-use crate::logging;
 use crate::ssh::{ClientOptions, JumpHostOptions};
 use crate::sshd::ServerOptions;
 use crate::utils::{current_home_dir, expand_user_home, get_default_ssh_config_host, parse_ssh_url};
@@ -61,7 +60,7 @@ pub(crate) fn client_options_from_conf(conf: &SshClientConf) -> Result<ClientOpt
             Some(conf.password.clone())
         },
         insecure: conf.insecure,
-        quiet: conf.quiet || logging::is_quiet(),
+        quiet: conf.quiet,
         jump_hosts: jump_host_options_from_conf(&conf.jump_hosts)?,
     })
 }
@@ -119,7 +118,7 @@ fn build_client_options_from_server(
             known_hosts: PathBuf::from(known_hosts),
             password,
             insecure,
-            quiet: disable_banner || logging::is_quiet(),
+            quiet: disable_banner,
             jump_hosts,
         });
     } else {
@@ -134,7 +133,7 @@ fn build_client_options_from_server(
         known_hosts: PathBuf::from(known_hosts),
         password,
         insecure,
-        quiet: disable_banner || logging::is_quiet(),
+        quiet: disable_banner,
         jump_hosts: build_jump_hosts(jump_host, user_identity)?,
     })
 }

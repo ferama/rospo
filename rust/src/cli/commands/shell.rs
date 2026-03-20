@@ -21,7 +21,8 @@ pub(crate) fn grabpubkey_command(args: GrabPubkeyArgs) -> CliResponse {
         Ok(key) => key,
         Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
     };
-    match add_host_key_to_known_hosts(&args.server, &key, Path::new(&known_hosts)) {
+    let host = format!("{}:{}", parsed.host, parsed.port);
+    match add_host_key_to_known_hosts(&host, &key, Path::new(&known_hosts)) {
         Ok(()) => CliResponse::success(""),
         Err(err) => CliResponse::failure(format!("{err}\n"), 1),
     }

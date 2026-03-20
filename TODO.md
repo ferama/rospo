@@ -42,18 +42,18 @@ Already implemented in Rust:
 - recursive SFTP `get` root-directory preservation
 - transferred-file permission preservation for SFTP upload/download
 - maintainability refactor from large monolithic `mod.rs` files into package-style focused submodules for `cli`, `sshd`, `ssh`, `sftp`, and `utils`
-- Rust automated coverage for config, utils, keys, SSH, SSHD, SOCKS, tunnels, chunked SFTP, malformed CLI parity, and Rust->Go interop
+- Rust automated coverage for config, utils, keys, SSH, SSHD, SOCKS, tunnels, chunked SFTP, malformed CLI parity, Rust->Go interop, and side-by-side Go/Rust behavioral diffing for representative binary/runtime paths
 
 ## Highest Priority Remaining Work
 
-- finish exact logging/output parity with the Go binary
 - validate Windows support end to end:
   - Windows service mode behavior
   - Windows PTY/ConPTY behavior
   - Windows-specific path, permission, and banner semantics
-- finish exact Go mpb/progress-output parity for SFTP
 - finish exhaustive exit-code parity beyond the currently covered representative cases
 - automate mixed Go/Rust interoperability validation across the full matrix
+- extend side-by-side Go/Rust binary diff coverage beyond the currently covered representative commands
+- finish exact Go mpb/progress-output parity for interactive terminal SFTP rendering
 
 ## CLI Parity Work
 
@@ -117,8 +117,7 @@ Already implemented in Rust:
 
 ## SFTP Work
 
-- verify exact mpb-style progress rendering and line formatting against Go
-- verify progress behavior on terminals versus non-terminals
+- verify exact mpb-style progress rendering and line formatting against Go on real terminals
 - verify remaining recursive transfer edge cases against Go
 - validate permission behavior against mixed Go/Rust server-client combinations
 - extend automated mixed Go/Rust SFTP coverage beyond the current Rust-client-to-Go-server cases
@@ -131,11 +130,11 @@ Already implemented in Rust:
 - verify logging/quiet behavior across all spawned subsystems
 - add end-to-end tests for realistic multi-section configs
 
-## Logging Work
+## Logging And Output Work
 
-- match Go logger prefixes, colors, wording, and formatting
-- match quiet-mode suppression behavior
+- extend byte-for-byte side-by-side output diff coverage beyond the current `grabpubkey`, `shell`, `get`, and `put` cases
 - verify stdout versus stderr placement on each path
+- verify remaining failure-path wording and formatting against Go
 
 ## Cross-Platform Work
 
@@ -158,6 +157,7 @@ Already implemented in Rust:
   - network interruption
   - reconnect recovery
 - extend automated Go/Rust interop tests beyond the current shell/SFTP/tunnel coverage
+- extend `behavioral_diff.rs` to more binary commands and more failure cases
 - extend `run` coverage with realistic mixed configs
 - decide what to do about the Go test packages that do not have direct Rust module equivalents:
   - `pkg/registry`
@@ -179,9 +179,9 @@ Already implemented in Rust:
 
 ## Current Known Gaps
 
-- logging parity is not done
-- Windows support is implemented but not yet validated
-- exact Go mpb/progress-output SFTP parity is not proven
+- Windows support is implemented but not yet validated end to end on a real Windows host
+- exact Go mpb-style interactive SFTP progress parity is not proven
 - full exit-code/error-text parity is not proven beyond the currently covered representative cases
 - full mixed Go/Rust automated interoperability coverage is not done
+- side-by-side binary diff coverage is representative, not exhaustive
 - some Go test coverage has no direct Rust module equivalent yet

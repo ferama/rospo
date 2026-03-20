@@ -1,4 +1,4 @@
-use std::io::{self, Write};
+use std::io::{self, IsTerminal, Write};
 use std::sync::Arc;
 
 use tokio::sync::{mpsc, Mutex};
@@ -11,6 +11,7 @@ use crate::utils::byte_count_si;
 #[derive(Clone)]
 pub(crate) struct ProgressManager {
     direction: &'static str,
+    enabled: bool,
     state: Arc<Mutex<ProgressState>>,
     renderer: Arc<Mutex<Option<JoinHandle<()>>>>,
 }
@@ -43,6 +44,7 @@ impl ProgressManager {
     fn new(direction: &'static str) -> Self {
         Self {
             direction,
+            enabled: io::stdout().is_terminal(),
             state: Arc::new(Mutex::new(ProgressState {
                 bars: Vec::new(),
                 rendered_lines: 0,
@@ -53,6 +55,9 @@ impl ProgressManager {
     }
 
     pub(crate) async fn finish(&self) -> Result<(), String> {
+        if !self.enabled {
+            return Ok(());
+        }
         {
             let mut state = self.state.lock().await;
             state.closed = true;
@@ -64,6 +69,9 @@ impl ProgressManager {
     }
 
     async fn ensure_renderer(&self) {
+        if !self.enabled {
+            return;
+        }
         let mut guard = self.renderer.lock().await;
         if guard.is_some() {
             return;
@@ -100,6 +108,10 @@ impl ProgressReporter for ProgressManager {
         let state = self.state.clone();
         let manager = self.clone();
         tokio::spawn(async move {
+            if !manager.enabled {
+                while progress_rx.recv().await.is_some() {}
+                return;
+            }
             manager.ensure_renderer().await;
             let id = {
                 let mut state = state.lock().await;
