@@ -44,6 +44,8 @@ Already implemented in Rust:
 - maintainability refactor from large monolithic `mod.rs` files into package-style focused submodules for `cli`, `sshd`, `ssh`, `sftp`, and `utils`
 - Rust automated coverage for config, utils, keys, SSH, SSHD, SOCKS, tunnels, chunked SFTP, malformed CLI parity, Rust->Go interop, and side-by-side Go/Rust behavioral diffing for representative binary/runtime paths
 - upstream `russh` usage without a local patched dependency override
+- YAML 1.1-style boolean compatibility for config fields such as `forward: yes`
+- targeted maintainability comments in dense runtime, PTY, progress, config, and CLI-precedence code paths
 
 ## Highest Priority Remaining Work
 
@@ -72,6 +74,7 @@ Already implemented in Rust:
 - verify unknown-field ignoring matches Go in more mixed config scenarios
 - verify runtime defaulting behavior for every config-backed command path
 - decide whether the apparent Go `run` DNS-client selection bug must be preserved exactly
+- verify additional YAML scalar edge cases beyond the now-supported boolean spellings
 
 ## SSH Client Work
 

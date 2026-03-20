@@ -40,6 +40,11 @@ Repository artifacts currently used as compatibility oracles:
   - `rust/tests/behavioral_diff.rs`
   - `rust/tests/keepalive_compat.rs`
 
+Recent implementation notes reflected in the current Rust tree:
+
+- config booleans accept YAML 1.1-style string spellings such as `yes`, `no`, `on`, and `off`
+- the reorganized Rust modules now include targeted comments in dense runtime, PTY, config, progress, and precedence code paths where intent would otherwise be harder to infer
+
 ## CLI Contract
 
 ### Root Command
@@ -507,6 +512,7 @@ Observed from Go and preserved in current Rust types:
 - missing strings decode as empty string
 - missing sequences decode as empty vectors when the containing struct is present
 - unknown YAML keys are ignored
+- YAML boolean-like strings such as `yes`, `no`, `on`, and `off` are accepted for boolean fields
 - `dnsproxy.remote_dns_address` is not defaulted at raw YAML load time
 - defaults mainly live in CLI flag definitions and runtime constructors
 
@@ -523,6 +529,7 @@ Current Rust config coverage:
 - `pkg/conf/testdata/sshd.yaml`
 - nonexistent config-file failure
 - unparsable config-file failure
+- YAML 1.1-style boolean spellings such as `forward: yes`
 
 ## Runtime Behavior Rules To Preserve
 
@@ -719,6 +726,7 @@ Automated Rust coverage currently includes:
 - template output
 - keygen output shape and stored-file behavior
 - Go config fixture parsing and config file failure behavior
+- config boolean compatibility for YAML values like `yes` and `no`
 - SSH URL parsing
 - endpoint formatting
 - SSH config parsing
@@ -758,6 +766,18 @@ Observed successful interop:
 - Rust `shell` against Go `sshd`
 - Rust `tun forward` against Go `sshd`
 - Rust `tun reverse` against Go `sshd`
+
+## Maintainability Status
+
+Current Rust maintainability work completed so far:
+
+- early monolithic `mod.rs` files were split into package-style focused modules
+- targeted comments were added where behavior is non-obvious, especially in:
+  - CLI/config precedence resolution
+  - interactive client terminal handling
+  - Unix PTY and Windows ConPTY server process wiring
+  - SFTP progress rendering and worker scheduling
+  - authorized-keys loading and config compatibility shims
 - Rust `put` and `get` against Go `sshd` SFTP
 - Rust `socks-proxy` against Go `sshd`
 - Rust `dns-proxy` against Go `sshd`

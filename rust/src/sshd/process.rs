@@ -33,6 +33,8 @@ pub(super) async fn spawn_shell(
 
     let mut cmd = build_command(&state.options.shell_executable, command);
     apply_default_env(&mut cmd, &env, &state.options.shell_executable);
+    // Non-PTY exec/shell requests stay on ordinary stdio pipes. PTY-backed sessions take the
+    // platform-specific branch above because they need different child setup and I/O wiring.
     cmd.stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
@@ -136,6 +138,8 @@ async fn spawn_pty_shell_unix(
     let (resize_tx, resize_rx) = mpsc::unbounded_channel::<(u32, u32)>();
 
     if let Some(session) = state.channels.lock().await.get_mut(&channel) {
+        // Once a PTY exists, later SSH channel data and window-change messages need access to the
+        // PTY master rather than a plain child stdin pipe.
         session.io = Some(ChannelIo::Pty(PtyHandle { stdin_tx, resize_tx }));
     }
 
@@ -157,6 +161,8 @@ async fn spawn_pty_shell_windows(
     command: Option<String>,
 ) -> Result<(), russh::Error> {
     let runtime = tokio::runtime::Handle::current();
+    // On Windows the PTY lifetime is owned by the ConPTY wrapper, while I/O and resize handling
+    // stay on helper threads because the underlying API is synchronous HANDLE-based I/O.
     let process = ConPtyProcess::spawn(
         &build_windows_pty_command_line(&state.options.shell_executable, command),
         pty.cols as u16,
@@ -314,6 +320,8 @@ fn resize_pty(pty_file: &std::fs::File, cols: u32, rows: u32) -> io::Result<()> 
 
 fn build_command(shell_executable: &str, command: Option<String>) -> Command {
     if !shell_executable.trim().is_empty() {
+        // Preserve the Go behavior where shell_executable can include fixed arguments instead of
+        // being restricted to a bare executable path.
         let mut parts = shell_executable.split_whitespace();
         let program = parts.next().unwrap_or(shell_executable);
         let mut cmd = Command::new(program);
@@ -376,6 +384,8 @@ fn apply_default_env(cmd: &mut Command, env: &HashMap<String, String>, shell_exe
         cmd.env(key, value);
     }
 
+    // The server always seeds a minimal login-like environment so shells behave consistently even
+    // when the SSH client did not send every variable explicitly.
     let shell = if shell_executable.trim().is_empty() {
         if cfg!(windows) {
             "powershell.exe".to_string()

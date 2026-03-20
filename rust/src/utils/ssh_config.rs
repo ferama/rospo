@@ -26,6 +26,8 @@ pub fn parse_ssh_config_content(content: &str) -> Result<Vec<NodeConfig>, String
         }
 
         if key.eq_ignore_ascii_case("Host") {
+            // Keep the parser intentionally small: rospo only consumes exact Host sections and a
+            // handful of fields that affect its connection model.
             if let Some(host) = current_host.take()
                 && host != "*"
             {
@@ -93,6 +95,8 @@ pub fn get_default_ssh_config_host(host: &str) -> Option<NodeConfig> {
 }
 
 pub fn get_host_conf(nodes: &[NodeConfig], host: &str) -> Option<NodeConfig> {
+    // Match Go's current behavior: only exact Host matches are considered, not wildcard
+    // expansion or pattern matching.
     nodes.iter().find(|node| node.host == host).cloned()
 }
 

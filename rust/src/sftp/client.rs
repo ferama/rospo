@@ -85,6 +85,8 @@ impl Client {
             return Ok(());
         }
 
+        // Small or effectively complete files stay on the resumable single-stream path; larger
+        // transfers switch to ranged workers so they behave like the Go worker pool.
         let (progress_tx, progress_join) =
             self.start_progress(progress, size, offset, remote_path.clone(), options.max_workers.max(1));
         let result = if options.max_workers <= 1 || size.saturating_sub(offset) as usize <= super::DEFAULT_CHUNK_SIZE {
@@ -148,6 +150,8 @@ impl Client {
         let (progress_tx, progress_join) =
             self.start_progress(progress, size, offset, remote_target.clone(), options.max_workers.max(1));
         LOG.log(format_args!("Using {} workers", options.max_workers));
+        // Uploads use the same split: resume with a single stream for small tails, or fan out into
+        // independent ranged writers when parallel workers are actually beneficial.
         let result = if options.max_workers <= 1 || size.saturating_sub(offset) as usize <= super::DEFAULT_CHUNK_SIZE {
             self.copy_file_upload(&remote_target, local, offset, progress_tx.clone())
                 .await
@@ -350,6 +354,8 @@ impl Client {
         let limit = max_workers.max(1);
 
         while !chunks.is_empty() || !in_flight.is_empty() {
+            // Keep the worker set full, but never exceed the configured concurrency for a single
+            // file. Each worker owns a fixed byte range.
             while in_flight.len() < limit && !chunks.is_empty() {
                 let chunk = chunks.pop_front().expect("chunk available");
                 in_flight.push(self.retry_download_chunk(
@@ -380,6 +386,8 @@ impl Client {
         let limit = max_workers.max(1);
 
         while !chunks.is_empty() || !in_flight.is_empty() {
+            // Upload workers mirror the download side: each task retries its own range until it
+            // is fully persisted, then reports the completed byte count once.
             while in_flight.len() < limit && !chunks.is_empty() {
                 let chunk = chunks.pop_front().expect("chunk available");
                 in_flight.push(self.retry_upload_chunk(
@@ -587,6 +595,8 @@ impl Client {
         let limit = options.concurrent_files.max(1);
 
         while !in_flight.is_empty() || iter.len() > 0 {
+            // Recursive transfers bound file-level concurrency separately from chunk-level
+            // concurrency so one large file cannot starve the rest of the tree.
             while in_flight.len() < limit {
                 let Some(job) = iter.next() else {
                     break;
@@ -622,6 +632,8 @@ impl Client {
         let limit = options.concurrent_files.max(1);
 
         while !in_flight.is_empty() || iter.len() > 0 {
+            // Each recursive upload job reuses the single-file machinery, but the outer queue caps
+            // how many distinct files are transferred at once.
             while in_flight.len() < limit {
                 let Some(job) = iter.next() else {
                     break;

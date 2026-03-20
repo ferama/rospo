@@ -54,6 +54,8 @@ pub(super) async fn load_authorized_keys(
 ) -> Result<HashSet<russh::keys::ssh_key::PublicKey>, String> {
     let mut keys = HashSet::new();
     for source in sources {
+        // Missing or temporarily unreachable sources are skipped so one bad URL or path does not
+        // prevent the rest of the configured authorized_keys inputs from loading.
         let content = match load_authorized_keys_source(source).await {
             Ok(content) => content,
             Err(_) => continue,
@@ -86,6 +88,8 @@ fn merge_authorized_keys(
         if trimmed.is_empty() || trimmed.starts_with('#') {
             continue;
         }
+        // Ignore options/comments syntax we do not currently model and only keep lines that parse
+        // as standalone OpenSSH public keys, which matches the accepted sources in the Go code.
         if let Ok(key) = ParsedPublicKey::from_openssh(trimmed) {
             let openssh = key.to_openssh().map_err(|err| err.to_string())?;
             let parsed =

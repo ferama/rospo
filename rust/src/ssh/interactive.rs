@@ -23,6 +23,8 @@ pub(crate) async fn drain_channel(
     };
     let (stdin_tx, mut stdin_rx) = mpsc::unbounded_channel::<Option<Vec<u8>>>();
     let _stdin_thread = if interactive {
+        // tokio stdin can stay blocked on a terminal read even after the remote side exits, so use
+        // a dedicated blocking reader thread and feed bytes into the async loop over a channel.
         Some(spawn_stdin_reader(stdin_tx))
     } else {
         None
@@ -70,6 +72,8 @@ pub(crate) async fn drain_channel(
                 if let Ok((cols, rows)) = terminal_size() {
                     if last_size != Some((cols, rows)) {
                         last_size = Some((cols, rows));
+                        // Only send window-change when the size actually changes, which matches the
+                        // behavior users expect from OpenSSH in an interactive PTY.
                         let _ = channel.window_change(cols, rows, 0, 0).await;
                     }
                 }
@@ -123,6 +127,8 @@ impl TerminalModeGuard {
         }
         let mut term = termios::tcgetattr(std::io::stdin()).map_err(|err| err.to_string())?;
         let original = term.clone();
+        // Interactive PTY sessions need raw mode so control characters like Ctrl-D are delivered
+        // to the remote shell instead of being consumed locally by the host terminal.
         termios::cfmakeraw(&mut term);
         termios::tcsetattr(std::io::stdin(), SetArg::TCSANOW, &term).map_err(|err| err.to_string())?;
         Ok(Self { original })

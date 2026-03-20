@@ -91,6 +91,8 @@ impl ConPtyProcess {
             x: cols as i16,
             y: rows as i16,
         };
+        // ConPTY is built from two anonymous pipes plus a pseudo console handle: one direction
+        // feeds bytes into the child, the other reads terminal output back out.
         let hpc = match create_pseudo_console(coord, pty_in, pty_out) {
             Ok(hpc) => hpc,
             Err(err) => {
@@ -227,6 +229,8 @@ fn create_process_attached_to_pty(hpc: Hpcon, command_line: &str) -> io::Result<
     }
 
     let result = (|| {
+        // The Windows child is attached to the pseudo console through the extended startup
+        // attribute list; there is no stdin/stdout PTY fd model like on Unix.
         if unsafe {
             UpdateProcThreadAttribute(
                 attr_ptr,

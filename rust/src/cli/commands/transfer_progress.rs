@@ -78,6 +78,8 @@ impl ProgressManager {
         }
         let state = self.state.clone();
         *guard = Some(tokio::spawn(async move {
+            // A single renderer owns terminal repainting for all transfer bars so concurrent file
+            // workers do not interleave escape sequences and corrupt stdout.
             let mut ticker = time::interval(Duration::from_millis(100));
             loop {
                 ticker.tick().await;
@@ -158,6 +160,8 @@ async fn render_snapshot(state: &Arc<Mutex<ProgressState>>) -> io::Result<()> {
     if previous > 0 {
         write!(out, "\x1b[{}F", previous)?;
     }
+    // Redraw in place instead of printing append-only updates so interactive transfers behave like
+    // the Go progress bars, while non-terminal stdout stays clean because rendering is disabled.
     let total = previous.max(lines.len());
     for idx in 0..total {
         write!(out, "\x1b[2K")?;

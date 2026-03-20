@@ -37,6 +37,8 @@ pub(crate) fn revshell_command(args: RevshellArgs) -> CliResponse {
         Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
     };
     let result = runtime.block_on(async move {
+        // revshell follows the Go composition model: start a local embedded sshd, then keep a
+        // reverse tunnel alive so the remote endpoint can dial back into that local server.
         let sshd_task = tokio::spawn(async move { sshd::run(server_options).await });
         let tunnel_task = tokio::spawn(async move { tunnel::run_reverse(client_options, local, remote).await });
 

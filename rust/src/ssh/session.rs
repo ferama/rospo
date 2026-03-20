@@ -43,6 +43,8 @@ impl Session {
             LOG.log(format_args!("connecting to hop {}@{}", hop.username, hop_addr));
 
             let mut handle = if let Some(previous) = previous_handle.take() {
+                // Each hop after the first is reached through a direct-tcpip channel opened on the
+                // previous authenticated SSH connection, mirroring the Go jump-host chain.
                 let channel = previous
                     .channel_open_direct_tcpip(hop.host.clone(), u32::from(hop.port), "127.0.0.1", 0)
                     .await
@@ -126,6 +128,8 @@ impl Session {
             .await
             .map_err(|err| err.to_string())?;
 
+        // Forward the usual locale-related environment so the remote PTY behaves like an OpenSSH
+        // interactive login instead of always falling back to the server defaults.
         for env_name in [
             "LANG",
             "LANGUAGE",
@@ -210,6 +214,8 @@ impl Session {
     }
 
     pub async fn send_keepalive_request(&self) -> Result<(), String> {
+        // Stock russh only exposes the OpenSSH-style ping request, so keepalive semantics here
+        // are liveness-based rather than tied to a custom rospo request name.
         self.handle.send_ping().await.map_err(|err| err.to_string())
     }
 

@@ -36,6 +36,8 @@ pub async fn run_forward(options: ClientOptions, local: Endpoint, remote: Endpoi
             remote
         ));
 
+        // Go uses the same 5-second cadence for reconnect backoff and tunnel liveness checks, so
+        // the Rust loop keeps both decisions on the same timer.
         let mut ping = time::interval(Duration::from_secs(RECONNECTION_INTERVAL_SECS));
         let mut should_reconnect = false;
 
@@ -116,6 +118,8 @@ pub async fn run_reverse(options: ClientOptions, local: Endpoint, remote: Endpoi
                     };
                     let local_addr = local.to_string();
                     tokio::spawn(async move {
+                        // Reverse tunnels terminate locally: each forwarded-tcpip channel from the
+                        // server is bridged into a fresh TCP connection on the local machine.
                         match TcpStream::connect(&local_addr).await {
                             Ok(socket) => proxy_streams(socket, forwarded.channel.into_stream()).await,
                             Err(err) => LOG.log(format_args!("dial INTO local service error. {}", err)),

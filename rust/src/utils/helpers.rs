@@ -32,6 +32,8 @@ pub fn get_user_default_shell(username: &str) -> String {
     #[cfg(not(windows))]
     {
         let fallback = "/bin/sh".to_string();
+        // Keep shell discovery dependency-free and close to the Go implementation by reading
+        // /etc/passwd directly instead of pulling in a platform-specific account lookup crate.
         let Ok(passwd) = fs::read_to_string("/etc/passwd") else {
             return fallback;
         };
@@ -69,6 +71,8 @@ pub fn write_file_0600(path: &Path, contents: &[u8]) -> Result<(), String> {
     {
         use std::os::unix::fs::PermissionsExt;
 
+        // Keys and known_hosts-style material should land with owner-only permissions, matching the
+        // expectations of OpenSSH tooling and the original Go code.
         let permissions = fs::Permissions::from_mode(0o600);
         fs::set_permissions(path, permissions).map_err(|err| err.to_string())?;
     }

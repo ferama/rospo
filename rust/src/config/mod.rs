@@ -119,6 +119,8 @@ where
         String(String),
     }
 
+    // Go/YAML users often rely on YAML 1.1 spellings like "yes"/"no" even though serde_yaml
+    // normalizes booleans more strictly when a field is typed as bool.
     match BoolCompat::deserialize(deserializer)? {
         BoolCompat::Bool(value) => Ok(value),
         BoolCompat::String(value) => match value.trim().to_ascii_lowercase().as_str() {

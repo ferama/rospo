@@ -94,6 +94,8 @@ fn build_client_options_from_server(
     jump_host_changed: bool,
 ) -> Result<ClientOptions, String> {
     let parsed = if let Some(host_conf) = get_default_ssh_config_host(server) {
+        // Match the Go client precedence: explicit CLI flags win, otherwise an exact Host entry in
+        // ~/.ssh/config can fill in identity, known_hosts, ProxyJump, and host-key policy.
         if !user_identity_changed {
             user_identity = expand_user_home(&host_conf.identity_file);
         }
@@ -141,6 +143,8 @@ fn build_client_options_from_server(
 fn build_jump_hosts(mut jump_host: Option<String>, mut user_identity: String) -> Result<Vec<JumpHostOptions>, String> {
     let mut jump_hosts = Vec::<JumpHostOptions>::new();
     while let Some(current) = jump_host.take() {
+        // ProxyJump chains can themselves reference named ssh_config hosts, so resolve one hop at a
+        // time and keep following ProxyJump until the chain terminates.
         if let Some(host_conf) = get_default_ssh_config_host(&current) {
             user_identity = expand_user_home(&host_conf.identity_file);
             jump_hosts.push(JumpHostOptions {
@@ -171,6 +175,8 @@ fn build_jump_hosts(mut jump_host: Option<String>, mut user_identity: String) ->
 fn jump_host_options_from_conf(conf: &[JumpHostConf]) -> Result<Vec<JumpHostOptions>, String> {
     let mut jump_hosts = Vec::new();
     for item in conf {
+        // Config-defined jump hosts bypass ~/.ssh/config expansion because the YAML already carries
+        // the resolved per-hop credentials we want to honor.
         let parsed = parse_ssh_url(&item.uri)?;
         let identity = if item.identity.is_empty() {
             format!("{}/.ssh/id_rsa", current_home_dir())

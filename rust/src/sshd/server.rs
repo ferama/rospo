@@ -155,6 +155,8 @@ impl server::Handler for Handler {
         channel: Channel<Msg>,
         _session: &mut server::Session,
     ) -> Result<bool, Self::Error> {
+        // Requests like env/pty/shell arrive after the session channel is opened, so stash the
+        // per-channel state up front and fill in the rest of the execution details lazily.
         self.state.channels.lock().await.insert(
             channel.id(),
             SessionChannelState {
@@ -304,6 +306,8 @@ impl server::Handler for Handler {
             .map(|state| (state.env.clone(), state.pty))
             .unwrap_or_default();
         session.channel_success(channel)?;
+        // The process layer decides whether this becomes a plain stdio child or a real PTY-backed
+        // shell based on the earlier pty-req state captured for the channel.
         spawn_shell(channel, session.handle(), self.state.clone(), env.0, env.1, None).await?;
         Ok(())
     }
@@ -415,6 +419,8 @@ impl server::Handler for Handler {
         let connected_address = address.to_string();
         let connected_port = *port;
         let task = tokio::spawn(async move {
+            // Each incoming TCP connection on the server listener becomes a forwarded-tcpip channel
+            // back to the SSH client, which then bridges it into the local target service.
             while let Ok((mut inbound, origin)) = listener.accept().await {
                 let origin_address = match origin.ip() {
                     std::net::IpAddr::V4(ip) => ip.to_string(),
