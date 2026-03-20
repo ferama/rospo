@@ -1,6 +1,8 @@
 mod common;
 
 use std::path::PathBuf;
+use std::process::{Command as StdCommand, Stdio};
+use std::io::Write;
 
 use rospo::socks;
 use rospo::ssh::{JumpHostOptions, Session};
@@ -9,7 +11,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use common::{
     authorized_keys_path, client_options_for, key_path, reserve_local_addr, start_http_hello_server, start_sshd,
-    wait_for_tcp,
+    start_sshd_full, unique_path, wait_for_tcp,
 };
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -140,4 +142,218 @@ async fn socks_proxy_transports_http_requests() {
 
     socks_task.abort();
     http_task.abort();
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn no_auth_server_accepts_authenticate_none() {
+    let server = start_sshd_full(Vec::new(), "", false, false, true).await;
+    let known_hosts = PathBuf::from(common::unique_path("rospo-known-hosts-no-auth"));
+    let options = client_options_for(&server.addr, "client", None, true, &known_hosts, Vec::new()).await;
+
+    let mut session = Session::connect(options).await.expect("connect with authenticate-none");
+    let status = session.run_command("true").await.expect("run command");
+    assert_eq!(status, 0);
+    session.disconnect().await.expect("disconnect");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn unknown_host_returns_trust_error() {
+    let server = start_sshd(vec![authorized_keys_path("authorized_keys")], "", false, false).await;
+    let endpoint = new_endpoint(&server.addr).expect("parse endpoint");
+    let known_hosts = PathBuf::from(unique_path("rospo-known-hosts-untrusted"));
+    let options = rospo::ssh::ClientOptions {
+        username: "ferama".to_string(),
+        host: endpoint.host,
+        port: endpoint.port,
+        identity: key_path("client"),
+        known_hosts,
+        password: None,
+        insecure: false,
+        quiet: true,
+        jump_hosts: Vec::new(),
+    };
+
+    let err = match Session::connect(options).await {
+        Ok(_) => panic!("unknown host should fail"),
+        Err(err) => err,
+    };
+    assert!(err.contains("is not trusted"), "unexpected error: {err}");
+    assert!(err.contains("rospo grabpubkey"), "unexpected error: {err}");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn malformed_known_hosts_returns_parse_error() {
+    let server = start_sshd(vec![authorized_keys_path("authorized_keys")], "", false, false).await;
+    let endpoint = new_endpoint(&server.addr).expect("parse endpoint");
+    let known_hosts = PathBuf::from(unique_path("rospo-known-hosts-malformed"));
+    std::fs::write(&known_hosts, "not-a-known-hosts-line\n").expect("write malformed known_hosts");
+    let options = rospo::ssh::ClientOptions {
+        username: "ferama".to_string(),
+        host: endpoint.host,
+        port: endpoint.port,
+        identity: key_path("client"),
+        known_hosts: known_hosts.clone(),
+        password: None,
+        insecure: false,
+        quiet: true,
+        jump_hosts: Vec::new(),
+    };
+
+    let err = match Session::connect(options).await {
+        Ok(_) => panic!("malformed known_hosts should fail"),
+        Err(err) => err,
+    };
+    assert!(
+        err.contains("error while parsing 'known_hosts' file"),
+        "unexpected error: {err}"
+    );
+    assert!(err.contains(known_hosts.to_str().expect("utf8 path")), "unexpected error: {err}");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn invalid_identity_still_allows_password_auth() {
+    let server = start_sshd(Vec::new(), "password", false, false).await;
+    let known_hosts = PathBuf::from(common::unique_path("rospo-known-hosts-invalid-identity"));
+    let options = rospo::ssh::ClientOptions {
+        username: "ferama".to_string(),
+        host: new_endpoint(&server.addr).expect("parse endpoint").host,
+        port: new_endpoint(&server.addr).expect("parse endpoint").port,
+        identity: PathBuf::from("/tmp/rospo-this-key-does-not-exist"),
+        known_hosts,
+        password: Some("password".to_string()),
+        insecure: true,
+        quiet: true,
+        jump_hosts: Vec::new(),
+    };
+
+    let mut session = Session::connect(options).await.expect("fallback to password auth");
+    let status = session.run_command("true").await.expect("run command");
+    assert_eq!(status, 0);
+    session.disconnect().await.expect("disconnect");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn keepalive_fails_after_disconnect() {
+    let server = start_sshd(vec![authorized_keys_path("authorized_keys")], "", false, false).await;
+    let known_hosts = PathBuf::from(common::unique_path("rospo-known-hosts-keepalive-disconnect"));
+    let options = client_options_for(&server.addr, "client", None, true, &known_hosts, Vec::new()).await;
+
+    let mut session = Session::connect(options).await.expect("connect");
+    session
+        .send_keepalive_request()
+        .await
+        .expect("keepalive before disconnect");
+    session.disconnect().await.expect("disconnect");
+    assert!(session.send_keepalive_request().await.is_err());
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn shell_cli_propagates_stdout_stderr_and_exit_code() {
+    let server = start_sshd(vec![authorized_keys_path("authorized_keys")], "", false, false).await;
+    let binary = PathBuf::from(env!("CARGO_BIN_EXE_rospo"));
+    let identity = key_path("client");
+    let server_arg = format!("ferama@{}", server.addr);
+
+    let output = StdCommand::new(binary)
+        .args([
+            "-q",
+            "shell",
+            "-b",
+            "-i",
+            "-s",
+            identity.to_str().expect("utf8 identity"),
+            &server_arg,
+            "sh -c 'printf out; printf err >&2; exit 7'",
+        ])
+        .output()
+        .expect("run rospo shell");
+
+    assert_eq!(output.status.code(), Some(7));
+    assert_eq!(String::from_utf8_lossy(&output.stdout), "out");
+    assert_eq!(String::from_utf8_lossy(&output.stderr), "err");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn shell_cli_prompts_for_password_when_flag_is_missing() {
+    let server = start_sshd(Vec::new(), "password", false, false).await;
+    let binary = PathBuf::from(env!("CARGO_BIN_EXE_rospo"));
+    let server_arg = format!("ferama@{}", server.addr);
+
+    let mut child = StdCommand::new(binary)
+        .args(["-q", "shell", "-i", &server_arg, "true"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn rospo shell without password");
+    let mut stdin = child.stdin.take().expect("child stdin");
+    stdin.write_all(b"password\n").expect("write prompted password");
+    drop(stdin);
+
+    let output = child.wait_with_output().expect("wait for rospo shell");
+    assert_eq!(output.status.code(), Some(0));
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("The server asks for a password"), "stdout: {stdout}");
+    assert!(stdout.contains("Password:"), "stdout: {stdout}");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn shell_cli_unknown_host_exits_with_trust_error() {
+    let server = start_sshd(vec![authorized_keys_path("authorized_keys")], "", false, false).await;
+    let binary = PathBuf::from(env!("CARGO_BIN_EXE_rospo"));
+    let identity = key_path("client");
+    let server_arg = format!("ferama@{}", server.addr);
+    let known_hosts = unique_path("rospo-cli-unknown-host-known-hosts");
+
+    let output = StdCommand::new(binary)
+        .args([
+            "-q",
+            "shell",
+            "-s",
+            identity.to_str().expect("utf8 identity"),
+            "-k",
+            known_hosts.to_str().expect("utf8 known_hosts"),
+            &server_arg,
+            "true",
+        ])
+        .output()
+        .expect("run rospo shell");
+
+    assert_eq!(output.status.code(), Some(1));
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("is not trusted"),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn shell_cli_malformed_known_hosts_exits_with_parse_error() {
+    let server = start_sshd(vec![authorized_keys_path("authorized_keys")], "", false, false).await;
+    let binary = PathBuf::from(env!("CARGO_BIN_EXE_rospo"));
+    let identity = key_path("client");
+    let server_arg = format!("ferama@{}", server.addr);
+    let known_hosts = unique_path("rospo-cli-malformed-known-hosts");
+    std::fs::write(&known_hosts, "not-a-known-hosts-line\n").expect("write malformed known_hosts");
+
+    let output = StdCommand::new(binary)
+        .args([
+            "-q",
+            "shell",
+            "-s",
+            identity.to_str().expect("utf8 identity"),
+            "-k",
+            known_hosts.to_str().expect("utf8 known_hosts"),
+            &server_arg,
+            "true",
+        ])
+        .output()
+        .expect("run rospo shell");
+
+    assert_eq!(output.status.code(), Some(1));
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("error while parsing 'known_hosts' file"),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 }

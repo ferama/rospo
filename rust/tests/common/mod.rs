@@ -61,6 +61,23 @@ pub async fn start_sshd(
     disable_shell: bool,
     disable_sftp_subsystem: bool,
 ) -> StartedServer {
+    start_sshd_full(
+        authorized_keys,
+        authorized_password,
+        disable_shell,
+        disable_sftp_subsystem,
+        false,
+    )
+    .await
+}
+
+pub async fn start_sshd_full(
+    authorized_keys: Vec<String>,
+    authorized_password: &str,
+    disable_shell: bool,
+    disable_sftp_subsystem: bool,
+    disable_auth: bool,
+) -> StartedServer {
     let tempdir = tempfile::tempdir().expect("create tempdir");
     let listen_address = reserve_local_addr();
     let options = ServerOptions {
@@ -70,7 +87,7 @@ pub async fn start_sshd(
         listen_address: listen_address.clone(),
         disable_shell,
         disable_banner: false,
-        disable_auth: false,
+        disable_auth,
         disable_sftp_subsystem,
         disable_tunnelling: false,
         shell_executable: String::new(),

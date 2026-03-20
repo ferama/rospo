@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
+use std::fs;
 
 use internal_russh_forked_ssh_key::PublicKey;
 use russh::client;
@@ -51,6 +52,7 @@ pub(crate) struct KeyGrabber {
 pub(crate) struct ClientHandler {
     pub(crate) options: ClientOptions,
     pub(crate) forwarded_sender: Option<mpsc::UnboundedSender<ForwardedTcpIp>>,
+    pub(crate) last_error: Arc<Mutex<Option<String>>>,
 }
 
 impl client::Handler for KeyGrabber {
@@ -85,6 +87,15 @@ impl client::Handler for ClientHandler {
         if !self.options.known_hosts.exists() {
             let _ = std::fs::write(&self.options.known_hosts, "");
         }
+        if let Err(err) = validate_known_hosts_file(&self.options.known_hosts) {
+            if let Ok(mut slot) = self.last_error.lock() {
+                *slot = Some(format!(
+                    "error while parsing 'known_hosts' file: {}: {err}",
+                    self.options.known_hosts.display()
+                ));
+            }
+            return Ok(false);
+        }
 
         match russh::keys::check_known_hosts_path(
             &self.options.host,
@@ -92,9 +103,36 @@ impl client::Handler for ClientHandler {
             server_public_key,
             &self.options.known_hosts,
         ) {
-            Ok(found) => Ok(found),
-            Err(_) => Ok(false),
+            Ok(true) => Ok(true),
+            Ok(false) => {
+                if let Ok(mut slot) = self.last_error.lock() {
+                    *slot = Some(format!(
+                        "ERROR: the host '{}:{}' is not trusted. If it is trusted instead,\n  please grab its pub key using the 'rospo grabpubkey' command",
+                        self.options.host, self.options.port
+                    ));
+                }
+                Ok(false)
+            }
+            Err(err) => {
+                if let Ok(mut slot) = self.last_error.lock() {
+                    *slot = Some(format!(
+                        "error while parsing 'known_hosts' file: {}: {err}",
+                        self.options.known_hosts.display()
+                    ));
+                }
+                Ok(false)
+            }
         }
+    }
+
+    async fn disconnected(
+        &mut self,
+        reason: client::DisconnectReason<Self::Error>,
+    ) -> Result<(), Self::Error> {
+        if let Ok(mut slot) = self.last_error.lock() {
+            *slot = Some(format!("server disconnected: {reason:?}"));
+        }
+        Ok(())
     }
 
     async fn server_channel_open_forwarded_tcpip(
@@ -117,4 +155,29 @@ impl client::Handler for ClientHandler {
         }
         Ok(())
     }
+}
+
+fn validate_known_hosts_file(path: &PathBuf) -> Result<(), String> {
+    let content = fs::read_to_string(path).map_err(|err| err.to_string())?;
+    for (idx, line) in content.lines().enumerate() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with('#') {
+            continue;
+        }
+        let mut parts = trimmed.split_whitespace();
+        let Some(_host) = parts.next() else {
+            continue;
+        };
+        let Some(key_type) = parts.next() else {
+            return Err(format!("invalid entry at line {}", idx + 1));
+        };
+        let Some(key_body) = parts.next() else {
+            return Err(format!("invalid entry at line {}", idx + 1));
+        };
+        let key_line = format!("{key_type} {key_body}");
+        if PublicKey::from_openssh(&key_line).is_err() {
+            return Err(format!("invalid entry at line {}", idx + 1));
+        }
+    }
+    Ok(())
 }

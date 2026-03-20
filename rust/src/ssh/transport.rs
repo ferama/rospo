@@ -1,6 +1,7 @@
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
+use std::io::{self, IsTerminal, Write};
 
 use internal_russh_forked_ssh_key::PublicKey;
 use russh::client;
@@ -85,9 +86,59 @@ pub(crate) async fn authenticate_handle(
         authenticated = auth.success();
     }
 
+    if !authenticated
+        && let Some(prompted) = prompt_for_password()?
+    {
+        let auth = handle
+            .authenticate_password(username.to_string(), prompted)
+            .await
+            .map_err(|err| err.to_string())?;
+        authenticated = auth.success();
+    }
+
     if authenticated {
         Ok(())
     } else {
         Err("authentication failed".to_string())
     }
+}
+
+fn prompt_for_password() -> Result<Option<String>, String> {
+    println!("\nThe server asks for a password");
+    print!("Password: ");
+    io::stdout().flush().map_err(|err| err.to_string())?;
+    let password = read_password_line()?;
+    println!();
+    if password.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(password))
+    }
+}
+
+#[cfg(unix)]
+fn read_password_line() -> Result<String, String> {
+    let stdin = io::stdin();
+    if !stdin.is_terminal() {
+        return read_password_line_plain();
+    }
+    let mut term = nix::sys::termios::tcgetattr(&stdin).map_err(|err| err.to_string())?;
+    let original = term.clone();
+    term.local_flags.remove(nix::sys::termios::LocalFlags::ECHO);
+    nix::sys::termios::tcsetattr(&stdin, nix::sys::termios::SetArg::TCSANOW, &term)
+        .map_err(|err| err.to_string())?;
+    let result = read_password_line_plain();
+    let _ = nix::sys::termios::tcsetattr(&stdin, nix::sys::termios::SetArg::TCSANOW, &original);
+    result
+}
+
+#[cfg(not(unix))]
+fn read_password_line() -> Result<String, String> {
+    read_password_line_plain()
+}
+
+fn read_password_line_plain() -> Result<String, String> {
+    let mut buf = String::new();
+    io::stdin().read_line(&mut buf).map_err(|err| err.to_string())?;
+    Ok(buf.trim_end_matches(&['\r', '\n'][..]).to_string())
 }

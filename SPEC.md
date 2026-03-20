@@ -548,13 +548,19 @@ Current Rust status:
 - SSH config integration exists
 - jump-host routing exists
 - known-hosts verification exists
+- untrusted-host failures now return an explicit trust error that points users at `rospo grabpubkey`
+- malformed `known_hosts` files are detected and reported explicitly
 - command and interactive shell paths exist
 - Unix client-side raw-terminal handling exists for interactive shells
 - Unix client-side PTY resize propagation exists
+- interactive password fallback exists when the CLI did not receive `-p/--password`
+- `authenticate_none` fallback is covered for no-auth servers
+- stdout/stderr separation and exit-status propagation are covered for the CLI shell path
 - service-style reconnect loops exist for tunnels
 - root/global quiet mode is wired into client-side runtime output suppression
 - stock `russh` keepalive/ping behavior is used
 - client keepalive behavior is regression-tested against the Rust `sshd`
+- post-disconnect keepalive attempts now fail immediately on the local client side
 
 ### SSH Server
 
@@ -737,9 +743,15 @@ Automated Rust coverage currently includes:
 - public-key serialization shape
 - known-hosts line format
 - secure SSH connect with known-hosts verification
+- unknown-host trust failure behavior
+- malformed `known_hosts` parse failure behavior
 - password-auth SSH connect
+- CLI password-prompt fallback when `-p/--password` is omitted
+- no-auth SSH connect through `authenticate_none`
 - jump-host SSH connect
 - shell-disabled rejection
+- shell CLI stdout/stderr separation and exit-code propagation
+- keepalive failure after explicit client disconnect
 - SOCKS end-to-end proxying
 - SFTP enabled/disabled subsystem behavior
 - large-file chunked SFTP upload/download roundtrip

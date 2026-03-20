@@ -1,6 +1,8 @@
 use russh::{client, client::Handle, Disconnect, Pty};
 use russh_sftp::client::SftpSession;
 use tokio::sync::mpsc;
+use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use super::interactive::{drain_channel, terminal_size};
 use super::transport::{authenticate_handle, build_client_config};
@@ -10,6 +12,7 @@ use super::LOG;
 pub struct Session {
     handle: Handle<ClientHandler>,
     forwarded_receiver: mpsc::UnboundedReceiver<ForwardedTcpIp>,
+    disconnected: Arc<AtomicBool>,
 }
 
 impl Session {
@@ -26,6 +29,7 @@ impl Session {
 
         for hop in &options.jump_hosts {
             let hop_addr = format_endpoint(&hop.host, hop.port);
+            let last_error = Arc::new(Mutex::new(None));
             let handler = ClientHandler {
                 options: ClientOptions {
                     username: hop.username.clone(),
@@ -39,6 +43,7 @@ impl Session {
                     jump_hosts: Vec::new(),
                 },
                 forwarded_sender: None,
+                last_error: last_error.clone(),
             };
             LOG.log(format_args!("connecting to hop {}@{}", hop.username, hop_addr));
 
@@ -56,12 +61,20 @@ impl Session {
                 match client::connect(build_client_config(), (hop.host.as_str(), hop.port), handler).await {
                     Ok(handle) => handle,
                     Err(err) => {
+                        if let Some(message) = take_handler_error(&last_error) {
+                            LOG.log(format_args!("{message}"));
+                            return Err(message);
+                        }
                         LOG.log(format_args!("dial INTO remote server error. {}", err));
                         return Err(err.to_string());
                     }
                 }
             };
 
+            if let Some(message) = take_handler_error(&last_error) {
+                LOG.log(format_args!("{message}"));
+                return Err(message);
+            }
             authenticate_handle(&mut handle, &hop.username, &hop.identity, hop.password.as_deref()).await?;
 
             LOG.log(format_args!("reached the jump host {}@{}", hop.username, hop_addr));
@@ -69,9 +82,11 @@ impl Session {
             previous_handle = Some(handle);
         }
 
+        let last_error = Arc::new(Mutex::new(None));
         let handler = ClientHandler {
             options: options.clone(),
             forwarded_sender: Some(forwarded_sender),
+            last_error: last_error.clone(),
         };
         let server_addr = format_endpoint(&options.host, options.port);
 
@@ -89,12 +104,20 @@ impl Session {
             match client::connect(build_client_config(), (options.host.as_str(), options.port), handler).await {
                 Ok(handle) => handle,
                 Err(err) => {
+                    if let Some(message) = take_handler_error(&last_error) {
+                        LOG.log(format_args!("{message}"));
+                        return Err(message);
+                    }
                     LOG.log(format_args!("dial INTO remote server error. {}", err));
                     return Err(err.to_string());
                 }
             }
         };
 
+        if let Some(message) = take_handler_error(&last_error) {
+            LOG.log(format_args!("{message}"));
+            return Err(message);
+        }
         authenticate_handle(
             &mut handle,
             &options.username,
@@ -108,6 +131,7 @@ impl Session {
         Ok(Self {
             handle,
             forwarded_receiver,
+            disconnected: Arc::new(AtomicBool::new(false)),
         })
     }
 
@@ -216,6 +240,9 @@ impl Session {
     pub async fn send_keepalive_request(&self) -> Result<(), String> {
         // Stock russh only exposes the OpenSSH-style ping request, so keepalive semantics here
         // are liveness-based rather than tied to a custom rospo request name.
+        if self.disconnected.load(Ordering::Relaxed) {
+            return Err("client already disconnected".to_string());
+        }
         self.handle.send_ping().await.map_err(|err| err.to_string())
     }
 
@@ -225,11 +252,16 @@ impl Session {
 
     pub async fn disconnect(&mut self) -> Result<(), String> {
         LOG.log(format_args!("disconnecting client"));
+        self.disconnected.store(true, Ordering::Relaxed);
         self.handle
             .disconnect(Disconnect::ByApplication, "", "English")
             .await
             .map_err(|err| err.to_string())
     }
+}
+
+fn take_handler_error(slot: &Arc<Mutex<Option<String>>>) -> Option<String> {
+    slot.lock().ok().and_then(|mut value| value.take())
 }
 
 fn format_endpoint(host: &str, port: u16) -> String {

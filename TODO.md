@@ -46,6 +46,8 @@ Already implemented in Rust:
 - upstream `russh` usage without a local patched dependency override
 - YAML 1.1-style boolean compatibility for config fields such as `forward: yes`
 - targeted maintainability comments in dense runtime, PTY, progress, config, and CLI-precedence code paths
+- SSH client trust-error handling for unknown hosts and malformed `known_hosts`
+- SSH client password-prompt fallback, no-auth coverage, disconnect-aware keepalive handling, and shell stdout/stderr/exit propagation coverage
 
 ## Highest Priority Remaining Work
 
@@ -78,15 +80,10 @@ Already implemented in Rust:
 
 ## SSH Client Work
 
-- verify stock keepalive behavior remains stable:
-  - 5-second timing
-  - disconnect handling
-- verify host-key failure wording and exit codes match Go
-- verify password-auth behavior and prompts against Go CLI/OpenSSH expectations
-- verify no-auth server behavior against Go across more combinations
-- verify stdout/stderr interleaving and exit-status propagation in more edge cases
-- verify identity-file loading behavior including encrypted/passphrase cases if Go supports them
-- verify malformed known-hosts behavior matches Go
+- verify stock keepalive behavior remains stable across longer-lived runtime sessions
+- verify password-auth prompt behavior against more real OpenSSH client/server combinations
+- verify stdout/stderr interleaving in more edge cases beyond the currently covered shell command path
+- confirm whether encrypted/passphrase identity files matter at all, since the Go client does not currently support them either
 
 ## Embedded SSH Server Work
 
