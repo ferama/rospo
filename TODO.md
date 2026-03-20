@@ -29,6 +29,8 @@ Already implemented in Rust:
 - non-placeholder `run` orchestration for implemented sections
 - HTTP/HTTPS `authorized_keys` support
 - Unix PTY-backed embedded-server shell handling
+- Windows service entrypoint and SCM detection
+- Windows ConPTY-backed embedded-server shell handling
 - root `-q/--quiet` acceptance and global quiet-mode suppression
 - Go-style stdout logger with timestamps, prefixes, ANSI colors, and quiet suppression
 - chunked concurrent single-file SFTP upload/download
@@ -38,9 +40,10 @@ Already implemented in Rust:
 ## Highest Priority Remaining Work
 
 - finish exact logging/output parity with the Go binary
-- finish Windows support:
-  - Windows service mode
-  - Windows PTY/ConPTY support
+- validate Windows support end to end:
+  - Windows service mode behavior
+  - Windows PTY/ConPTY behavior
+  - Windows-specific path, permission, and banner semantics
 - finish exact Go worker-pool/progress SFTP parity
 - finish exhaustive exit-code and malformed-invocation parity
 - automate mixed Go/Rust interoperability validation across the full matrix
@@ -78,7 +81,7 @@ Already implemented in Rust:
 
 ## Embedded SSH Server Work
 
-- implement Windows PTY behavior equivalent to the Go ConPTY path
+- verify the implemented Windows ConPTY behavior against the Go server path
 - verify shell/session behavior against Go in more OpenSSH client combinations
 - verify forwarding lifecycle and teardown behavior against Go more exhaustively
 - verify disable-auth behavior across mixed Go/Rust client-server combinations
@@ -132,8 +135,8 @@ Already implemented in Rust:
 
 - verify Linux runtime behavior end to end
 - verify macOS runtime behavior end to end
-- implement Windows service mode equivalent to Go `go-svc`
-- implement Windows ConPTY-backed shell/session handling
+- verify Windows service mode equivalent to Go `go-svc`
+- verify Windows ConPTY-backed shell/session handling
 - verify Windows banner suppression and shell behavior
 - verify Windows home/path expansion semantics
 - verify Windows file-permission semantics for key files
@@ -171,7 +174,7 @@ Already implemented in Rust:
 ## Current Known Gaps
 
 - logging parity is not done
-- Windows support is not done
+- Windows support is implemented but not yet validated
 - exact Go worker-pool/progress SFTP parity is not proven
 - full exit-code/error-text parity is not proven
 - full mixed Go/Rust automated interoperability coverage is not done

@@ -8,3 +8,5 @@ pub mod ssh;
 pub mod sshd;
 pub mod tunnel;
 pub mod utils;
+#[cfg(windows)]
+pub mod windows_service;

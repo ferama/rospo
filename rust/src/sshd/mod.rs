@@ -24,6 +24,11 @@ use crate::utils::{
     current_home_dir, current_username, expand_user_home, get_user_default_shell, write_file_0600,
 };
 
+#[cfg(windows)]
+mod windows_pty;
+#[cfg(windows)]
+use windows_pty::ConPtyProcess;
+
 const BANNER: &str = "\n .---------------.\n | 🐸 rospo sshd |\n .---------------.\n\n";
 const LOG: Logger = Logger::new("[SSHD] ", BLUE);
 
@@ -550,7 +555,12 @@ async fn spawn_shell(
 ) -> Result<(), russh::Error> {
     #[cfg(unix)]
     if let Some(pty) = pty {
-        return spawn_pty_shell(channel, handle, state, env, pty, command).await;
+        return spawn_pty_shell_unix(channel, handle, state, env, pty, command).await;
+    }
+
+    #[cfg(windows)]
+    if let Some(pty) = pty {
+        return spawn_pty_shell_windows(channel, handle, state, env, pty, command).await;
     }
 
     let mut cmd = build_command(&state.options.shell_executable, command);
@@ -601,7 +611,7 @@ async fn spawn_shell(
 }
 
 #[cfg(unix)]
-async fn spawn_pty_shell(
+async fn spawn_pty_shell_unix(
     channel: ChannelId,
     handle: server::Handle,
     state: SharedState,
@@ -677,6 +687,78 @@ async fn spawn_pty_shell(
     tokio::spawn(run_pty_reader(channel, handle.clone(), reader));
     tokio::spawn(run_pty_resizer(resizer_std, resize_rx));
     tokio::spawn(wait_for_child(channel, handle, child));
+
+    Ok(())
+}
+
+#[cfg(windows)]
+async fn spawn_pty_shell_windows(
+    channel: ChannelId,
+    handle: server::Handle,
+    state: SharedState,
+    _env: HashMap<String, String>,
+    pty: PtyRequest,
+    command: Option<String>,
+) -> Result<(), russh::Error> {
+    let runtime = tokio::runtime::Handle::current();
+    let process = ConPtyProcess::spawn(
+        &build_windows_pty_command_line(&state.options.shell_executable, command),
+        pty.cols as u16,
+        pty.rows as u16,
+    )
+    .map_err(russh::Error::IO)?;
+
+    let (stdin_tx, mut stdin_rx) = mpsc::unbounded_channel::<Vec<u8>>();
+    let (resize_tx, mut resize_rx) = mpsc::unbounded_channel::<(u32, u32)>();
+    if let Some(session) = state.channels.lock().await.get_mut(&channel) {
+        session.io = Some(ChannelIo::Pty(PtyHandle {
+            stdin_tx,
+            resize_tx,
+        }));
+    }
+
+    let reader_process = process.clone();
+    let reader_handle = handle.clone();
+    let reader_runtime = runtime.clone();
+    std::thread::spawn(move || {
+        let mut buf = vec![0u8; 16 * 1024];
+        loop {
+            match reader_process.read(&mut buf) {
+                Ok(0) => break,
+                Ok(n) => {
+                    let data = buf[..n].to_vec();
+                    let _ = reader_runtime.block_on(reader_handle.data(channel, data));
+                }
+                Err(_) => break,
+            }
+        }
+    });
+
+    let writer_process = process.clone();
+    std::thread::spawn(move || {
+        while let Some(bytes) = stdin_rx.blocking_recv() {
+            if writer_process.write_all(&bytes).is_err() {
+                break;
+            }
+        }
+    });
+
+    let resizer_process = process.clone();
+    std::thread::spawn(move || {
+        while let Some((cols, rows)) = resize_rx.blocking_recv() {
+            let _ = resizer_process.resize(cols as u16, rows as u16);
+        }
+    });
+
+    std::thread::spawn(move || {
+        let status = process.wait().unwrap_or(1);
+        process.close();
+        let _ = runtime.block_on(async move {
+            let _ = handle.exit_status_request(channel, status).await;
+            let _ = handle.eof(channel).await;
+            let _ = handle.close(channel).await;
+        });
+    });
 
     Ok(())
 }
@@ -801,6 +883,34 @@ fn build_command(shell_executable: &str, command: Option<String>) -> Command {
         cmd.arg("-c").arg(command);
     }
     cmd
+}
+
+#[cfg(windows)]
+fn build_windows_pty_command_line(shell_executable: &str, command: Option<String>) -> String {
+    let mut args = if shell_executable.trim().is_empty() {
+        vec!["powershell.exe".to_string()]
+    } else {
+        shell_executable
+            .split_whitespace()
+            .map(ToString::to_string)
+            .collect::<Vec<_>>()
+    };
+    if let Some(command) = command {
+        args.push(command);
+    }
+    args.into_iter()
+        .map(|arg| quote_windows_arg(&arg))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+#[cfg(windows)]
+fn quote_windows_arg(arg: &str) -> String {
+    if !arg.contains([' ', '\t', '"']) {
+        return arg.to_string();
+    }
+    let escaped = arg.replace('\\', "\\\\").replace('"', "\\\"");
+    format!("\"{escaped}\"")
 }
 
 fn apply_default_env(cmd: &mut Command, env: &HashMap<String, String>, shell_executable: &str) {

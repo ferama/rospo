@@ -278,7 +278,7 @@ Rust status:
   - root/global quiet-mode suppression for client-side banner and runtime logging
 - remaining gaps:
   - no interactive password prompt workflow beyond direct flag use
-  - Windows PTY behavior is not implemented
+  - Windows interactive client-side PTY behavior is not implemented
   - exact edge-case parity for stderr/stdout/exit-status is not yet exhaustively proven
 
 #### `socks-proxy [user@]host[:port]`
@@ -334,6 +334,7 @@ Rust status:
   - local-file and HTTP/HTTPS `authorized_keys` sources
   - Go-style `:2222` listen addresses
   - Unix PTY-backed shell sessions
+  - Windows ConPTY-backed shell sessions
 - note:
   - server-side keepalives are disabled to avoid OpenSSH auth-phase protocol errors
 
@@ -509,7 +510,9 @@ Current Rust status:
 - embedded SSH server exists
 - key auth, password auth, disable-auth, SFTP, shell/exec, forwarding, and HTTP/HTTPS `authorized_keys` exist
 - Unix PTY sessions exist
-- Windows PTY/service behavior does not exist yet
+- Windows ConPTY PTY path exists under `cfg(windows)`
+- Windows service entrypoint exists under `cfg(windows)`
+- Windows runtime parity is not yet validated on a Windows host
 
 ### Tunnels
 
@@ -607,8 +610,9 @@ Go behavior that must still be preserved exactly:
 Current Rust status:
 
 - Unix paths are exercised
-- Windows service mode is not implemented
-- Windows PTY/ConPTY behavior is not implemented
+- Windows service mode is implemented behind `cfg(windows)`
+- Windows PTY/ConPTY behavior is implemented behind `cfg(windows)`
+- this implementation was not live-validated on Windows from the current host
 - cross-platform parity is not yet verified
 
 ## Utility Behavior Captured So Far
@@ -678,6 +682,11 @@ Automated Rust coverage currently includes:
 - automated Rust client -> Go server interop for SFTP upload/download
 - automated Rust client -> Go server interop for forward tunnel
 - automated Rust client -> Go server interop for reverse tunnel
+- Unix-only PTY shell validation against Rust `sshd`
+
+Windows validation gap:
+
+- Windows-target compile/runtime validation could not be completed from the current macOS host because Cargo could not fetch Windows-target dependencies in the sandboxed no-network environment
 
 ### Live Go/Rust Interoperability Checks
 
@@ -738,6 +747,8 @@ Implemented in Rust:
 - non-placeholder `run` orchestration for implemented subsystems
 - HTTP/HTTPS `authorized_keys` loading
 - Unix PTY-backed interactive shell support in the embedded server
+- Windows service entrypoint and SCM detection
+- Windows ConPTY-backed PTY support in the embedded server
 - Go-style stdout logger with timestamps, prefixes, ANSI colors, and quiet suppression
 - automated Rust compatibility/integration tests for the implemented areas
 - automated Rust -> Go server interoperability tests for shell, SFTP, and tunnels
@@ -748,7 +759,7 @@ Not implemented or not yet fully equivalent:
 - exact Cobra failure/exit-code parity for all malformed invocations
 - exact Go worker-pool/progress SFTP equivalence
 - full side-by-side Go/Rust behavioral diff suite
-- Windows service mode
-- Windows ConPTY or equivalent PTY support
+- validated Windows service parity
+- validated Windows ConPTY/PTY parity
 - exhaustive mixed Go/Rust interoperability coverage
 - standalone Rust equivalents for Go-only helper packages `pkg/registry`, `pkg/worker`, and `pkg/rio`
