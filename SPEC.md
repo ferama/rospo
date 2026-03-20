@@ -139,7 +139,11 @@ Rust status:
 - resumable single-stream download is implemented
 - chunked concurrent single-file download is implemented
 - bounded concurrent recursive download scheduling is implemented
-- exact Go worker-pool/progress semantics are not yet proven equivalent
+- recursive download preserves the remote root directory name
+- resumed transfer progress accounting is implemented
+- downloaded file permissions are applied locally
+- Go-style worker-pool/retry semantics are implemented
+- user-visible progress rendering exists, but exact mpb-style output is not yet proven equivalent
 
 #### `grabpubkey host:port`
 
@@ -209,7 +213,10 @@ Rust status:
 - resumable single-stream upload is implemented
 - chunked concurrent single-file upload is implemented
 - bounded concurrent recursive upload scheduling is implemented
-- exact Go worker-pool/progress semantics are not yet proven equivalent
+- resumed transfer progress accounting is implemented
+- uploaded file permissions are pushed to the remote target
+- Go-style worker-pool/retry semantics are implemented
+- user-visible progress rendering exists, but exact mpb-style output is not yet proven equivalent
 
 #### `revshell [user@]host[:port]`
 
@@ -583,7 +590,11 @@ Current Rust status:
 - embedded server subsystem exists
 - chunked concurrent single-file transfer logic exists
 - bounded concurrent recursive transfer scheduling exists
-- exact Go worker-pool/progress behavior is not yet proven equivalent
+- recursive `get` preserves the remote root directory name
+- per-file resumed progress accounting exists for upload/download
+- local and remote permission preservation is implemented for transferred files
+- Go-style per-chunk retry worker behavior is implemented
+- exact mpb progress-bar output and mixed-version SFTP validation are not yet fully proven
 
 ### Logging
 
@@ -683,6 +694,8 @@ Automated Rust coverage currently includes:
 - SOCKS end-to-end proxying
 - SFTP enabled/disabled subsystem behavior
 - large-file chunked SFTP upload/download roundtrip
+- recursive SFTP download root-directory layout and permission preservation
+- resumed SFTP upload/download progress offset accounting
 - forward tunnel echo path
 - reverse tunnel echo path
 - automated Rust client -> Go server interop for shell
@@ -749,6 +762,10 @@ Implemented in Rust:
 - `put`
 - chunked concurrent single-file SFTP upload/download
 - bounded concurrent recursive SFTP scheduling
+- Go-style per-chunk retry worker behavior for SFTP transfers
+- resumed SFTP progress accounting
+- recursive SFTP `get` root-directory preservation
+- transferred-file permission preservation for SFTP upload/download
 - `tun forward`
 - `tun reverse`
 - `sshd`
@@ -766,7 +783,7 @@ Not implemented or not yet fully equivalent:
 
 - exact Go logging/output parity
 - exhaustive Cobra failure/exit-code parity for all malformed invocations
-- exact Go worker-pool/progress SFTP equivalence
+- exact Go mpb progress-bar formatting/output equivalence
 - full side-by-side Go/Rust behavioral diff suite
 - validated Windows service parity
 - validated Windows ConPTY/PTY parity

@@ -36,6 +36,10 @@ Already implemented in Rust:
 - Go-style stdout logger with timestamps, prefixes, ANSI colors, and quiet suppression
 - chunked concurrent single-file SFTP upload/download
 - bounded concurrent recursive SFTP transfer scheduling
+- Go-style per-chunk retry worker behavior for SFTP transfers
+- resumed SFTP progress accounting
+- recursive SFTP `get` root-directory preservation
+- transferred-file permission preservation for SFTP upload/download
 - maintainability refactor from large monolithic `mod.rs` files into package-style focused submodules for `cli`, `sshd`, `ssh`, `sftp`, and `utils`
 - Rust automated coverage for config, utils, keys, SSH, SSHD, SOCKS, tunnels, chunked SFTP, malformed CLI parity, and Rust->Go interop
 
@@ -46,7 +50,7 @@ Already implemented in Rust:
   - Windows service mode behavior
   - Windows PTY/ConPTY behavior
   - Windows-specific path, permission, and banner semantics
-- finish exact Go worker-pool/progress SFTP parity
+- finish exact Go mpb/progress-output parity for SFTP
 - finish exhaustive exit-code and malformed-invocation parity beyond the currently covered representative cases
 - automate mixed Go/Rust interoperability validation across the full matrix
 
@@ -112,11 +116,10 @@ Already implemented in Rust:
 
 ## SFTP Work
 
-- verify and tune the current chunked concurrent upload behavior against Go
-- verify and tune the current chunked concurrent download behavior against Go
-- port or emulate exact Go worker-pool behavior and limits
-- verify resume semantics match Go
-- verify recursive transfer edge cases against Go
+- verify exact mpb-style progress rendering and line formatting against Go
+- verify progress behavior on terminals versus non-terminals
+- verify remaining recursive transfer edge cases against Go
+- validate permission behavior against mixed Go/Rust server-client combinations
 - extend automated mixed Go/Rust SFTP coverage beyond the current Rust-client-to-Go-server cases
 
 ## `run` Command Work
@@ -177,7 +180,7 @@ Already implemented in Rust:
 
 - logging parity is not done
 - Windows support is implemented but not yet validated
-- exact Go worker-pool/progress SFTP parity is not proven
+- exact Go mpb/progress-output SFTP parity is not proven
 - full exit-code/error-text parity is not proven beyond the currently covered malformed-invocation cases
 - full mixed Go/Rust automated interoperability coverage is not done
 - some Go test coverage has no direct Rust module equivalent yet

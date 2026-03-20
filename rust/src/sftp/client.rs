@@ -1,9 +1,12 @@
+use std::collections::VecDeque;
 use std::path::Path;
+use std::sync::Arc;
 
 use futures::stream::{FuturesUnordered, StreamExt};
-use russh_sftp::protocol::OpenFlags;
+use russh_sftp::protocol::{FileAttributes, OpenFlags};
 use tokio::fs;
-use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncSeekExt, AsyncWrite, AsyncWriteExt};
+use tokio::sync::mpsc;
 
 use crate::ssh::{ClientOptions, Session};
 
@@ -11,7 +14,7 @@ use super::paths::{
     build_chunks, canonicalize_or, ensure_remote_dir, remote_join, remote_parent, resolve_local_target,
     resolve_remote_target,
 };
-use super::types::{Client, DownloadJob, TransferOptions, UploadJob};
+use super::types::{Client, DownloadJob, ProgressReporter, TransferOptions, UploadJob};
 
 impl Client {
     pub async fn connect(options: ClientOptions) -> Result<Self, String> {
@@ -41,6 +44,17 @@ impl Client {
         local: &str,
         options: TransferOptions,
     ) -> Result<(), String> {
+        self.get_file_with_options_and_progress(remote, local, options, None)
+            .await
+    }
+
+    pub async fn get_file_with_options_and_progress(
+        &self,
+        remote: &str,
+        local: &str,
+        options: TransferOptions,
+        progress: Option<Arc<dyn ProgressReporter>>,
+    ) -> Result<(), String> {
         let remote_path = canonicalize_or(remote, ".", &self.sftp).await?;
         let remote_meta = self
             .sftp
@@ -61,12 +75,26 @@ impl Client {
             return Ok(());
         }
 
-        if options.max_workers <= 1 || size.saturating_sub(offset) as usize <= super::DEFAULT_CHUNK_SIZE {
-            return self.copy_file_download(&remote_path, &local_path, offset).await;
-        }
-
-        self.download_chunks(&remote_path, &local_path, offset, size, options.max_workers)
+        let (progress_tx, progress_join) =
+            self.start_progress(progress, size, offset, remote_path.clone(), options.max_workers.max(1));
+        let result = if options.max_workers <= 1 || size.saturating_sub(offset) as usize <= super::DEFAULT_CHUNK_SIZE {
+            self.copy_file_download(&remote_path, &local_path, offset, progress_tx.clone())
+                .await
+        } else {
+            self.download_chunks(
+                &remote_path,
+                &local_path,
+                offset,
+                size,
+                options.max_workers,
+                progress_tx.clone(),
+            )
             .await
+        };
+        drop(progress_tx);
+        self.finish_progress(progress_join).await?;
+        result?;
+        set_local_permissions(Path::new(&local_path), remote_meta.permissions).await
     }
 
     pub async fn put_file_with_options(
@@ -74,6 +102,17 @@ impl Client {
         remote: &str,
         local: &str,
         options: TransferOptions,
+    ) -> Result<(), String> {
+        self.put_file_with_options_and_progress(remote, local, options, None)
+            .await
+    }
+
+    pub async fn put_file_with_options_and_progress(
+        &self,
+        remote: &str,
+        local: &str,
+        options: TransferOptions,
+        progress: Option<Arc<dyn ProgressReporter>>,
     ) -> Result<(), String> {
         let local_meta = fs::metadata(local).await.map_err(|err| err.to_string())?;
         if local_meta.is_dir() {
@@ -94,12 +133,26 @@ impl Client {
             ensure_remote_dir(&self.sftp, &parent).await?;
         }
 
-        if options.max_workers <= 1 || size.saturating_sub(offset) as usize <= super::DEFAULT_CHUNK_SIZE {
-            return self.copy_file_upload(&remote_target, local, offset).await;
-        }
-
-        self.upload_chunks(&remote_target, local, offset, size, options.max_workers)
+        let (progress_tx, progress_join) =
+            self.start_progress(progress, size, offset, remote_target.clone(), options.max_workers.max(1));
+        let result = if options.max_workers <= 1 || size.saturating_sub(offset) as usize <= super::DEFAULT_CHUNK_SIZE {
+            self.copy_file_upload(&remote_target, local, offset, progress_tx.clone())
+                .await
+        } else {
+            self.upload_chunks(
+                &remote_target,
+                local,
+                offset,
+                size,
+                options.max_workers,
+                progress_tx.clone(),
+            )
             .await
+        };
+        drop(progress_tx);
+        self.finish_progress(progress_join).await?;
+        result?;
+        set_remote_permissions(&self.sftp, &remote_target, local_mode(&local_meta)).await
     }
 
     pub async fn get_recursive(&self, remote: &str, local: &str) -> Result<(), String> {
@@ -118,6 +171,17 @@ impl Client {
         local: &str,
         options: TransferOptions,
     ) -> Result<(), String> {
+        self.get_recursive_with_options_and_progress(remote, local, options, None)
+            .await
+    }
+
+    pub async fn get_recursive_with_options_and_progress(
+        &self,
+        remote: &str,
+        local: &str,
+        options: TransferOptions,
+        progress: Option<Arc<dyn ProgressReporter>>,
+    ) -> Result<(), String> {
         let remote_root = canonicalize_or(remote, ".", &self.sftp).await?;
         let remote_meta = self
             .sftp
@@ -132,10 +196,19 @@ impl Client {
             return Err(format!("local path is not a directory: {local}"));
         }
 
+        let root_name = Path::new(&remote_root)
+            .file_name()
+            .ok_or_else(|| format!("invalid remote path: {remote_root}"))?
+            .to_string_lossy()
+            .into_owned();
+        let local_root = Path::new(local).join(root_name);
+        fs::create_dir_all(&local_root).await.map_err(|err| err.to_string())?;
+        set_local_permissions(&local_root, remote_meta.permissions).await?;
+
         let mut jobs = Vec::new();
-        self.collect_remote_jobs(&remote_root, Path::new(local), &remote_root, &mut jobs)
+        self.collect_remote_jobs(&remote_root, &local_root, &remote_root, &mut jobs)
             .await?;
-        self.run_download_jobs(jobs, options).await
+        self.run_download_jobs(jobs, options, progress).await
     }
 
     pub async fn put_recursive_with_options(
@@ -143,6 +216,17 @@ impl Client {
         remote: &str,
         local: &str,
         options: TransferOptions,
+    ) -> Result<(), String> {
+        self.put_recursive_with_options_and_progress(remote, local, options, None)
+            .await
+    }
+
+    pub async fn put_recursive_with_options_and_progress(
+        &self,
+        remote: &str,
+        local: &str,
+        options: TransferOptions,
+        progress: Option<Arc<dyn ProgressReporter>>,
     ) -> Result<(), String> {
         let local_meta = fs::metadata(local).await.map_err(|err| err.to_string())?;
         if !local_meta.is_dir() {
@@ -169,10 +253,16 @@ impl Client {
 
         let mut jobs = Vec::new();
         self.collect_local_jobs(Path::new(local), &target_root, &mut jobs).await?;
-        self.run_upload_jobs(jobs, options).await
+        self.run_upload_jobs(jobs, options, progress).await
     }
 
-    async fn copy_file_download(&self, remote_path: &str, local_path: &str, offset: u64) -> Result<(), String> {
+    async fn copy_file_download(
+        &self,
+        remote_path: &str,
+        local_path: &str,
+        offset: u64,
+        progress_tx: Option<mpsc::Sender<u64>>,
+    ) -> Result<(), String> {
         let mut remote_file = self
             .sftp
             .open(remote_path.to_string())
@@ -196,22 +286,23 @@ impl Client {
                 .map_err(|err| err.to_string())?;
         }
 
-        tokio::io::copy(&mut remote_file, &mut local_file)
-            .await
-            .map_err(|err| err.to_string())?;
+        copy_stream_with_progress(&mut remote_file, &mut local_file, progress_tx).await?;
         local_file.flush().await.map_err(|err| err.to_string())?;
         remote_file.shutdown().await.map_err(|err| err.to_string())?;
         Ok(())
     }
 
-    async fn copy_file_upload(&self, remote_target: &str, local: &str, offset: u64) -> Result<(), String> {
+    async fn copy_file_upload(
+        &self,
+        remote_target: &str,
+        local: &str,
+        offset: u64,
+        progress_tx: Option<mpsc::Sender<u64>>,
+    ) -> Result<(), String> {
         let mut local_file = fs::File::open(local).await.map_err(|err| err.to_string())?;
         let mut remote_file = self
             .sftp
-            .open_with_flags(
-                remote_target.to_string(),
-                OpenFlags::CREATE | OpenFlags::WRITE | OpenFlags::READ,
-            )
+            .open_with_flags(remote_target.to_string(), OpenFlags::CREATE | OpenFlags::WRITE)
             .await
             .map_err(|err| err.to_string())?;
 
@@ -226,9 +317,7 @@ impl Client {
                 .map_err(|err| err.to_string())?;
         }
 
-        tokio::io::copy(&mut local_file, &mut remote_file)
-            .await
-            .map_err(|err| err.to_string())?;
+        copy_stream_with_progress(&mut local_file, &mut remote_file, progress_tx).await?;
         remote_file.flush().await.map_err(|err| err.to_string())?;
         remote_file.shutdown().await.map_err(|err| err.to_string())?;
         Ok(())
@@ -241,15 +330,21 @@ impl Client {
         offset: u64,
         size: u64,
         max_workers: usize,
+        progress_tx: Option<mpsc::Sender<u64>>,
     ) -> Result<(), String> {
-        let mut chunks = build_chunks(offset, size);
+        let mut chunks = VecDeque::from(build_chunks(offset, size));
         let mut in_flight = FuturesUnordered::new();
         let limit = max_workers.max(1);
 
         while !chunks.is_empty() || !in_flight.is_empty() {
             while in_flight.len() < limit && !chunks.is_empty() {
-                let chunk = chunks.remove(0);
-                in_flight.push(self.download_chunk(remote_path, local_path, chunk));
+                let chunk = chunks.pop_front().expect("chunk available");
+                in_flight.push(self.retry_download_chunk(
+                    remote_path.to_string(),
+                    local_path.to_string(),
+                    chunk,
+                    progress_tx.clone(),
+                ));
             }
             if let Some(result) = in_flight.next().await {
                 result?;
@@ -265,15 +360,21 @@ impl Client {
         offset: u64,
         size: u64,
         max_workers: usize,
+        progress_tx: Option<mpsc::Sender<u64>>,
     ) -> Result<(), String> {
-        let mut chunks = build_chunks(offset, size);
+        let mut chunks = VecDeque::from(build_chunks(offset, size));
         let mut in_flight = FuturesUnordered::new();
         let limit = max_workers.max(1);
 
         while !chunks.is_empty() || !in_flight.is_empty() {
             while in_flight.len() < limit && !chunks.is_empty() {
-                let chunk = chunks.remove(0);
-                in_flight.push(self.upload_chunk(remote_target, local, chunk));
+                let chunk = chunks.pop_front().expect("chunk available");
+                in_flight.push(self.retry_upload_chunk(
+                    remote_target.to_string(),
+                    local.to_string(),
+                    chunk,
+                    progress_tx.clone(),
+                ));
             }
             if let Some(result) = in_flight.next().await {
                 result?;
@@ -282,7 +383,52 @@ impl Client {
         Ok(())
     }
 
-    async fn download_chunk(&self, remote_path: &str, local_path: &str, chunk: super::types::Chunk) -> Result<(), String> {
+    async fn retry_download_chunk(
+        &self,
+        remote_path: String,
+        local_path: String,
+        chunk: super::types::Chunk,
+        progress_tx: Option<mpsc::Sender<u64>>,
+    ) -> Result<(), String> {
+        loop {
+            match self.download_chunk(&remote_path, &local_path, chunk.clone()).await {
+                Ok(written) => {
+                    if let Some(tx) = &progress_tx {
+                        let _ = tx.send(written).await;
+                    }
+                    return Ok(());
+                }
+                Err(_) => continue,
+            }
+        }
+    }
+
+    async fn retry_upload_chunk(
+        &self,
+        remote_target: String,
+        local: String,
+        chunk: super::types::Chunk,
+        progress_tx: Option<mpsc::Sender<u64>>,
+    ) -> Result<(), String> {
+        loop {
+            match self.upload_chunk(&remote_target, &local, chunk.clone()).await {
+                Ok(written) => {
+                    if let Some(tx) = &progress_tx {
+                        let _ = tx.send(written).await;
+                    }
+                    return Ok(());
+                }
+                Err(_) => continue,
+            }
+        }
+    }
+
+    async fn download_chunk(
+        &self,
+        remote_path: &str,
+        local_path: &str,
+        chunk: super::types::Chunk,
+    ) -> Result<u64, String> {
         let mut remote_file = self
             .sftp
             .open(remote_path.to_string())
@@ -317,10 +463,16 @@ impl Client {
                 .map_err(|err| err.to_string())?;
             remaining -= n as u64;
         }
-        local_file.flush().await.map_err(|err| err.to_string())
+        local_file.flush().await.map_err(|err| err.to_string())?;
+        Ok(chunk.len)
     }
 
-    async fn upload_chunk(&self, remote_target: &str, local: &str, chunk: super::types::Chunk) -> Result<(), String> {
+    async fn upload_chunk(
+        &self,
+        remote_target: &str,
+        local: &str,
+        chunk: super::types::Chunk,
+    ) -> Result<u64, String> {
         let mut local_file = fs::File::open(local).await.map_err(|err| err.to_string())?;
         local_file
             .seek(std::io::SeekFrom::Start(chunk.offset))
@@ -328,10 +480,7 @@ impl Client {
             .map_err(|err| err.to_string())?;
         let mut remote_file = self
             .sftp
-            .open_with_flags(
-                remote_target.to_string(),
-                OpenFlags::CREATE | OpenFlags::WRITE | OpenFlags::READ,
-            )
+            .open_with_flags(remote_target.to_string(), OpenFlags::CREATE | OpenFlags::WRITE)
             .await
             .map_err(|err| err.to_string())?;
         remote_file
@@ -353,7 +502,8 @@ impl Client {
                 .map_err(|err| err.to_string())?;
             remaining -= n as u64;
         }
-        remote_file.flush().await.map_err(|err| err.to_string())
+        remote_file.flush().await.map_err(|err| err.to_string())?;
+        Ok(chunk.len)
     }
 
     async fn collect_remote_jobs(
@@ -363,7 +513,12 @@ impl Client {
         current_remote: &str,
         jobs: &mut Vec<DownloadJob>,
     ) -> Result<(), String> {
-        for entry in self.sftp.read_dir(current_remote.to_string()).await.map_err(|err| err.to_string())? {
+        for entry in self
+            .sftp
+            .read_dir(current_remote.to_string())
+            .await
+            .map_err(|err| err.to_string())?
+        {
             let remote_path = remote_join(current_remote, &entry.file_name());
             let rel = remote_path
                 .strip_prefix(root_remote)
@@ -372,6 +527,7 @@ impl Client {
             let local_path = local_root.join(rel);
             if entry.metadata().is_dir() {
                 fs::create_dir_all(&local_path).await.map_err(|err| err.to_string())?;
+                set_local_permissions(&local_path, entry.metadata().permissions).await?;
                 Box::pin(self.collect_remote_jobs(root_remote, local_root, &remote_path, jobs)).await?;
             } else {
                 jobs.push(DownloadJob {
@@ -383,7 +539,12 @@ impl Client {
         Ok(())
     }
 
-    async fn collect_local_jobs(&self, current_local: &Path, current_remote: &str, jobs: &mut Vec<UploadJob>) -> Result<(), String> {
+    async fn collect_local_jobs(
+        &self,
+        current_local: &Path,
+        current_remote: &str,
+        jobs: &mut Vec<UploadJob>,
+    ) -> Result<(), String> {
         let mut entries = fs::read_dir(current_local).await.map_err(|err| err.to_string())?;
         while let Some(entry) = entries.next_entry().await.map_err(|err| err.to_string())? {
             let local_path = entry.path();
@@ -402,7 +563,12 @@ impl Client {
         Ok(())
     }
 
-    async fn run_download_jobs(&self, jobs: Vec<DownloadJob>, options: TransferOptions) -> Result<(), String> {
+    async fn run_download_jobs(
+        &self,
+        jobs: Vec<DownloadJob>,
+        options: TransferOptions,
+        progress: Option<Arc<dyn ProgressReporter>>,
+    ) -> Result<(), String> {
         let mut iter = jobs.into_iter();
         let mut in_flight = FuturesUnordered::new();
         let limit = options.concurrent_files.max(1);
@@ -414,9 +580,15 @@ impl Client {
                 };
                 let remote = job.remote;
                 let local = job.local;
+                let progress = progress.clone();
                 in_flight.push(async move {
-                    self.get_file_with_options(&remote, &local, TransferOptions::new(options.max_workers, 1))
-                        .await
+                    self.get_file_with_options_and_progress(
+                        &remote,
+                        &local,
+                        TransferOptions::new(options.max_workers, 1),
+                        progress,
+                    )
+                    .await
                 });
             }
             if let Some(result) = in_flight.next().await {
@@ -426,7 +598,12 @@ impl Client {
         Ok(())
     }
 
-    async fn run_upload_jobs(&self, jobs: Vec<UploadJob>, options: TransferOptions) -> Result<(), String> {
+    async fn run_upload_jobs(
+        &self,
+        jobs: Vec<UploadJob>,
+        options: TransferOptions,
+        progress: Option<Arc<dyn ProgressReporter>>,
+    ) -> Result<(), String> {
         let mut iter = jobs.into_iter();
         let mut in_flight = FuturesUnordered::new();
         let limit = options.concurrent_files.max(1);
@@ -438,9 +615,15 @@ impl Client {
                 };
                 let remote = job.remote;
                 let local = job.local;
+                let progress = progress.clone();
                 in_flight.push(async move {
-                    self.put_file_with_options(&remote, &local, TransferOptions::new(options.max_workers, 1))
-                        .await
+                    self.put_file_with_options_and_progress(
+                        &remote,
+                        &local,
+                        TransferOptions::new(options.max_workers, 1),
+                        progress,
+                    )
+                    .await
                 });
             }
             if let Some(result) = in_flight.next().await {
@@ -449,4 +632,106 @@ impl Client {
         }
         Ok(())
     }
+
+    fn start_progress(
+        &self,
+        progress: Option<Arc<dyn ProgressReporter>>,
+        size: u64,
+        offset: u64,
+        file_name: String,
+        capacity: usize,
+    ) -> (Option<mpsc::Sender<u64>>, Option<tokio::task::JoinHandle<()>>) {
+        let Some(progress) = progress else {
+            return (None, None);
+        };
+        let (progress_tx, progress_rx) = mpsc::channel(capacity.max(1));
+        let progress_join = progress.spawn(size, offset, file_name, progress_rx);
+        (Some(progress_tx), Some(progress_join))
+    }
+
+    async fn finish_progress(
+        &self,
+        progress_join: Option<tokio::task::JoinHandle<()>>,
+    ) -> Result<(), String> {
+        if let Some(join) = progress_join {
+            join.await.map_err(|err| err.to_string())?;
+        }
+        Ok(())
+    }
+}
+
+async fn copy_stream_with_progress<R, W>(
+    reader: &mut R,
+    writer: &mut W,
+    progress_tx: Option<mpsc::Sender<u64>>,
+) -> Result<(), String>
+where
+    R: AsyncRead + Unpin,
+    W: AsyncWrite + Unpin,
+{
+    let mut buf = vec![0u8; 32 * 1024];
+    loop {
+        let n = reader.read(&mut buf).await.map_err(|err| err.to_string())?;
+        if n == 0 {
+            break;
+        }
+        writer
+            .write_all(&buf[..n])
+            .await
+            .map_err(|err| err.to_string())?;
+        if let Some(tx) = &progress_tx {
+            let _ = tx.send(n as u64).await;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(unix)]
+fn local_mode(metadata: &std::fs::Metadata) -> u32 {
+    use std::os::unix::fs::PermissionsExt;
+
+    metadata.permissions().mode()
+}
+
+#[cfg(not(unix))]
+fn local_mode(metadata: &std::fs::Metadata) -> u32 {
+    if metadata.permissions().readonly() {
+        0o555
+    } else {
+        0o777
+    }
+}
+
+async fn set_remote_permissions(
+    sftp: &russh_sftp::client::SftpSession,
+    remote_path: &str,
+    permissions: u32,
+) -> Result<(), String> {
+    let mut metadata = FileAttributes::empty();
+    metadata.permissions = Some(permissions);
+    sftp.set_metadata(remote_path.to_string(), metadata)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+async fn set_local_permissions(path: &Path, permissions: Option<u32>) -> Result<(), String> {
+    let Some(permissions) = permissions else {
+        return Ok(());
+    };
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+
+        fs::set_permissions(path, std::fs::Permissions::from_mode(permissions & 0o777))
+            .await
+            .map_err(|err| err.to_string())?;
+    }
+    #[cfg(not(unix))]
+    {
+        let readonly = permissions & 0o222 == 0;
+        let mut perms = fs::metadata(path).await.map_err(|err| err.to_string())?.permissions();
+        perms.set_readonly(readonly);
+        fs::set_permissions(path, perms).await.map_err(|err| err.to_string())?;
+    }
+    Ok(())
 }

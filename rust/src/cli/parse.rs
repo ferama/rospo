@@ -236,7 +236,11 @@ fn parse_ssh_flags_and_positionals(
 ) -> Result<(ClientOptions, Vec<String>, bool, usize, usize), String> {
     let default_identity = format!("{}/.ssh/id_rsa", current_home_dir());
     let default_known_hosts = format!("{}/.ssh/known_hosts", current_home_dir());
-    let mut max_workers = sftp::DEFAULT_MAX_WORKERS;
+    let mut max_workers = if command_name == "get" {
+        sftp::DEFAULT_DOWNLOAD_MAX_WORKERS
+    } else {
+        sftp::DEFAULT_UPLOAD_MAX_WORKERS
+    };
     let mut concurrent_transfers = if command_name == "get" {
         sftp::DEFAULT_CONCURRENT_DOWNLOADS
     } else {

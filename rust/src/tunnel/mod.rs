@@ -64,7 +64,7 @@ pub async fn run_forward(options: ClientOptions, local: Endpoint, remote: Endpoi
                     tokio::spawn(proxy_streams(socket, channel.into_stream()));
                 }
                 _ = ping.tick() => {
-                    if session.send_ping().await.is_err() {
+                    if session.send_keepalive_request().await.is_err() {
                         should_reconnect = true;
                     }
                 }
@@ -119,7 +119,7 @@ pub async fn run_reverse(options: ClientOptions, local: Endpoint, remote: Endpoi
                     });
                 }
                 _ = ping.tick() => {
-                    if session.send_ping().await.is_err() {
+                    if session.send_checkalive_request().await.is_err() {
                         LOG.log(format_args!("disconnected"));
                         should_reconnect = true;
                     }

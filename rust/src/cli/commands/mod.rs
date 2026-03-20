@@ -4,3 +4,4 @@ pub(crate) mod proxy;
 pub(crate) mod server;
 pub(crate) mod shell;
 pub(crate) mod transfer;
+pub(crate) mod transfer_progress;

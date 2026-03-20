@@ -3,6 +3,8 @@ use crate::cli::CliResponse;
 use crate::sftp::{self, TransferOptions};
 use crate::tunnel;
 
+use super::transfer_progress::ProgressManager;
+
 pub(crate) fn tun_command(rest: &[String]) -> CliResponse {
     match parse_tun_command(rest) {
         Ok(parsed) => {
@@ -46,17 +48,29 @@ pub(crate) fn get_command(rest: &[String]) -> CliResponse {
                 Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
             };
             let result = runtime.block_on(async move {
+                let progress = std::sync::Arc::new(ProgressManager::download());
                 let mut client = sftp::Client::connect(parsed.options).await?;
                 let transfer = TransferOptions::new(parsed.max_workers, parsed.concurrent_transfers);
                 let result = if parsed.recursive {
                     client
-                        .get_recursive_with_options(&parsed.remote, &parsed.local, transfer)
+                        .get_recursive_with_options_and_progress(
+                            &parsed.remote,
+                            &parsed.local,
+                            transfer,
+                            Some(progress.clone()),
+                        )
                         .await
                 } else {
                     client
-                        .get_file_with_options(&parsed.remote, &parsed.local, transfer)
+                        .get_file_with_options_and_progress(
+                            &parsed.remote,
+                            &parsed.local,
+                            transfer,
+                            Some(progress.clone()),
+                        )
                         .await
                 };
+                let _ = progress.finish().await;
                 let _ = client.close().await;
                 result
             });
@@ -80,17 +94,29 @@ pub(crate) fn put_command(rest: &[String]) -> CliResponse {
                 Err(err) => return CliResponse::failure(format!("{err}\n"), 1),
             };
             let result = runtime.block_on(async move {
+                let progress = std::sync::Arc::new(ProgressManager::upload());
                 let mut client = sftp::Client::connect(parsed.options).await?;
                 let transfer = TransferOptions::new(parsed.max_workers, parsed.concurrent_transfers);
                 let result = if parsed.recursive {
                     client
-                        .put_recursive_with_options(&parsed.remote, &parsed.local, transfer)
+                        .put_recursive_with_options_and_progress(
+                            &parsed.remote,
+                            &parsed.local,
+                            transfer,
+                            Some(progress.clone()),
+                        )
                         .await
                 } else {
                     client
-                        .put_file_with_options(&parsed.remote, &parsed.local, transfer)
+                        .put_file_with_options_and_progress(
+                            &parsed.remote,
+                            &parsed.local,
+                            transfer,
+                            Some(progress.clone()),
+                        )
                         .await
                 };
+                let _ = progress.finish().await;
                 let _ = client.close().await;
                 result
             });
