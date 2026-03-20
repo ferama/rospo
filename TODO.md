@@ -36,6 +36,7 @@ Already implemented in Rust:
 - Go-style stdout logger with timestamps, prefixes, ANSI colors, and quiet suppression
 - chunked concurrent single-file SFTP upload/download
 - bounded concurrent recursive SFTP transfer scheduling
+- maintainability refactor from large monolithic `mod.rs` files into package-style focused submodules for `cli`, `sshd`, `ssh`, `sftp`, and `utils`
 - Rust automated coverage for config, utils, keys, SSH, SSHD, SOCKS, tunnels, chunked SFTP, malformed CLI parity, and Rust->Go interop
 
 ## Highest Priority Remaining Work
@@ -54,7 +55,7 @@ Already implemented in Rust:
 - verify exact exit codes for all success and failure paths, not just the currently covered ones
 - extend the current malformed-invocation regression coverage to all commands and more edge cases
 - verify `help` subcommand parity beyond the currently captured combinations
-- decide whether the current manual parsing approach is sufficient long term or if a lower-risk parser abstraction is needed
+- keep the current split parsing modules maintainable while preserving exact Go/Cobra-compatible behavior
 
 ## Config Layer Work
 

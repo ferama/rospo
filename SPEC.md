@@ -23,6 +23,8 @@ Repository artifacts currently used as compatibility oracles:
 
 - Go contract summary: `docs/migration/go_inventory.md`
 - Interim migration report: `docs/migration/report.md`
+- Architecture snapshot: `ARCHITECTURE.md`
+- Design decision log: `DECISIONS.md`
 - Go CLI golden fixtures: `compat/golden/cli`
 - Go runtime/config/parser fixtures: `compat/golden/runtime`
 - Go baseline capture script: `scripts/capture_go_baselines.sh`
@@ -487,7 +489,7 @@ Go behavior that must still be preserved exactly:
 
 Current Rust status:
 
-- real transport exists in `rust/src/ssh/mod.rs`
+- real transport exists in the `rust/src/ssh/` module family
 - SSH config integration exists
 - jump-host routing exists
 - known-hosts verification exists
@@ -717,13 +719,14 @@ Remaining interop gap:
 - root no-arg exit code is `0` despite printing an error and usage
 - `run` in Go appears to contain a likely bug in DNS proxy SSH-client selection
 - logging/output parity is still a major unfinished area
-- Windows behavior is still incomplete
+- Windows behavior is implemented but not yet parity-validated on a real Windows host
 
 ## Current Rust Coverage Summary
 
 Implemented in Rust:
 
 - executable crate entrypoint and module layout
+- maintainable package-style Rust layout with focused submodules for `cli`, `sshd`, `ssh`, `sftp`, and `utils`
 - fixture-driven CLI help and root-output matching
 - fixture-driven template output
 - root `-q, --quiet` acceptance and global quiet-mode initialization
