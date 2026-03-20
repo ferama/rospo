@@ -1,6 +1,6 @@
 # Rospo Migration Spec
 
-Date: 2026-03-19
+Date: 2026-03-20
 
 This document is the current migration spec for the Go-to-Rust rewrite of `rospo`. It is both a compatibility contract and a status snapshot of what is already implemented in the Rust tree.
 
@@ -35,6 +35,7 @@ Repository artifacts currently used as compatibility oracles:
   - `rust/tests/ssh_integration.rs`
   - `rust/tests/sshd_integration.rs`
   - `rust/tests/tunnel_integration.rs`
+  - `rust/tests/interop_go_server.rs`
 
 ## CLI Contract
 
@@ -51,6 +52,8 @@ Repository artifacts currently used as compatibility oracles:
   - `rospo -h` prints help and exits `0`
   - `rospo --version` prints version and exits `0`
   - `rospo` with no args prints Cobra arity error plus usage and exits `0`
+- Current Rust status:
+  - root `-q, --quiet` is accepted before subcommands and initializes global quiet-mode suppression for runtime logging
 
 ### Shared SSH Client Flags
 
@@ -132,7 +135,9 @@ Rust status:
 - SFTP download is implemented
 - recursive download is implemented
 - resumable single-stream download is implemented
-- Go-equivalent concurrent chunked worker-pool behavior is not yet implemented
+- chunked concurrent single-file download is implemented
+- bounded concurrent recursive download scheduling is implemented
+- exact Go worker-pool/progress semantics are not yet proven equivalent
 
 #### `grabpubkey host:port`
 
@@ -200,7 +205,9 @@ Rust status:
 - SFTP upload is implemented
 - recursive upload is implemented
 - resumable single-stream upload is implemented
-- Go-equivalent concurrent chunked worker-pool behavior is not yet implemented
+- chunked concurrent single-file upload is implemented
+- bounded concurrent recursive upload scheduling is implemented
+- exact Go worker-pool/progress semantics are not yet proven equivalent
 
 #### `revshell [user@]host[:port]`
 
@@ -268,6 +275,7 @@ Rust status:
   - `ProxyJump` and explicit jump-host chains
   - Unix PTY-backed interactive sessions
   - PTY resize propagation on Unix
+  - root/global quiet-mode suppression for client-side banner and runtime logging
 - remaining gaps:
   - no interactive password prompt workflow beyond direct flag use
   - Windows PTY behavior is not implemented
@@ -482,6 +490,7 @@ Current Rust status:
 - known-hosts verification exists
 - command and interactive shell paths exist
 - service-style reconnect loops exist for tunnels
+- root/global quiet mode is wired into client-side runtime output suppression
 - exact Go keepalive behavior is not yet proven equivalent
 
 ### SSH Server
@@ -563,7 +572,9 @@ Current Rust status:
 - recursive transfer exists
 - resumable single-stream logic exists
 - embedded server subsystem exists
-- bounded worker-pool chunked concurrency is not yet ported
+- chunked concurrent single-file transfer logic exists
+- bounded concurrent recursive transfer scheduling exists
+- exact Go worker-pool/progress behavior is not yet proven equivalent
 
 ### Logging
 
@@ -576,7 +587,12 @@ Go behavior that must still be preserved exactly:
 
 Current Rust status:
 
-- `rust/src/logging/mod.rs` is still a stub
+- `rust/src/logging/mod.rs` is implemented
+- the Rust logger writes Go-style `LstdFlags` timestamps to stdout
+- ANSI-colored prefixes are emitted on terminals
+- global quiet suppression is implemented and wired through root `-q`
+- runtime logging is wired through the SSH client, embedded SSH server, and tunnel engine
+- exact wording, per-path coverage, and stdout/stderr placement are not yet fully matched to Go
 
 ### Windows / Cross-Platform
 
@@ -655,8 +671,13 @@ Automated Rust coverage currently includes:
 - shell-disabled rejection
 - SOCKS end-to-end proxying
 - SFTP enabled/disabled subsystem behavior
+- large-file chunked SFTP upload/download roundtrip
 - forward tunnel echo path
 - reverse tunnel echo path
+- automated Rust client -> Go server interop for shell
+- automated Rust client -> Go server interop for SFTP upload/download
+- automated Rust client -> Go server interop for forward tunnel
+- automated Rust client -> Go server interop for reverse tunnel
 
 ### Live Go/Rust Interoperability Checks
 
@@ -691,6 +712,7 @@ Implemented in Rust:
 - executable crate entrypoint and module layout
 - fixture-driven CLI help and root-output matching
 - fixture-driven template output
+- root `-q, --quiet` acceptance and global quiet-mode initialization
 - config schema mirror and YAML loading
 - config file loading behavior
 - SSH URL parsing
@@ -707,6 +729,8 @@ Implemented in Rust:
 - `dns-proxy`
 - `get`
 - `put`
+- chunked concurrent single-file SFTP upload/download
+- bounded concurrent recursive SFTP scheduling
 - `tun forward`
 - `tun reverse`
 - `sshd`
@@ -714,13 +738,15 @@ Implemented in Rust:
 - non-placeholder `run` orchestration for implemented subsystems
 - HTTP/HTTPS `authorized_keys` loading
 - Unix PTY-backed interactive shell support in the embedded server
+- Go-style stdout logger with timestamps, prefixes, ANSI colors, and quiet suppression
 - automated Rust compatibility/integration tests for the implemented areas
+- automated Rust -> Go server interoperability tests for shell, SFTP, and tunnels
 
 Not implemented or not yet fully equivalent:
 
 - exact Go logging/output parity
 - exact Cobra failure/exit-code parity for all malformed invocations
-- worker-pool/chunked SFTP transfer equivalence
+- exact Go worker-pool/progress SFTP equivalence
 - full side-by-side Go/Rust behavioral diff suite
 - Windows service mode
 - Windows ConPTY or equivalent PTY support

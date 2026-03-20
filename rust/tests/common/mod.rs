@@ -8,6 +8,7 @@ use rospo::ssh::{fetch_server_public_key, ClientOptions, JumpHostOptions};
 use rospo::sshd::{self, ServerOptions};
 use rospo::utils::{add_host_key_to_known_hosts, new_endpoint, parse_ssh_url};
 use tempfile::TempDir;
+use tokio::process::{Child, Command};
 use tokio::task::JoinHandle;
 
 pub fn repo_root() -> PathBuf {
@@ -83,6 +84,58 @@ pub async fn start_sshd(
         _tempdir: tempdir,
         task,
     }
+}
+
+pub struct StartedGoServer {
+    pub addr: String,
+    _tempdir: TempDir,
+    child: Child,
+}
+
+impl Drop for StartedGoServer {
+    fn drop(&mut self) {
+        let _ = self.child.start_kill();
+    }
+}
+
+pub fn go_baseline_path() -> PathBuf {
+    PathBuf::from("/tmp/rospo-go-baseline")
+}
+
+pub fn has_go_baseline() -> bool {
+    go_baseline_path().exists()
+}
+
+pub async fn start_go_sshd(authorized_keys: &str, authorized_password: &str) -> Option<StartedGoServer> {
+    if !has_go_baseline() {
+        return None;
+    }
+
+    let tempdir = tempfile::tempdir().expect("create tempdir");
+    let addr = reserve_local_addr();
+    let mut command = Command::new(go_baseline_path());
+    command
+        .arg("sshd")
+        .arg("-I")
+        .arg(tempdir.path().join("server_key"))
+        .arg("-P")
+        .arg(&addr)
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null());
+
+    if authorized_password.is_empty() {
+        command.arg("-K").arg(authorized_keys);
+    } else {
+        command.arg("-A").arg(authorized_password);
+    }
+
+    let child = command.spawn().expect("spawn go baseline sshd");
+    wait_for_tcp(&addr).await;
+    Some(StartedGoServer {
+        addr,
+        _tempdir: tempdir,
+        child,
+    })
 }
 
 pub fn key_path(name: &str) -> PathBuf {

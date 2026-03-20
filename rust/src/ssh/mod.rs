@@ -2,12 +2,15 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use crate::logging::{Logger, GREEN};
 use internal_russh_forked_ssh_key::PublicKey;
 use russh::client;
 use russh::{client::Handle, ChannelMsg, Disconnect, Pty};
 use russh_sftp::client::SftpSession;
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 use tokio::sync::mpsc;
+
+const LOG: Logger = Logger::new("[SSHC] ", GREEN);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Status {
@@ -66,6 +69,7 @@ impl client::Handler for KeyGrabber {
 }
 
 pub async fn fetch_server_public_key(server: (&str, u16)) -> Result<PublicKey, String> {
+    LOG.log(format_args!("grabbing server public key from {}:{}", server.0, server.1));
     let config = Arc::new(client::Config {
         inactivity_timeout: Some(Duration::from_secs(5)),
         ..Default::default()
@@ -161,6 +165,13 @@ pub struct Session {
 
 impl Session {
     pub async fn connect(options: ClientOptions) -> Result<Self, String> {
+        LOG.log(format_args!("trying to connect to remote server..."));
+        if !options.identity.as_os_str().is_empty() {
+            LOG.log(format_args!("using identity at {}", options.identity.display()));
+        }
+        if !options.insecure {
+            LOG.log(format_args!("using known_hosts file at {}", options.known_hosts.display()));
+        }
         let (forwarded_sender, forwarded_receiver) = mpsc::unbounded_channel();
         let mut previous_handle = None::<Handle<ClientHandler>>;
 
@@ -207,6 +218,8 @@ impl Session {
             )
             .await?;
 
+            LOG.log(format_args!("jump host connected: {}@{}:{}", hop.username, hop.host, hop.port));
+
             previous_handle = Some(handle);
         }
 
@@ -241,6 +254,11 @@ impl Session {
             options.password.as_deref(),
         )
         .await?;
+
+        LOG.log(format_args!(
+            "connected to {}@{}:{}",
+            options.username, options.host, options.port
+        ));
 
         Ok(Self {
             handle,
@@ -356,6 +374,7 @@ impl Session {
     }
 
     pub async fn disconnect(&mut self) -> Result<(), String> {
+        LOG.log(format_args!("disconnecting client"));
         self.handle
             .disconnect(Disconnect::ByApplication, "", "English")
             .await

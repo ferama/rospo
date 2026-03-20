@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use crate::logging::{Logger, MAGENTA};
 use tokio::io::{copy_bidirectional, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::time;
@@ -8,12 +9,14 @@ use crate::ssh::{ClientOptions, Session};
 use crate::utils::Endpoint;
 
 pub const RECONNECTION_INTERVAL_SECS: u64 = 5;
+const LOG: Logger = Logger::new("[TUN]  ", MAGENTA);
 
 pub async fn run_forward(options: ClientOptions, local: Endpoint, remote: Endpoint) -> Result<(), String> {
     loop {
         let mut session = match Session::connect(options.clone()).await {
             Ok(session) => session,
             Err(err) => {
+                LOG.log(format_args!("error while connecting {}", err));
                 time::sleep(Duration::from_secs(RECONNECTION_INTERVAL_SECS)).await;
                 if err.is_empty() {
                     continue;
@@ -26,6 +29,11 @@ pub async fn run_forward(options: ClientOptions, local: Endpoint, remote: Endpoi
             Ok(listener) => listener,
             Err(err) => return Err(err.to_string()),
         };
+        LOG.log(format_args!(
+            "forward connected. Local: {} <- Remote: {}",
+            listener.local_addr().map_err(|err| err.to_string())?,
+            remote
+        ));
 
         let mut ping = time::interval(Duration::from_secs(RECONNECTION_INTERVAL_SECS));
         let mut should_reconnect = false;
@@ -48,6 +56,7 @@ pub async fn run_forward(options: ClientOptions, local: Endpoint, remote: Endpoi
                     ).await {
                         Ok(channel) => channel,
                         Err(_) => {
+                            LOG.log(format_args!("disconnected"));
                             should_reconnect = true;
                             continue;
                         }
@@ -72,6 +81,7 @@ pub async fn run_reverse(options: ClientOptions, local: Endpoint, remote: Endpoi
         let mut session = match Session::connect(options.clone()).await {
             Ok(session) => session,
             Err(_) => {
+                LOG.log(format_args!("error while connecting reverse tunnel"));
                 time::sleep(Duration::from_secs(RECONNECTION_INTERVAL_SECS)).await;
                 continue;
             }
@@ -81,11 +91,16 @@ pub async fn run_reverse(options: ClientOptions, local: Endpoint, remote: Endpoi
         let assigned_port = match session.tcpip_forward(&remote_host, remote.port).await {
             Ok(port) => port,
             Err(_) => {
+                LOG.log(format_args!("failed to request remote listener"));
                 let _ = session.disconnect().await;
                 time::sleep(Duration::from_secs(RECONNECTION_INTERVAL_SECS)).await;
                 continue;
             }
         };
+        LOG.log(format_args!(
+            "reverse connected. Remote: {}:{} -> Local: {}",
+            remote_host, assigned_port, local
+        ));
 
         let mut ping = time::interval(Duration::from_secs(RECONNECTION_INTERVAL_SECS));
         let mut should_reconnect = false;
@@ -105,6 +120,7 @@ pub async fn run_reverse(options: ClientOptions, local: Endpoint, remote: Endpoi
                 }
                 _ = ping.tick() => {
                     if session.send_ping().await.is_err() {
+                        LOG.log(format_args!("disconnected"));
                         should_reconnect = true;
                     }
                 }

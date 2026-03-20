@@ -4,7 +4,8 @@ use std::path::{Path, PathBuf};
 
 use crate::config::{load_config, Config, JumpHostConf, SshClientConf};
 use crate::dns_proxy;
-use crate::sftp;
+use crate::logging;
+use crate::sftp::{self, TransferOptions};
 use crate::ssh::{fetch_server_public_key, ClientOptions, JumpHostOptions, Session};
 use crate::sshd::{self, ServerOptions};
 use crate::socks;
@@ -55,6 +56,7 @@ where
         .into_iter()
         .map(|arg| arg.into().to_string_lossy().into_owned())
         .collect::<Vec<_>>();
+    let (args, _) = normalize_args(args);
 
     dispatch(&args)
 }
@@ -64,7 +66,13 @@ where
     I: IntoIterator<Item = T>,
     T: Into<OsString>,
 {
-    let response = execute(args);
+    let args = args
+        .into_iter()
+        .map(|arg| arg.into().to_string_lossy().into_owned())
+        .collect::<Vec<_>>();
+    let (args, quiet) = normalize_args(args);
+    logging::init_logging(quiet);
+    let response = dispatch(&args);
     if !response.stdout.is_empty() {
         print!("{}", response.stdout);
     }
@@ -72,6 +80,26 @@ where
         eprint!("{}", response.stderr);
     }
     response.exit_code
+}
+
+fn normalize_args(args: Vec<String>) -> (Vec<String>, bool) {
+    if args.is_empty() {
+        return (args, false);
+    }
+
+    let mut normalized = Vec::with_capacity(args.len());
+    normalized.push(args[0].clone());
+    let mut quiet = false;
+
+    for arg in args.into_iter().skip(1) {
+        if arg == "-q" || arg == "--quiet" {
+            quiet = true;
+            continue;
+        }
+        normalized.push(arg);
+    }
+
+    (normalized, quiet)
 }
 
 fn dispatch(args: &[String]) -> CliResponse {
@@ -537,7 +565,7 @@ fn build_parsed_command(
             known_hosts: PathBuf::from(known_hosts),
             password,
             insecure,
-            quiet: disable_banner,
+            quiet: disable_banner || logging::is_quiet(),
             jump_hosts,
         },
         command,
@@ -581,10 +609,15 @@ fn get_command(rest: &[String]) -> CliResponse {
             };
             let result = runtime.block_on(async move {
                 let mut client = sftp::Client::connect(parsed.options).await?;
+                let transfer = TransferOptions::new(parsed.max_workers, parsed.concurrent_transfers);
                 let result = if parsed.recursive {
-                    client.get_recursive(&parsed.remote, &parsed.local).await
+                    client
+                        .get_recursive_with_options(&parsed.remote, &parsed.local, transfer)
+                        .await
                 } else {
-                    client.get_file(&parsed.remote, &parsed.local).await
+                    client
+                        .get_file_with_options(&parsed.remote, &parsed.local, transfer)
+                        .await
                 };
                 let _ = client.close().await;
                 result
@@ -610,10 +643,15 @@ fn put_command(rest: &[String]) -> CliResponse {
             };
             let result = runtime.block_on(async move {
                 let mut client = sftp::Client::connect(parsed.options).await?;
+                let transfer = TransferOptions::new(parsed.max_workers, parsed.concurrent_transfers);
                 let result = if parsed.recursive {
-                    client.put_recursive(&parsed.remote, &parsed.local).await
+                    client
+                        .put_recursive_with_options(&parsed.remote, &parsed.local, transfer)
+                        .await
                 } else {
-                    client.put_file(&parsed.remote, &parsed.local).await
+                    client
+                        .put_file_with_options(&parsed.remote, &parsed.local, transfer)
+                        .await
                 };
                 let _ = client.close().await;
                 result
@@ -721,6 +759,8 @@ struct ParsedGetCommand {
     remote: String,
     local: String,
     recursive: bool,
+    max_workers: usize,
+    concurrent_transfers: usize,
 }
 
 struct ParsedPutCommand {
@@ -728,10 +768,13 @@ struct ParsedPutCommand {
     local: String,
     remote: String,
     recursive: bool,
+    max_workers: usize,
+    concurrent_transfers: usize,
 }
 
 fn parse_get_command(rest: &[String]) -> Result<ParsedGetCommand, String> {
-    let (options, positionals, recursive) = parse_ssh_flags_and_positionals(rest, "get")?;
+    let (options, positionals, recursive, max_workers, concurrent_transfers) =
+        parse_ssh_flags_and_positionals(rest, "get")?;
     if positionals.len() < 2 {
         return Err("get requires a server and remote path".to_string());
     }
@@ -742,11 +785,14 @@ fn parse_get_command(rest: &[String]) -> Result<ParsedGetCommand, String> {
         remote,
         local,
         recursive,
+        max_workers,
+        concurrent_transfers,
     })
 }
 
 fn parse_put_command(rest: &[String]) -> Result<ParsedPutCommand, String> {
-    let (options, positionals, recursive) = parse_ssh_flags_and_positionals(rest, "put")?;
+    let (options, positionals, recursive, max_workers, concurrent_transfers) =
+        parse_ssh_flags_and_positionals(rest, "put")?;
     if positionals.len() < 2 {
         return Err("put requires a server and local path".to_string());
     }
@@ -757,15 +803,23 @@ fn parse_put_command(rest: &[String]) -> Result<ParsedPutCommand, String> {
         local,
         remote,
         recursive,
+        max_workers,
+        concurrent_transfers,
     })
 }
 
 fn parse_ssh_flags_and_positionals(
     rest: &[String],
     command_name: &str,
-) -> Result<(ClientOptions, Vec<String>, bool), String> {
+) -> Result<(ClientOptions, Vec<String>, bool, usize, usize), String> {
     let default_identity = format!("{}/.ssh/id_rsa", current_home_dir());
     let default_known_hosts = format!("{}/.ssh/known_hosts", current_home_dir());
+    let mut max_workers = sftp::DEFAULT_MAX_WORKERS;
+    let mut concurrent_transfers = if command_name == "get" {
+        sftp::DEFAULT_CONCURRENT_DOWNLOADS
+    } else {
+        sftp::DEFAULT_CONCURRENT_UPLOADS
+    };
     let mut disable_banner = false;
     let mut insecure = false;
     let mut user_identity = default_identity;
@@ -827,8 +881,19 @@ fn parse_ssh_flags_and_positionals(
                 idx += 1;
             }
             "-w" | "--max-workers" | "-c" | "--concurrent-downloads" | "--concurrent-uploads" => {
-                if rest.get(idx + 1).is_none() {
+                let Some(value) = rest.get(idx + 1) else {
                     return Err(format!("flag needs an argument: {}", rest[idx]));
+                };
+                let parsed = value
+                    .parse::<usize>()
+                    .map_err(|_| format!("invalid value for {}: {}", rest[idx], value))?;
+                if parsed == 0 {
+                    return Err(format!("invalid value for {}: {}", rest[idx], value));
+                }
+                if rest[idx] == "-w" || rest[idx] == "--max-workers" {
+                    max_workers = parsed;
+                } else {
+                    concurrent_transfers = parsed;
                 }
                 idx += 2;
             }
@@ -900,11 +965,13 @@ fn parse_ssh_flags_and_positionals(
             known_hosts: PathBuf::from(known_hosts),
             password,
             insecure,
-            quiet: disable_banner,
+            quiet: disable_banner || logging::is_quiet(),
             jump_hosts,
         },
         positionals,
         recursive,
+        max_workers,
+        concurrent_transfers,
     ))
 }
 
@@ -1116,7 +1183,7 @@ fn build_client_options_from_server(
             known_hosts: PathBuf::from(known_hosts),
             password,
             insecure,
-            quiet: disable_banner,
+            quiet: disable_banner || logging::is_quiet(),
             jump_hosts,
         });
     } else {
@@ -1131,7 +1198,7 @@ fn build_client_options_from_server(
         known_hosts: PathBuf::from(known_hosts),
         password,
         insecure,
-        quiet: disable_banner,
+        quiet: disable_banner || logging::is_quiet(),
         jump_hosts: build_jump_hosts(jump_host, user_identity)?,
     })
 }
@@ -1186,7 +1253,7 @@ fn client_options_from_conf(conf: &SshClientConf) -> Result<ClientOptions, Strin
         known_hosts: PathBuf::from(known_hosts),
         password: if conf.password.is_empty() { None } else { Some(conf.password.clone()) },
         insecure: conf.insecure,
-        quiet: conf.quiet,
+        quiet: conf.quiet || logging::is_quiet(),
         jump_hosts: jump_host_options_from_conf(&conf.jump_hosts)?,
     })
 }
@@ -1368,7 +1435,7 @@ fn parse_tun_command(rest: &[String]) -> Result<ParsedTunnelCommand, String> {
             known_hosts: PathBuf::from(known_hosts),
             password,
             insecure,
-            quiet: disable_banner,
+            quiet: disable_banner || logging::is_quiet(),
             jump_hosts,
         },
         local: new_endpoint(&local)?,

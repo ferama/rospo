@@ -1,6 +1,6 @@
 # Rospo Migration TODO
 
-Date: 2026-03-19
+Date: 2026-03-20
 
 This file lists the remaining work after the current Rust implementation state. It intentionally excludes work that is already implemented and validated.
 
@@ -29,7 +29,11 @@ Already implemented in Rust:
 - non-placeholder `run` orchestration for implemented sections
 - HTTP/HTTPS `authorized_keys` support
 - Unix PTY-backed embedded-server shell handling
-- Rust automated coverage for config, utils, keys, SSH, SSHD, SOCKS, and tunnels
+- root `-q/--quiet` acceptance and global quiet-mode suppression
+- Go-style stdout logger with timestamps, prefixes, ANSI colors, and quiet suppression
+- chunked concurrent single-file SFTP upload/download
+- bounded concurrent recursive SFTP transfer scheduling
+- Rust automated coverage for config, utils, keys, SSH, SSHD, SOCKS, tunnels, chunked SFTP, and Rust->Go interop
 
 ## Highest Priority Remaining Work
 
@@ -37,7 +41,7 @@ Already implemented in Rust:
 - finish Windows support:
   - Windows service mode
   - Windows PTY/ConPTY support
-- finish Go-equivalent concurrent/chunked SFTP transfer behavior
+- finish exact Go worker-pool/progress SFTP parity
 - finish exhaustive exit-code and malformed-invocation parity
 - automate mixed Go/Rust interoperability validation across the full matrix
 
@@ -47,7 +51,6 @@ Already implemented in Rust:
 - verify unknown-flag and malformed-invocation behavior against Cobra for every command
 - verify `help` subcommand parity beyond the currently captured combinations
 - decide whether the current manual parsing approach is sufficient long term or if a lower-risk parser abstraction is needed
-- wire root `-q/--quiet` behavior consistently through all commands and runtime paths
 
 ## Config Layer Work
 
@@ -104,12 +107,12 @@ Already implemented in Rust:
 
 ## SFTP Work
 
-- port Go-equivalent chunked concurrent uploads
-- port Go-equivalent chunked concurrent downloads
-- port or emulate Go worker-pool behavior and limits
+- verify and tune the current chunked concurrent upload behavior against Go
+- verify and tune the current chunked concurrent download behavior against Go
+- port or emulate exact Go worker-pool behavior and limits
 - verify resume semantics match Go
 - verify recursive transfer edge cases against Go
-- add automated mixed Go/Rust SFTP coverage beyond the current manual/live validations
+- extend automated mixed Go/Rust SFTP coverage beyond the current Rust-client-to-Go-server cases
 
 ## `run` Command Work
 
@@ -121,7 +124,6 @@ Already implemented in Rust:
 
 ## Logging Work
 
-- replace the current placeholder `rust/src/logging/mod.rs`
 - match Go logger prefixes, colors, wording, and formatting
 - match quiet-mode suppression behavior
 - verify stdout versus stderr placement on each path
@@ -146,7 +148,7 @@ Already implemented in Rust:
   - listener collisions
   - network interruption
   - reconnect recovery
-- turn the current manual live interop checks into automated tests where practical
+- extend automated Go/Rust interop tests beyond the current shell/SFTP/tunnel coverage
 - extend `run` coverage with realistic mixed configs
 - decide what to do about the Go test packages that do not have direct Rust module equivalents:
   - `pkg/registry`
@@ -170,7 +172,7 @@ Already implemented in Rust:
 
 - logging parity is not done
 - Windows support is not done
-- chunked concurrent SFTP parity is not done
+- exact Go worker-pool/progress SFTP parity is not proven
 - full exit-code/error-text parity is not proven
 - full mixed Go/Rust automated interoperability coverage is not done
 - some Go test coverage has no direct Rust module equivalent yet

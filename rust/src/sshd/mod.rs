@@ -19,11 +19,13 @@ use tokio::process::{ChildStderr, ChildStdout, Command};
 use tokio::sync::{mpsc, Mutex};
 
 use crate::config::SshdConf;
+use crate::logging::{Logger, BLUE};
 use crate::utils::{
     current_home_dir, current_username, expand_user_home, get_user_default_shell, write_file_0600,
 };
 
 const BANNER: &str = "\n .---------------.\n | 🐸 rospo sshd |\n .---------------.\n\n";
+const LOG: Logger = Logger::new("[SSHD] ", BLUE);
 
 #[derive(Debug, Clone)]
 pub struct ServerOptions {
@@ -107,6 +109,8 @@ pub async fn run(options: ServerOptions) -> Result<(), String> {
         return Err("listen port can't be empty".to_string());
     }
 
+    LOG.log(format_args!("loading server key at: '{}'", expand_user_home(&options.server_key)));
+    LOG.log(format_args!("authorized_keys: {:?}", options.authorized_keys));
     ensure_server_key(Path::new(&expand_user_home(&options.server_key))).await?;
 
     if !options.disable_auth {
@@ -142,6 +146,10 @@ pub async fn run(options: ServerOptions) -> Result<(), String> {
     let listener = TcpListener::bind(&listen_address)
         .await
         .map_err(|err| err.to_string())?;
+    LOG.log(format_args!(
+        "listening on {}",
+        listener.local_addr().map_err(|err| err.to_string())?
+    ));
 
     server
         .run_on_socket(config, &listener)
@@ -886,10 +894,12 @@ async fn load_authorized_keys(
 
 async fn load_authorized_keys_source(source: &str) -> Result<String, String> {
     if is_http_source(source) {
+        LOG.log(format_args!("loading keys from http {}", source));
         let response = reqwest::get(source).await.map_err(|err| err.to_string())?;
         let response = response.error_for_status().map_err(|err| err.to_string())?;
         response.text().await.map_err(|err| err.to_string())
     } else {
+        LOG.log(format_args!("loading keys from file {}", source));
         fs::read_to_string(expand_user_home(source))
             .await
             .map_err(|err| err.to_string())

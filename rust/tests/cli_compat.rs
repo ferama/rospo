@@ -23,6 +23,14 @@ fn root_help_matches_go_fixture() {
 }
 
 #[test]
+fn root_quiet_flag_is_accepted_before_subcommands() {
+    let response = execute(["rospo", "-q", "template"]);
+    assert_eq!(response.exit_code, 0);
+    assert_eq!(response.stdout, golden("template-output.txt"));
+    assert!(response.stderr.is_empty());
+}
+
+#[test]
 fn root_noargs_matches_go_fixture() {
     let response = execute(["rospo"]);
     assert_eq!(response.exit_code, 0);
