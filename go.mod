@@ -10,7 +10,7 @@ require (
 	github.com/judwhite/go-svc v1.2.1
 	github.com/kevinburke/ssh_config v1.6.0
 	github.com/miekg/dns v1.1.72
-	github.com/pkg/sftp v1.13.10
+	github.com/pkg/sftp v1.13.11
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/vbauerster/mpb/v8 v8.12.1
