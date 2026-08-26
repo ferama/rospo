@@ -9,7 +9,7 @@ require (
 	github.com/ferama/go-socks v0.0.0-20260207144257-becabd7b3e0b
 	github.com/judwhite/go-svc v1.2.1
 	github.com/kevinburke/ssh_config v1.6.0
-	github.com/miekg/dns v1.1.72
+	github.com/miekg/dns v1.1.73
 	github.com/pkg/sftp v1.13.11
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
@@ -33,8 +33,5 @@ require (
 	github.com/mattn/go-runewidth v0.0.27 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/vbauerster/cupwriter v0.0.4 // indirect
-	golang.org/x/mod v0.31.0 // indirect
-	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/tools v0.40.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
