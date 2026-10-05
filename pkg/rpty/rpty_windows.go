@@ -58,7 +58,8 @@ func (c *rconPty) Run(cm *exec.Cmd) error {
 	cpty, err := ConPTYStart(cm.Path)
 
 	if err != nil {
-		log.Fatalf("Failed to spawn a pty:  %v", err)
+		log.Printf("Failed to spawn a pty:  %v", err)
+		return err
 	}
 	c.cpty = cpty
 	c.ready.Done()

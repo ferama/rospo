@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"runtime/debug"
 	"strings"
 	"sync"
 
@@ -18,11 +19,35 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// ptyRequestMsg is the payload of a "pty-req" channel request (RFC 4254 6.2)
+type ptyRequestMsg struct {
+	Term     string
+	Columns  uint32
+	Rows     uint32
+	Width    uint32
+	Height   uint32
+	Modelist string
+}
+
 // parseDims extracts two uint32s from the provided buffer.
-func parseDims(b []byte) (uint32, uint32) {
+func parseDims(b []byte) (uint32, uint32, error) {
+	if len(b) < 8 {
+		return 0, 0, fmt.Errorf("payload too short: %d bytes", len(b))
+	}
 	w := binary.BigEndian.Uint32(b)
 	h := binary.BigEndian.Uint32(b[4:])
-	return w, h
+	return w, h, nil
+}
+
+// recoverAndClose prevents a panic in a per channel goroutine from
+// taking down the whole daemon. Must be called with defer
+func recoverAndClose(where string, c io.Closer) {
+	if r := recover(); r != nil {
+		log.Printf("recovered panic in %s: %v\n%s", where, r, debug.Stack())
+		if c != nil {
+			c.Close()
+		}
+	}
 }
 
 type channelHandler struct {
@@ -62,8 +87,6 @@ func (s *channelHandler) handleShellExecRequest(
 	}
 
 	if s.server.disableShell {
-		log.Printf("declining %s request... ", req.Type)
-		req.Reply(false, nil)
 		return false
 	}
 	var cmd *exec.Cmd
@@ -127,7 +150,8 @@ func (s *channelHandler) handleShellExecRequest(
 
 	if pty != nil {
 		if err := pty.Run(cmd); err != nil {
-			log.Fatalf("%s", err)
+			log.Printf("could not run command on pty (%s)", err)
+			return false
 		}
 		s.ptySessionClientServe(channel, pty)
 
@@ -138,9 +162,9 @@ func (s *channelHandler) handleShellExecRequest(
 		cmd.Stdout = channel
 		cmd.Stderr = channel
 		cmd.Stdin = channel
-		err := cmd.Start()
-		if err != nil {
-			log.Printf("%s", err)
+		if err := cmd.Start(); err != nil {
+			log.Printf("could not start command (%s)", err)
+			return false
 		}
 
 		go func() {
@@ -157,35 +181,28 @@ func (s *channelHandler) handleShellExecRequest(
 		}()
 	}
 
-	req.Reply(true, nil)
 	return true
 }
 
 func (s *channelHandler) handlePtyRequest(req *ssh.Request) (rpty.Pty, error) {
 	if s.server.disableShell {
-		log.Printf("declining %s request... ", req.Type)
-		req.Reply(false, nil)
+		return nil, nil
+	}
+
+	var payload ptyRequestMsg
+	if err := ssh.Unmarshal(req.Payload, &payload); err != nil {
+		log.Printf("invalid pty-req payload (%s)", err)
 		return nil, nil
 	}
 
 	// allocate a terminal for this channel
-	// log.Print("creating pty...")
-	// Create new pty
 	pty, err := rpty.New()
 	if err != nil {
 		return nil, err
 	}
+	pty.Resize(uint16(payload.Columns), uint16(payload.Rows))
 
-	// Responding 'ok' here will let the client
-	// know we have a pty ready for input
-	req.Reply(true, nil)
-	// Parse body...
-	termLen := req.Payload[3]
-	termEnv := string(req.Payload[4 : termLen+4])
-	w, h := parseDims(req.Payload[termLen+4:])
-	pty.Resize(uint16(w), uint16(h))
-
-	log.Printf("pty-req '%s'", termEnv)
+	log.Printf("pty-req '%s'", payload.Term)
 	return pty, nil
 }
 
@@ -195,6 +212,7 @@ func (s *channelHandler) serveChannelSession(c ssh.NewChannel) {
 		log.Printf("could not accept channel (%s)", err)
 		return
 	}
+	defer recoverAndClose("session channel", channel)
 
 	var pty rpty.Pty
 	env := map[string]string{}
@@ -206,17 +224,28 @@ func (s *channelHandler) serveChannelSession(c ssh.NewChannel) {
 			ok = s.handleShellExecRequest(pty, env, channel, req)
 
 		case "pty-req":
+			if pty != nil {
+				// only one pty per session
+				break
+			}
 			pty, err = s.handlePtyRequest(req)
 			if err != nil {
 				log.Printf("could not start pty (%s)", err)
+				req.Reply(false, nil)
+				channel.Close()
 				return
 			}
-			if pty != nil {
-				ok = true
-			}
+			ok = pty != nil
 
 		case "window-change":
-			w, h := parseDims(req.Payload)
+			if pty == nil {
+				break
+			}
+			w, h, err := parseDims(req.Payload)
+			if err != nil {
+				log.Printf("invalid window-change payload (%s)", err)
+				break
+			}
 			pty.Resize(uint16(w), uint16(h))
 			ok = true
 
@@ -282,6 +311,8 @@ func (s *channelHandler) ptySessionClientServe(channel ssh.Channel, pty rpty.Pty
 }
 
 func (s *channelHandler) handleSftpRequest(channel ssh.Channel) {
+	defer recoverAndClose("sftp subsystem", channel)
+
 	debugStream := os.Stderr
 	serverOptions := []sftp.ServerOption{
 		sftp.WithDebug(debugStream),
@@ -291,11 +322,13 @@ func (s *channelHandler) handleSftpRequest(channel ssh.Channel) {
 		serverOptions...,
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("could not start sftp server (%s)", err)
+		channel.Close()
+		return
 	}
 	if err := server.Serve(); err != nil {
 		if err != io.EOF {
-			log.Fatal("sftp server completed with error:", err)
+			log.Printf("sftp server completed with error: %s", err)
 		}
 	}
 	server.Close()
@@ -338,6 +371,7 @@ func (s *channelHandler) handleChannelDirect(c ssh.NewChannel) {
 		log.Printf("Could not accept channel (%s)\n", err)
 		return
 	}
+	defer recoverAndClose("direct-tcpip channel", connection)
 	go ssh.DiscardRequests(requests)
 	addr := fmt.Sprintf("[%s]:%d", payload.Addr, payload.Port)
 
