@@ -12,7 +12,7 @@ require (
 	github.com/miekg/dns v1.1.73
 	github.com/pkg/sftp v1.13.11
 	github.com/spf13/cobra v1.10.2
-	github.com/spf13/pflag v1.0.10
+	github.com/spf13/pflag v1.1.0
 	github.com/vbauerster/mpb/v8 v8.16.3
 	golang.org/x/crypto v0.58.0
 	golang.org/x/net v0.60.0
