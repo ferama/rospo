@@ -76,7 +76,7 @@ func LoadIdentityFile(file string) (ssh.AuthMethod, error) {
 
 	buffer, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("cannot read SSH idendity key file %s", path)
+		return nil, fmt.Errorf("cannot read SSH identity key file %s", path)
 	}
 
 	key, err := ssh.ParsePrivateKey(buffer)

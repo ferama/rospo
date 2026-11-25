@@ -21,7 +21,7 @@ var keygenCmd = &cobra.Command{
 	Short: "Generates private/public key pairs",
 	Long:  `Generates private/public key pairs`,
 	Example: `
-  # generates a key pair an store it into identiy and identity.pub files
+  # generates a key pair and store it into identity and identity.pub files
   $ rospo keygen -s
 	`,
 	Run: func(cmd *cobra.Command, args []string) {

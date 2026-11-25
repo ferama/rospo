@@ -31,7 +31,7 @@ var revshellCmd = &cobra.Command{
 Preliminary checks:
   1. Your remote server pubkey should be present into known_host file (disable this behaviour using the insecure flag)
      You can explicitly grab it with the 'grabpubkey' command
-  2. Your identity should be authorized into the remote server  (you can generate a new identity with the keygen comand)
+  2. Your identity should be authorized into the remote server  (you can generate a new identity with the keygen command)
   3. You local authorized_keys file should be created and should contain at least a key to be able to reverse connect.
 	 You can use have different options here, please check the "-K" flag
 `,

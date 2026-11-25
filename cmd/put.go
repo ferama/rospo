@@ -26,7 +26,7 @@ func init() {
 	rootCmd.AddCommand(putCmd)
 
 	cmnflags.AddSshClientFlags(putCmd.Flags())
-	putCmd.Flags().IntP("max-workers", "w", 16, "nmber of parallel workers")
+	putCmd.Flags().IntP("max-workers", "w", 16, "number of parallel workers")
 	putCmd.Flags().IntP("concurrent-uploads", "c", 4, "concurrent uploads (recursive only)")
 	putCmd.Flags().BoolP("recursive", "r", false, "if the copy should be recursive")
 

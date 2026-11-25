@@ -194,7 +194,7 @@ func closeHandles(handles ...windows.Handle) {
 
 func (cpty *ConPty) Close() uint32 {
 	// prevent panic from calling this method more then once
-	// from diffent places
+	// from different places
 	cpty.mu.Lock()
 	defer cpty.mu.Unlock()
 	if cpty.closed {

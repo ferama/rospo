@@ -28,7 +28,7 @@ It's meant to make SSH tunnels fun and understandable again
   * Pty on Windows through conpty apis
   * Sftp subsystem support server side
   * File transfer support client side (get and put sftp subcommands)
-  * SOCKS5/SOCKS4 proxy server trough SSH
+  * SOCKS5/SOCKS4 proxy server through SSH
   * DNS over SSH proxy
 
 ## How to Install
@@ -60,7 +60,7 @@ brew install rospo
 
 
 ### Docker Container
-You can use the docker ditribution where useful/needed
+You can use the docker distribution where useful/needed
 ```
 docker run ghcr.io/ferama/rospo --help
 ```
@@ -82,7 +82,7 @@ Forwards the local 5000 port to the remote 6000 on the remote_server
 $ rospo tun forward -l :5000 -r :6000 user@server:port
 ```
 
-Get more detailed help on each command runnig
+Get more detailed help on each command running
 ```
 $ rospo tun forward --help
 $ rospo tun reverse --help
@@ -160,7 +160,7 @@ sc.exe stop rospo; sc.exe delete rospo
 
 ### Example scenario: multiple complex tunnels
 
-Rospo supports multiple tunnels on the same ssh connetion. To exploit the full power of rospo for more complex cases, you should/need to use a scenario config file.
+Rospo supports multiple tunnels on the same ssh connection. To exploit the full power of rospo for more complex cases, you should/need to use a scenario config file.
 Let's define one. Create a file named `config.yaml` with the following contents
 ```yaml
 sshclient:

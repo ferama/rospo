@@ -31,7 +31,7 @@ func NewDnsProxy(sshConn *SshConnection, conf *DnsProxyConf) *DnsProxy {
 }
 
 // resolveDomain sends a DNS query for a domain name over TCP
-// to the underying ssh connection
+// to the underlying ssh connection
 func (p *DnsProxy) resolveDomain(msg *dns.Msg) ([]byte, error) {
 
 	conn, err := p.sshConn.Client.Dial("tcp", p.remoteDnsServer)

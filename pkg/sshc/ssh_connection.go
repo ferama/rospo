@@ -94,7 +94,7 @@ func NewSshConnection(conf *SshClientConf) *SshConnection {
 	return c
 }
 
-// Waits until the connection is estabilished with the server
+// Waits until the connection is established with the server
 func (s *SshConnection) ReadyWait() {
 	s.connected.Wait()
 }
