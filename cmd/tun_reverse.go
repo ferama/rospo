@@ -22,7 +22,7 @@ var tunReverseCmd = &cobra.Command{
 Preliminary checks:
   1. Your remote server pubkey should be present into known_host file (disable this behaviour using the insecure flag)
      You can explicitly grab it with the 'grabpubkey' command
-  2. Your identity should be authorized into the remote server  (you can generate a new identity with the keygen comand)
+  2. Your identity should be authorized into the remote server  (you can generate a new identity with the keygen command)
 `,
 	Example: `
   # Start a reverse tunnel from the local port 5000 to the remote 8888

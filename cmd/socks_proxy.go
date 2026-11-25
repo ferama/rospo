@@ -24,7 +24,7 @@ var socksProxyCmd = &cobra.Command{
 
 Both version 4 and 5 are supported.
 You need to configure your browser to use the SOCKS proxy.
-On windows you should put somthing like "socks=localhost" into the address field into
+On windows you should put something like "socks=localhost" into the address field into
 the proxy configuration form.
 	
 	`,

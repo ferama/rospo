@@ -30,7 +30,7 @@ func NewSftpClient(sshConnection *SshConnection) *SftpClient {
 	return s
 }
 
-// Waits until the connection is estabilished with the server
+// Waits until the connection is established with the server
 func (s *SftpClient) ReadyWait() {
 	s.connected.Wait()
 }
